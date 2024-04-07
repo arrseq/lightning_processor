@@ -53,22 +53,48 @@ impl Parser {
         let mut received_source1: Option<u8> = None;
 
         if self.operand_presense.destination {
-            let destination_bytes_received = match source.read(&mut buffer) {
+            let operand_bytes_received = match source.read(&mut buffer) {
                 Err(_) => return Err(Error::EndOfStream),
                 Ok(value) => value
             };
 
-            if destination_bytes_received == 0 {
+            if operand_bytes_received == 0 {
                 return Err(Error::EndOfStream);
             }
 
             received_destination = Some(buffer[0]);
         }
 
+        if self.operand_presense.source1 {
+            let operand_bytes_received = match source.read(&mut buffer) {
+                Err(_) => return Err(Error::EndOfStream),
+                Ok(value) => value
+            };
+
+            if operand_bytes_received == 0 {
+                return Err(Error::EndOfStream);
+            }
+
+            received_source0 = Some(buffer[0]);
+        }
+
+        if self.operand_presense.source1 {
+            let operand_bytes_received = match source.read(&mut buffer) {
+                Err(_) => return Err(Error::EndOfStream),
+                Ok(value) => value
+            };
+
+            if operand_bytes_received == 0 {
+                return Err(Error::EndOfStream);
+            }
+
+            received_source1 = Some(buffer[0]);
+        }
+
         Ok(Instruction {
             operation: received_operation,
-            source0: None,
-            source1: None,
+            source0: received_source0,
+            source1: received_source1,
             destination: received_destination
         })
     }
