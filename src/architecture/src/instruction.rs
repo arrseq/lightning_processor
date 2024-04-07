@@ -48,11 +48,28 @@ impl Parser {
             return Err(Error::OperandUnmatched);
         }
 
+        let mut received_destination: Option<u8> = None;
+        let mut received_source0: Option<u8> = None;
+        let mut received_source1: Option<u8> = None;
+
+        if self.operand_presense.destination {
+            let destination_bytes_received = match source.read(&mut buffer) {
+                Err(_) => return Err(Error::EndOfStream),
+                Ok(value) => value
+            };
+
+            if destination_bytes_received == 0 {
+                return Err(Error::EndOfStream);
+            }
+
+            received_destination = Some(buffer[0]);
+        }
+
         Ok(Instruction {
             operation: received_operation,
             source0: None,
             source1: None,
-            destination: None
+            destination: received_destination
         })
     }
 }

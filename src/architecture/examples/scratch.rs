@@ -3,7 +3,7 @@ use std::io::Cursor;
 use architecture::instruction::{OperandPresense, Parser};
 
 fn main() {
-    let bytes = vec![0, 0, 1];
+    let bytes = vec![0, 20, 1];
     let mut rom = Cursor::new(bytes);
 
     let mut parser = Parser::new(0, OperandPresense {
@@ -17,5 +17,5 @@ fn main() {
         Ok(ins) => ins
     };
 
-    println!("Parsed to instruction, opcode {}", instruction.operation);
+    println!("Parsed to instruction, opcode {}, dest {:?}", instruction.operation, instruction.destination);
 }
