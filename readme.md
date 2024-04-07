@@ -1,7 +1,7 @@
 # Silver Skies - Processor (SSP)
 A processor project focused on speed, efficiency, cost, and performance.
 
-VERY LARGE
+https://discord.gg/4zt8sUEbNy
 
 ### [Documentation](./docs.md)
 > [!IMPORTANT] 
