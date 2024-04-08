@@ -13,7 +13,7 @@ pub struct Instruction {
     pub destination: Option<u8>
 }
 
-pub enum Error {
+pub enum InstructionParseError {
     EndOfStream,
     OperandUnmatched
 }
@@ -31,8 +31,15 @@ impl Parser {
         }
     }
 
-    pub fn parse(&mut self, source: &mut dyn Read) -> Result<Instruction, Error> {
-        let mut buffer = [0 as u8; 1];
+    pub fn parse(&mut self, source: &mut dyn Read) -> Result<Instruction, InstructionParseError> {
+        let mut buffer = [0 as u8; 4];
+        let bytes_received = match source.read(&mut buffer) {
+            Err(_) => return Err(InstructionParseError::EndOfStream),
+            Ok(value) => value
+        };
+        if bytes_received == 0 {
+            return Err(InstructionParseError::EndOfStream);
+        }
 
         let mut received_operation: u8 = 0;
         let mut received_source0: Option<u8> = None;
@@ -46,20 +53,11 @@ impl Parser {
             + self.operand_presense.source1 as u8;
 
         for _ in 0..expected {
-            let bytes_received = match source.read(&mut buffer) {
-                Err(_) => return Err(Error::EndOfStream),
-                Ok(value) => value
-            };
-
-            if bytes_received == 0 {
-                return Err(Error::EndOfStream);
-            }
-
             let value = buffer[0];
             match byte_index {
                 0 => {
                     if value != self.operation {
-                        return Err(Error::OperandUnmatched);
+                        return Err(InstructionParseError::OperandUnmatched);
                     }
 
                     received_operation = value;
@@ -80,4 +78,11 @@ impl Parser {
             destination: received_destination
         })
     }
+}
+
+// Parse an integer in a byte stream with a specified length. If None is
+// returned then that indicates that the stream did not meet the expected
+// length. 
+pub fn parse_dynamic_integer(byte_stream: &mut dyn Read) -> Option<usize> {
+    // let buffer = [0 as u8]
 }
