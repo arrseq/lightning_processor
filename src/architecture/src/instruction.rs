@@ -34,61 +34,44 @@ impl Parser {
 
     pub fn parse(&mut self, source: &mut dyn Read) -> Result<Instruction, Error> {
         let mut buffer = [0 as u8; 1];
-        let opcode_bytes_received = match source.read(&mut buffer) {
-            Err(_) => return Err(Error::EndOfStream),
-            Ok(value) => value
-        };
 
-        if opcode_bytes_received == 0 {
-            return Err(Error::EndOfStream);
-        }
-
-        let received_operation = buffer[0];
-        if received_operation != self.operation {
-            return Err(Error::OperandUnmatched);
-        }
-
-        let mut received_destination: Option<u8> = None;
+        let mut received_operation: u8 = 0;
         let mut received_source0: Option<u8> = None;
         let mut received_source1: Option<u8> = None;
+        let mut received_destination: Option<u8> = None;
 
-        if self.operand_presense.destination {
-            let operand_bytes_received = match source.read(&mut buffer) {
+        let mut byte_index = 0;
+        let expected = 1
+            + self.operand_presense.destination as u8
+            + self.operand_presense.source0 as u8
+            + self.operand_presense.source1 as u8;
+
+        for _ in 0..expected {
+            let bytes_received = match source.read(&mut buffer) {
                 Err(_) => return Err(Error::EndOfStream),
                 Ok(value) => value
             };
 
-            if operand_bytes_received == 0 {
+            if bytes_received == 0 {
                 return Err(Error::EndOfStream);
             }
 
-            received_destination = Some(buffer[0]);
-        }
+            let value = buffer[0];
+            match byte_index {
+                0 => {
+                    if value != self.operation {
+                        return Err(Error::OperandUnmatched);
+                    }
 
-        if self.operand_presense.source1 {
-            let operand_bytes_received = match source.read(&mut buffer) {
-                Err(_) => return Err(Error::EndOfStream),
-                Ok(value) => value
+                    received_operation = value;
+                },
+                1 => received_destination = Some(value),
+                2 => received_source0 = Some(value),
+                3 => received_source1 = Some(value),
+                _ => unreachable!()
             };
 
-            if operand_bytes_received == 0 {
-                return Err(Error::EndOfStream);
-            }
-
-            received_source0 = Some(buffer[0]);
-        }
-
-        if self.operand_presense.source1 {
-            let operand_bytes_received = match source.read(&mut buffer) {
-                Err(_) => return Err(Error::EndOfStream),
-                Ok(value) => value
-            };
-
-            if operand_bytes_received == 0 {
-                return Err(Error::EndOfStream);
-            }
-
-            received_source1 = Some(buffer[0]);
+            byte_index += 1;
         }
 
         Ok(Instruction {
