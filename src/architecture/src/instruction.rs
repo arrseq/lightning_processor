@@ -1,4 +1,4 @@
-use std::{fmt::Display, io::Read};
+use std::{io::Read};
 
 pub struct OperandPresense {
     pub source0: bool,
@@ -13,7 +13,6 @@ pub struct Instruction {
     pub destination: Option<u8>
 }
 
-#[derive(Debug)]
 pub enum Error {
     EndOfStream,
     OperandUnmatched

@@ -13,14 +13,14 @@ fn main() {
     });
 
     let instruction = match parser.parse(&mut rom) {
-        Err(err) => return println!("Failed to parse to instruction {:?}", err),
+        Err(err) => panic!("Could not parse"),
         Ok(ins) => ins
     };
 
     println!("Parsed to instruction, opcode {}, dest {:?}, source 0 {:?}, source 1 {:?}", instruction.operation, instruction.destination, instruction.source0, instruction.source1);
 
     let instruction = match parser.parse(&mut rom) {
-        Err(err) => return println!("Failed to parse to instruction {:?}", err),
+        Err(err) => panic!("Could not parse"),
         Ok(ins) => ins
     };
 
