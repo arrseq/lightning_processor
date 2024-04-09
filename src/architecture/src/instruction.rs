@@ -1,76 +1,112 @@
-use crate::data::{ByteStream};
+use std::{io::Read};
 
-pub struct Parser<'a> {
-    pub byte_stream: &'a mut dyn ByteStream,
-    pub opcode: u8,
-    pub r0_expected: bool,
-    pub r1_expected: bool,
-    pub imm_expected: bool,
-    pub imm_size: u8 // Quantity of bytes
-}
-
-pub enum ParserError {
-    // Failed attempt at reading bytes from the stream
-    EndOfStream,
-    // Opcode does not match the one specificed in this instruction parser
-    InvalidOpcode
+pub struct OperandPresense {
+    pub source0: bool,
+    pub source1: bool,
+    pub destination: bool
 }
 
 pub struct Instruction {
-    pub opcode: u8,
-    pub r0: Option<u8>,
-    pub r1: Option<u8>,
-    pub imm: Option<Vec<u8>>
+    pub operation: u8,
+    pub source0: Option<u8>,
+    pub source1: Option<u8>,
+    pub destination: Option<u8>
 }
 
-impl<'a> Parser<'a> {
-    pub fn try_parse_queued(&mut self) -> Result<Instruction, ParserError> {
-        let opcode = match self.byte_stream.get_queued() {
-            Ok(opcode) => opcode,
-            Err(()) => return Err(ParserError::EndOfStream)
-        };
+pub enum InstructionParseError {
+    EndOfStream,
+    OperationUnmatched
+}
 
-        if opcode != self.opcode { return Err(ParserError::InvalidOpcode); }
+pub struct Parser {
+    operation: u8,
+    operand_presense: OperandPresense
+}
 
-        let mut r0: Option<u8> = None;
-        if self.r0_expected {
-            r0 = match self.byte_stream.get_queued() {
-                Ok(r0) => Some(r0),
-                Err(()) => return Err(ParserError::EndOfStream)
+impl Parser {
+    pub fn new(operation: u8, operand_presense: OperandPresense) -> Self {
+        Parser {
+            operation,
+            operand_presense
+        }
+    }
+
+    pub fn parse(&mut self, source: &mut dyn Read) -> Result<Instruction, InstructionParseError> {
+        let mut buffer = [0 as u8; 1];
+
+        let mut received_operation: u8 = 0;
+        let mut received_source0: Option<u8> = None;
+        let mut received_source1: Option<u8> = None;
+        let mut received_destination: Option<u8> = None;
+
+        let mut byte_index = 0;
+        let expected = 1
+            + self.operand_presense.destination as u8
+            + self.operand_presense.source0 as u8
+            + self.operand_presense.source1 as u8;
+
+        for _ in 0..expected {
+            let bytes_received = match source.read(&mut buffer) {
+                Err(_) => return Err(InstructionParseError::EndOfStream),
+                Ok(value) => value
+            };
+
+            if bytes_received == 0 {
+                return Err(InstructionParseError::EndOfStream);
             }
+
+            let value = buffer[0];
+            match byte_index {
+                0 => {
+                    if value != self.operation {
+                        return Err(InstructionParseError::OperationUnmatched);
+                    }
+
+                    received_operation = value;
+                },
+                1 => received_destination = Some(value),
+                2 => received_source0 = Some(value),
+                3 => received_source1 = Some(value),
+                _ => unreachable!()
+            };
+
+            byte_index += 1;
         }
 
-        let mut r1: Option<u8> = None;
-        if self.r1_expected {
-            r1 = match self.byte_stream.get_queued() {
-                Ok(r1) => Some(r1),
-                Err(()) => return Err(ParserError::EndOfStream)
+        Ok(Instruction {
+            operation: received_operation,
+            source0: received_source0,
+            source1: received_source1,
+            destination: received_destination
+        })
+    }
+}
+
+pub fn read_sized_block(byte_stream: &mut dyn Read) -> Option<Vec<u8>> {
+    let mut buffer = [0 as u8; 1];
+    match byte_stream.read(&mut buffer) {
+        Err(_) => return None,
+        Ok(bytes_received) => {
+            if bytes_received == 0 {
+                return None;
             }
         }
+    };
+    let value_size = buffer[0];
 
-        let mut imm: Option<Vec<u8>> = None;
-        if self.imm_expected {
-            imm = Some(Vec::new());
-            let bunch = self.byte_stream.get_bunch(self.imm_size as usize);
-
-            // Check for clipping. This results in lost cycles, to avoid undefined behavior
-            // in bad programs or poorly written compilers, its better to sanitize.
-            for byte in bunch {
-                if byte == Err(()) {
-                    return Err(ParserError::EndOfStream);
-                } else {
-                    imm.as_mut().unwrap().push(byte.unwrap());
+    let mut bytes: Vec<u8> = Vec::new();
+    for _ in 0..value_size {
+        match byte_stream.read(&mut buffer) {
+            Err(_) => return None,
+            Ok(length) => {
+                if length == 0 {
+                    return None;
                 }
             }
-        }
-
-        let ins = Instruction {
-            opcode,
-            r0,
-            r1,
-            imm,
         };
 
-        Ok(ins)
+        bytes.push(buffer[0]);
     }
+    
+    Some(bytes) 
 }
