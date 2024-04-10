@@ -1,16 +1,45 @@
-use std::{io::Read};
+use std::io::Read;
 
-pub struct OperandPresense {
+// TODO: Remove
+pub const IMMEDIATE_BYTES: u8 = 8;
+pub type ImmediateType = u64;
+
+pub enum MultiSizedData {
+    Byte(u8),
+    Word(u16),
+    DWord(u32),
+    QWord(u64)
+}
+
+// pub struct ImmediatePresence {
+//     pub bytes_acceptance
+// }
+
+pub struct OperandsPresence {
     pub source0: bool,
     pub source1: bool,
-    pub destination: bool
+    pub destination: bool,
+    pub immediate: bool
 }
 
 pub struct Instruction {
     pub operation: u8,
     pub source0: Option<u8>,
     pub source1: Option<u8>,
-    pub destination: Option<u8>
+    pub destination: Option<u8>,
+    pub immediate: Option<ImmediateType>
+}
+
+impl Default for Instruction {
+    fn default() -> Self {
+        Instruction {
+            operation: 0,
+            source0: None,
+            source1: None,
+            destination: None,
+            immediate: None
+        }
+    }
 }
 
 pub enum InstructionParseError {
@@ -20,46 +49,48 @@ pub enum InstructionParseError {
 
 pub struct Parser {
     operation: u8,
-    operand_presense: OperandPresense
+    operands_presence: OperandsPresence
 }
 
 impl Parser {
-    pub fn new(operation: u8, operand_presense: OperandPresense) -> Self {
+    pub fn new(operation: u8, operand_presence: OperandsPresence) -> Self {
         Parser {
             operation,
-            operand_presense
+            operands_presence: operand_presence
         }
     }
 
-    pub fn parse(&mut self, source: &mut dyn Read) -> Result<Instruction, InstructionParseError> {
+    // Returns an error if failed to parse
+    pub fn parse(&mut self, target: &mut Instruction, source: &mut dyn Read) -> Option<InstructionParseError> {
         let mut buffer = [0 as u8; 1];
 
         let mut received_operation: u8 = 0;
         let mut received_source0: Option<u8> = None;
         let mut received_source1: Option<u8> = None;
         let mut received_destination: Option<u8> = None;
+        let mut received_immediate: Option<ImmediateType> = None;
 
         let mut byte_index = 0;
         let expected = 1
-            + self.operand_presense.destination as u8
-            + self.operand_presense.source0 as u8
-            + self.operand_presense.source1 as u8;
+            + self.operands_presence.destination as u8
+            + self.operands_presence.source0 as u8
+            + self.operands_presence.source1 as u8;
 
         for _ in 0..expected {
             let bytes_received = match source.read(&mut buffer) {
-                Err(_) => return Err(InstructionParseError::EndOfStream),
+                Err(_) => return Some(InstructionParseError::EndOfStream),
                 Ok(value) => value
             };
 
             if bytes_received == 0 {
-                return Err(InstructionParseError::EndOfStream);
+                return Some(InstructionParseError::EndOfStream);
             }
 
             let value = buffer[0];
             match byte_index {
                 0 => {
                     if value != self.operation {
-                        return Err(InstructionParseError::OperationUnmatched);
+                        return Some(InstructionParseError::OperationUnmatched);
                     }
 
                     received_operation = value;
@@ -73,16 +104,38 @@ impl Parser {
             byte_index += 1;
         }
 
-        Ok(Instruction {
+        if self.operands_presence.immediate {
+            let mut immediate_buffer = [0 as u8; IMMEDIATE_BYTES as usize];
+            match source.read(&mut immediate_buffer) {
+                Err(_) => return Some(InstructionParseError::EndOfStream),
+                Ok(bytes_read) => {
+                    if bytes_read == 0 || bytes_read != IMMEDIATE_BYTES as usize {
+                        return Some(InstructionParseError::EndOfStream);
+                    }
+                }
+            }
+
+            let mut imm_store: ImmediateType = 0;
+            for &byte in immediate_buffer.iter() {
+                imm_store = (imm_store << 8) | byte as ImmediateType;
+            }
+
+            received_immediate = Some(imm_store);
+        }
+
+        *target = Instruction {
             operation: received_operation,
             source0: received_source0,
             source1: received_source1,
-            destination: received_destination
-        })
+            destination: received_destination,
+            immediate: received_immediate
+        };
+
+        None
     }
 }
 
-pub fn read_sized_block(byte_stream: &mut dyn Read) -> Option<Vec<u8>> {
+pub fn read_sized_unit(byte_stream: &mut dyn Read) -> Option<Vec<u8>> {
     let mut buffer = [0 as u8; 1];
     match byte_stream.read(&mut buffer) {
         Err(_) => return None,
