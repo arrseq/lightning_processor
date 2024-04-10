@@ -1,40 +1,48 @@
 use std::io::Cursor;
 
-use architecture::instruction::{read_sized_block, OperandPresense, Parser};
+use architecture::instruction::{multi_sized_to_usize, Instruction, MultiSizedData, OperandsPresence, Parser};
+
+enum Operation {
+    LoadToRegister = 0
+}
 
 fn main() {
-    let bytes = vec![0, 20, 15, 0, 100, 47];
-    let mut rom = Cursor::new(bytes);
-
-    let data = vec![2, 5, 10];
-    let mut data_rom = Cursor::new(data);
-
-    let parsed = read_sized_block(&mut data_rom);
-    if parsed.is_some() {
-        for el in parsed.unwrap() {
-            println!("Byte: {}", el);
+    // load to register
+    let mut l2r = Parser::new(
+        Operation::LoadToRegister as u8,
+        OperandsPresence {
+            destination: true,
+            source0: false,
+            source1: false,
+            immediate: Some(MultiSizedData::QWord(0))
         }
-    } else {
-        println!("Err None received");
+    );
+
+    // Program rom
+    let rom_bytes = vec![
+        0, 10, 00, 00, 00, 00, 00, 00, 16, 00, 
+        0, 47, 26, 00, 00, 00, 00, 00, 16, 00
+    ];
+    let mut rom_cursor = Cursor::new(rom_bytes);
+
+    let mut instruction = Instruction::default();
+    
+    for _ in 0..2 {
+        match l2r.parse(&mut instruction, &mut rom_cursor) {
+            Some(_) => return eprintln!("Failed to parse instruction L2R"),
+            None => {}
+        };
+    
+        println!("[Ok] Parsed instruction");
+        println!("-- Operation: {}", instruction.operation);
+        println!("-- Destination: {:?}", instruction.destination);
+        println!("-- Source 0: {:?}", instruction.source0);
+        println!("-- Source 1: {:?}", instruction.source1);
+        
+        if let Some(imm) = &instruction.immediate {
+            println!("-- Immediate: {:?}", multi_sized_to_usize(imm.clone()))
+        } else {
+            return println!("o: Failed to parse immediate");
+        }
     }
-
-    // let mut parser = Parser::new(0, OperandPresense {
-    //     source0: true,
-    //     source1: false,
-    //     destination: true,
-    // });
-
-    // let instruction = match parser.parse(&mut rom) {
-    //     Err(err) => panic!("Could not parse"),
-    //     Ok(ins) => ins
-    // };
-
-    // println!("Parsed to instruction, opcode {}, dest {:?}, source 0 {:?}, source 1 {:?}", instruction.operation, instruction.destination, instruction.source0, instruction.source1);
-
-    // let instruction = match parser.parse(&mut rom) {
-    //     Err(err) => panic!("Could not parse"),
-    //     Ok(ins) => ins
-    // };
-
-    // println!("Parsed to instruction, opcode {}, dest {:?}, source 0 {:?}, source 1 {:?}", instruction.operation, instruction.destination, instruction.source0, instruction.source1);
 }
