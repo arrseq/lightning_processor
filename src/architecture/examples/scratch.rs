@@ -1,6 +1,6 @@
 use std::io::Cursor;
 
-use architecture::instruction::{Instruction, OperandsPresence, Parser};
+use architecture::instruction::{multi_sized_to_usize, Instruction, MultiSizedData, OperandsPresence, Parser};
 
 enum Operation {
     LoadToRegister = 0
@@ -14,7 +14,7 @@ fn main() {
             destination: true,
             source0: false,
             source1: false,
-            immediate: true
+            immediate: Some(MultiSizedData::QWord(0))
         }
     );
 
@@ -38,6 +38,11 @@ fn main() {
         println!("-- Destination: {:?}", instruction.destination);
         println!("-- Source 0: {:?}", instruction.source0);
         println!("-- Source 1: {:?}", instruction.source1);
-        println!("-- Immediate: {:?}", instruction.immediate);
+        
+        if let Some(imm) = &instruction.immediate {
+            println!("-- Immediate: {:?}", multi_sized_to_usize(imm.clone()))
+        } else {
+            return println!("o: Failed to parse immediate");
+        }
     }
 }
