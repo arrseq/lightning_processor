@@ -1,7 +1,5 @@
 use std::io::Read;
 
-use xp_common::number::UnsignedNumber;
-
 pub const BYTE: u8 = 1;
 pub const WORD: u8 = 2;
 pub const DWORD: u8 = 4;
@@ -65,7 +63,7 @@ impl Default for Instruction {
     }
 }
 
-pub enum InstructionParseError {
+pub enum InstructionParseErrors {
     EndOfStream,
     OperationUnmatched
 }
@@ -84,7 +82,7 @@ impl Parser {
     }
 
     /// Returns an error if failed to parse
-    pub fn parse(&mut self, target: &mut Instruction, source: &mut dyn Read) -> Option<InstructionParseError> {
+    pub fn parse(&mut self, target: &mut Instruction, source: &mut dyn Read) -> Option<InstructionParseErrors> {
         let mut buffer = [0 as u8; 1];
 
         let mut byte_index = 0;
@@ -95,19 +93,19 @@ impl Parser {
 
         for _ in 0..expected {
             let bytes_received = match source.read(&mut buffer) {
-                Err(_) => return Some(InstructionParseError::EndOfStream),
+                Err(_) => return Some(InstructionParseErrors::EndOfStream),
                 Ok(value) => value
             };
 
             if bytes_received == 0 {
-                return Some(InstructionParseError::EndOfStream);
+                return Some(InstructionParseErrors::EndOfStream);
             }
 
             let value = buffer[0];
             match byte_index {
                 0 => {
                     if value != self.operation {
-                        return Some(InstructionParseError::OperationUnmatched);
+                        return Some(InstructionParseErrors::OperationUnmatched);
                     }
 
                     target.operation = value;
@@ -126,10 +124,10 @@ impl Parser {
                 MultiSizedData::Byte(_) => {
                     let mut immediate_buffer = [0 as u8; BYTE as usize];
                     match source.read(&mut immediate_buffer) {
-                        Err(_) => return Some(InstructionParseError::EndOfStream),
+                        Err(_) => return Some(InstructionParseErrors::EndOfStream),
                         Ok(bytes_read) => {
                             if bytes_read == 0 || bytes_read != BYTE as usize {
-                                return Some(InstructionParseError::EndOfStream);
+                                return Some(InstructionParseErrors::EndOfStream);
                             }
                         }
                     }
@@ -139,10 +137,10 @@ impl Parser {
                 MultiSizedData::Word(_) => {
                     let mut immediate_buffer = [0 as u8; WORD as usize];
                     match source.read(&mut immediate_buffer) {
-                        Err(_) => return Some(InstructionParseError::EndOfStream),
+                        Err(_) => return Some(InstructionParseErrors::EndOfStream),
                         Ok(bytes_read) => {
                             if bytes_read == 0 || bytes_read != WORD as usize {
-                                return Some(InstructionParseError::EndOfStream);
+                                return Some(InstructionParseErrors::EndOfStream);
                             }
                         }
                     }
@@ -157,10 +155,10 @@ impl Parser {
                 MultiSizedData::DWord(_) => {
                     let mut immediate_buffer = [0 as u8; DWORD as usize];
                     match source.read(&mut immediate_buffer) {
-                        Err(_) => return Some(InstructionParseError::EndOfStream),
+                        Err(_) => return Some(InstructionParseErrors::EndOfStream),
                         Ok(bytes_read) => {
                             if bytes_read == 0 || bytes_read != DWORD as usize {
-                                return Some(InstructionParseError::EndOfStream);
+                                return Some(InstructionParseErrors::EndOfStream);
                             }
                         }
                     }
@@ -175,10 +173,10 @@ impl Parser {
                 MultiSizedData::QWord(_) => {
                     let mut immediate_buffer = [0 as u8; QWORD as usize];
                     match source.read(&mut immediate_buffer) {
-                        Err(_) => return Some(InstructionParseError::EndOfStream),
+                        Err(_) => return Some(InstructionParseErrors::EndOfStream),
                         Ok(bytes_read) => {
                             if bytes_read == 0 || bytes_read != QWORD as usize {
-                                return Some(InstructionParseError::EndOfStream);
+                                return Some(InstructionParseErrors::EndOfStream);
                             }
                         }
                     }
