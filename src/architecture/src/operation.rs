@@ -1,21 +1,46 @@
 /// Most function is register based.
-pub enum Codes {
+pub enum Code {
     Terminate,
+    Interrupt,
+    Safe,
 
     // Data
-    LoadImmediate,
-    LoadMemory,
-    CloneRegister,
+    LoadFromImmediate,
+    LoadFromMemory,
+    LoadToMemory,
+    CloneToRegister,
 
     // Arithmetic
     Add,
+    AddFloat,
+    AddDouble,
+
     Subtract,
-    Multiply, // Needs more research and testing
-    Divide,   // Needs more research and testing,
+    SubtractFloat,
+    SubtractDouble,
 
-    // Interrupt
+    Multiply, 
+    MultiplyInteger, 
+    MultiplyFloat, 
+    MultiplyDouble, 
+
+    Divide,
+    DivideInteger,
+    DivideFloat,
+    DivideDouble,
     
+    And,
+    Or,
+    ExclusiveOr,
+    Not,
+    ShiftLeastSignificant,
+    ShiftMostSignificant,
+    TrailingZeros,
 
-    // Security
-    StartProtected
+    // Branching
+    Branch,
+    BranchEqual,
+    BranchUnequal,
+    BranchGreater,
+    BranchGreaterThanOrEqual,
 }

@@ -1,6 +1,7 @@
-pub enum Codes {    
+pub enum Code {    
     CurrentInstructionAddress,
     ArithmeticLogicUnitResultFlags,
+    FloatingPointUnitResultFlags,
     StackPointer,
 
     // Safe mode
@@ -38,5 +39,16 @@ pub enum Codes {
 }
 
 pub struct Register {
+    code: Code,
+    allow_safe_mode_read: bool,
+    allow_safe_mode_write: bool,
 
+}
+
+impl Register {
+    pub fn new(code: Code) -> Self {
+        Register {
+            code
+        }
+    }
 }
