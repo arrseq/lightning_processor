@@ -13,3 +13,20 @@ Read information for how to write code for the processor, how to emulate, and mo
 
 ### License
 There is no official for this project. We own the code and you may clone, fork, or take the code as a copy and not face legal repricussions. 
+
+### Setting up your development environment
+<!-- TODO: Add OpenCL once it is used in the emulation core -->
+This project is written in [Rust](https://www.rust-lang.org/). Download [Rust Up](https://rustup.rs/) to quickly setup your environment. Follow the steps below to get the processor running on your system.
+
+Clone the processor to your computer and enter the directory.
+```bash
+> mkdir Silver-Skies
+> cd Silver-Skies
+> git clone https://github.com/Silver-Skies/Processor
+> cd Processor
+```
+
+Download the dependencies and build the project.
+```bash
+> cargo build
+```
