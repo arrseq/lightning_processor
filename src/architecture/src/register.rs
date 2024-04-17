@@ -1,12 +1,12 @@
 pub enum Code {    
-    CurrentInstructionAddress,
-    ArithmeticLogicUnitResultFlags,
-    FloatingPointUnitResultFlags,
+    CurrentInstruction,
+    ArithmeticLogicUnitResult,
+    FloatingPointUnitResult,
     StackPointer,
 
     // Safe mode
-    PageHierarchyAddress,      // 64 bits   //
-    SafeMode,                  // 1 bit     //
+    PageHierarchy,      // 64 bits   //
+    Safe,                  // 1 bit     //
 
     // Binary constants
     True,
@@ -17,25 +17,25 @@ pub enum Code {
     QuadWord,
 
     // General purpose
-    GeneralPurpose0,           // 64 bits   //
-    GeneralPurpose1,           // 64 bits   //
-    GeneralPurpose2,           // 64 bits   //
+    General0,           // 64 bits   //
+    General1,           // 64 bits   //
+    General2,           // 64 bits   //
 
-    GeneralPurpose4,           // 64 bits   //
-    GeneralPurpose5,           // 64 bits   //
-    GeneralPurpose6,           // 64 bits   //
+    General4,           // 64 bits   //
+    General5,           // 64 bits   //
+    General6,           // 64 bits   //
 
-    GeneralPurpose7,           // 64 bits   //
-    GeneralPurpose8,           // 64 bits   //
-    GeneralPurpose9,           // 64 bits   //
+    General7,           // 64 bits   //
+    General8,           // 64 bits   //
+    General9,           // 64 bits   //
 
-    GeneralPurpose10,          // 64 bits   //
-    GeneralPurpose11,          // 64 bits   //
-    GeneralPurpose12,          // 64 bits   //
+    General10,          // 64 bits   //
+    General11,          // 64 bits   //
+    General12,          // 64 bits   //
 
-    GeneralPurpose13,          // 64 bits   //
-    GeneralPurpose14,          // 64 bits   //
-    GeneralPurpose15,          // 64 bits   //
+    General13,          // 64 bits   //
+    General14,          // 64 bits   //
+    General15,          // 64 bits   //
 }
 
 pub struct Register {
