@@ -2,16 +2,17 @@ pub enum Code {
     Terminate,              // trm
     Interrupt,              // int, s0
     Safe,                   // sfe, s0
-
-    // Register
-    LoadImmediateByte,      // li , s0, bt
-    LoadImmediateWord,      // li , s0, wd
-    LoadImmediateDWord,     // li , s0, dw
-    LoadImmediateQWord,     // li , s0, qw
-    CloneRegister,          // cr , s0, s1
+    
+    // Data flow
+    LoadImmediateByte,      // lib, s0, bt
+    LoadImmediateWord,      // liw, s0, wd
+    LoadImmediateDWord,     // ldw, s0, dw
+    LoadImmediateQWord,     // lqw, s0, qw
+    LoadInterconnect,       // lic, s0
+    CloneRegister,          // cln, s0, s1
 
     // Random access memory
-    LoadFromMemory,         // lfm, s0, s1
+    LoadFromMemory,         // lfm, s0, s1, s2
     LoadToMemory,           // ltm, s0, s1
 
     // Arithmetic
@@ -37,14 +38,14 @@ pub enum Code {
     Or,                     // or , s0, s1, s2
     ExclusiveOr,            // xor, s0, s1, s2
     Not,                    // not, s0, s1, s2
-    ShiftLeastSignificant,  // sls, s0, s1, s2
-    ShiftMostSignificant,   // sms, s0, s1, s2
-    TrailingZeros,          // tz , TODO: Undecided
+    ShiftStart,             // shs, s0, s1, s2
+    ShiftEnd,               // she, s0, s1, s2
+    TrailingZeros,          // tzr, TODO: Undecided
 
     // Branching
     Branch,                 // bch, s0
     BranchEqual,            // beq, s0, s1, s2
     BranchUnequal,          // buq, s0, s1, s2
-    BranchGreater,          // bgt, s0, s1, s2
+    BranchGreater,          // bgr, s0, s1, s2
     BranchGreaterOrEqual,   // bge, s0, s1, s2
 }
