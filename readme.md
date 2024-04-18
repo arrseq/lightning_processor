@@ -1,4 +1,4 @@
-# Silver Skies - Processor (SSP)
+# The Four Elements - Processor (TFEP)
 A processor project focused on speed, efficiency, cost, and performance. **Current implementations will be for FPGAs and in Verilog.**
 
 > [!NOTE]
