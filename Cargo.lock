@@ -3,24 +3,9 @@
 version = 3
 
 [[package]]
-name = "architecture"
-version = "0.1.0"
-dependencies = [
- "xp_common",
-]
-
-[[package]]
-name = "assembly"
+name = "assembler"
 version = "0.1.0"
 
 [[package]]
-name = "emulation"
-version = "0.1.0"
-
-[[package]]
-name = "translation"
-version = "0.1.0"
-
-[[package]]
-name = "xp_common"
+name = "emulator"
 version = "0.1.0"
