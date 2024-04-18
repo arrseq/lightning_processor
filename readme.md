@@ -12,7 +12,7 @@ https://discord.gg/4zt8sUEbNy
 Read information for how to write code for the processor, how to emulate, and more.
 
 ### License
-There is no official for this project. We own the code and you may clone, fork, or take the code as a copy and not face legal repricussions. 
+There is no license for this project. We own the code and you may clone, fork, or take the code as a copy and not face legal repricussions. 
 
 ### Setting up your development environment
 <!-- TODO: Add OpenCL once it is used in the emulation core -->
