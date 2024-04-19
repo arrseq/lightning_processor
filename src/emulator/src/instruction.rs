@@ -293,6 +293,33 @@ impl Parser {
                 immediate: None
             }
         });
+        singles.push(SingleParser {
+            operation: Operations::Terminate as u8,
+            operands_presence: OperandsPresence {
+                destination: false,
+                source0: false,
+                source1: false,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::Interrupt as u8,
+            operands_presence: OperandsPresence {
+                destination: false,
+                source0: true,
+                source1: false,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::Safe as u8,
+            operands_presence: OperandsPresence {
+                destination: false,
+                source0: true,
+                source1: false,
+                immediate: None
+            }
+        });
 
         Self {
             singles
