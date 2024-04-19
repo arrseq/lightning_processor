@@ -11,6 +11,7 @@ pub type Qword = u64;
 
 #[repr(u8)]
 pub enum Operations {
+    Nothing,                // ntg
     Terminate,              // trm
     Interrupt,              // int, s0
     Safe,                   // sfe, s0
@@ -121,19 +122,12 @@ pub enum ParserErrors {
     OperationUnmatched
 }
 
-pub struct Parser {
-    operation: u8,
-    operands_presence: OperandsPresence
+pub struct SingleParser {
+    pub operation: u8,
+    pub operands_presence: OperandsPresence
 }
 
-impl Parser {
-    pub fn new(operation: u8, operand_presence: OperandsPresence) -> Self {
-        Parser {
-            operation,
-            operands_presence: operand_presence
-        }
-    }
-
+impl SingleParser {
     /// Returns an error if failed to parse
     pub fn parse(&mut self, target: &mut Instruction, source: &mut dyn Read) -> Result<(), ParserErrors> {
         let mut buffer = [0 as u8; 1];
@@ -280,4 +274,28 @@ pub fn read_sized_unit(byte_stream: &mut dyn Read) -> Result<Vec<u8>, ()> {
 // TODO: Implement instruction stream with `Read` trait.
 pub struct Stream {
 
+}
+
+pub struct Parser {
+    singles: Vec<SingleParser>
+}
+
+impl Parser {
+    pub fn new() -> Self {
+        let mut singles = Vec::new();
+
+        singles.push(SingleParser {
+            operation: Operations::Nothing as u8,
+            operands_presence: OperandsPresence {
+                destination: false,
+                source0: false,
+                source1: false,
+                immediate: None
+            }
+        });
+
+        Self {
+            singles
+        }
+    }
 }
