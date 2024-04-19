@@ -9,6 +9,59 @@ pub type Word = u16;
 pub type Dword = u32;
 pub type Qword = u64;
 
+#[repr(u8)]
+pub enum Operations {
+    Terminate,              // trm
+    Interrupt,              // int, s0
+    Safe,                   // sfe, s0
+    
+    // Data flow
+    LoadImmediateByte,      // lib, s0, bt
+    LoadImmediateWord,      // liw, s0, wd
+    LoadImmediateDWord,     // ldw, s0, dw
+    LoadImmediateQWord,     // lqw, s0, qw
+    LoadInterconnect,       // lic, s0
+    CloneRegister,          // cln, s0, s1
+
+    // Random access memory
+    LoadFromMemory,         // lfm, s0, s1, s2
+    LoadToMemory,           // ltm, s0, s1
+
+    // Arithmetic
+    Add,                    // add, s0, s1, s2
+    AddFloat,               // aft, s0, s1, s2
+    AddDouble,              // adb, s0, s1, s2
+
+    Subtract,               // sub, s0, s1, s2
+    SubtractFloat,          // sft, s0, s1, s2
+    SubtractDouble,         // sdb, s0, s1, s2
+
+    Multiply,               // mul, s0, s1, s2
+    MultiplyInteger,        // mit, s0, s1, s2
+    MultiplyFloat,          // mft, s0, s1, s2
+    MultiplyDouble,         // mdb, s0, s1, s2
+
+    Divide,                 // div, s0, s1, s2
+    DivideInteger,          // dit, s0, s1, s2
+    DivideFloat,            // dft, s0, s1, s2
+    DivideDouble,           // ddb, s0, s1, s2
+
+    And,                    // and, s0, s1, s2
+    Or,                     // or , s0, s1, s2
+    ExclusiveOr,            // xor, s0, s1, s2
+    Not,                    // not, s0, s1, s2
+    ShiftStart,             // shs, s0, s1, s2
+    ShiftEnd,               // she, s0, s1, s2
+    TrailingZeros,          // tzr, TODO: Undecided
+
+    // Branching
+    Branch,                 // bch, s0
+    BranchEqual,            // beq, s0, s1, s2
+    BranchUnequal,          // buq, s0, s1, s2
+    BranchGreater,          // bgr, s0, s1, s2
+    BranchGreaterOrEqual,   // bge, s0, s1, s2
+}
+
 #[derive(Clone)]
 pub enum MultiSizedData {
     Byte(u8),
@@ -63,7 +116,7 @@ impl Default for Instruction {
     }
 }
 
-pub enum InstructionParseErrors {
+pub enum ParserErrors {
     EndOfStream,
     OperationUnmatched
 }
@@ -82,7 +135,7 @@ impl Parser {
     }
 
     /// Returns an error if failed to parse
-    pub fn parse(&mut self, target: &mut Instruction, source: &mut dyn Read) -> Option<InstructionParseErrors> {
+    pub fn parse(&mut self, target: &mut Instruction, source: &mut dyn Read) -> Result<(), ParserErrors> {
         let mut buffer = [0 as u8; 1];
 
         let mut byte_index = 0;
@@ -93,19 +146,19 @@ impl Parser {
 
         for _ in 0..expected {
             let bytes_received = match source.read(&mut buffer) {
-                Err(_) => return Some(InstructionParseErrors::EndOfStream),
+                Err(_) => return Err(ParserErrors::EndOfStream),
                 Ok(value) => value
             };
 
             if bytes_received == 0 {
-                return Some(InstructionParseErrors::EndOfStream);
+                return Err(ParserErrors::EndOfStream);
             }
 
             let value = buffer[0];
             match byte_index {
                 0 => {
                     if value != self.operation {
-                        return Some(InstructionParseErrors::OperationUnmatched);
+                        return Err(ParserErrors::OperationUnmatched);
                     }
 
                     target.operation = value;
@@ -124,10 +177,10 @@ impl Parser {
                 MultiSizedData::Byte(_) => {
                     let mut immediate_buffer = [0 as u8; BYTE as usize];
                     match source.read(&mut immediate_buffer) {
-                        Err(_) => return Some(InstructionParseErrors::EndOfStream),
+                        Err(_) => return Err(ParserErrors::EndOfStream),
                         Ok(bytes_read) => {
                             if bytes_read == 0 || bytes_read != BYTE as usize {
-                                return Some(InstructionParseErrors::EndOfStream);
+                                return Err(ParserErrors::EndOfStream);
                             }
                         }
                     }
@@ -137,10 +190,10 @@ impl Parser {
                 MultiSizedData::Word(_) => {
                     let mut immediate_buffer = [0 as u8; WORD as usize];
                     match source.read(&mut immediate_buffer) {
-                        Err(_) => return Some(InstructionParseErrors::EndOfStream),
+                        Err(_) => return Err(ParserErrors::EndOfStream),
                         Ok(bytes_read) => {
                             if bytes_read == 0 || bytes_read != WORD as usize {
-                                return Some(InstructionParseErrors::EndOfStream);
+                                return Err(ParserErrors::EndOfStream);
                             }
                         }
                     }
@@ -155,10 +208,10 @@ impl Parser {
                 MultiSizedData::DWord(_) => {
                     let mut immediate_buffer = [0 as u8; DWORD as usize];
                     match source.read(&mut immediate_buffer) {
-                        Err(_) => return Some(InstructionParseErrors::EndOfStream),
+                        Err(_) => return Err(ParserErrors::EndOfStream),
                         Ok(bytes_read) => {
                             if bytes_read == 0 || bytes_read != DWORD as usize {
-                                return Some(InstructionParseErrors::EndOfStream);
+                                return Err(ParserErrors::EndOfStream);
                             }
                         }
                     }
@@ -173,10 +226,10 @@ impl Parser {
                 MultiSizedData::QWord(_) => {
                     let mut immediate_buffer = [0 as u8; QWORD as usize];
                     match source.read(&mut immediate_buffer) {
-                        Err(_) => return Some(InstructionParseErrors::EndOfStream),
+                        Err(_) => return Err(ParserErrors::EndOfStream),
                         Ok(bytes_read) => {
                             if bytes_read == 0 || bytes_read != QWORD as usize {
-                                return Some(InstructionParseErrors::EndOfStream);
+                                return Err(ParserErrors::EndOfStream);
                             }
                         }
                     }
@@ -191,17 +244,17 @@ impl Parser {
             }
         }
 
-        None
+        Ok(())
     }
 }
 
-pub fn read_sized_unit(byte_stream: &mut dyn Read) -> Option<Vec<u8>> {
+pub fn read_sized_unit(byte_stream: &mut dyn Read) -> Result<Vec<u8>, ()> {
     let mut buffer = [0 as u8; 1];
     match byte_stream.read(&mut buffer) {
-        Err(_) => return None,
+        Err(_) => return Err(()),
         Ok(bytes_received) => {
             if bytes_received == 0 {
-                return None;
+                return Err(());
             }
         }
     };
@@ -210,10 +263,10 @@ pub fn read_sized_unit(byte_stream: &mut dyn Read) -> Option<Vec<u8>> {
     let mut bytes: Vec<u8> = Vec::new();
     for _ in 0..value_size {
         match byte_stream.read(&mut buffer) {
-            Err(_) => return None,
+            Err(_) => return Err(()),
             Ok(length) => {
                 if length == 0 {
-                    return None;
+                    return Err(());
                 }
             }
         };
@@ -221,5 +274,5 @@ pub fn read_sized_unit(byte_stream: &mut dyn Read) -> Option<Vec<u8>> {
         bytes.push(buffer[0]);
     }
     
-    Some(bytes) 
+    Ok(bytes) 
 }
