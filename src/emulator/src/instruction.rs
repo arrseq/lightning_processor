@@ -1,4 +1,4 @@
-use std::io::Read;
+use std::io::{Error, Read, Seek};
 
 pub const BYTE: u8 = 1;
 pub const WORD: u8 = 2;
@@ -117,9 +117,10 @@ impl Default for Instruction {
     }
 }
 
-pub enum ParserErrors {
+pub enum Errors {
     EndOfStream,
-    OperationUnmatched
+    OperationUnmatched,
+    Seek(Error)
 }
 
 pub struct SingleParser {
@@ -129,7 +130,7 @@ pub struct SingleParser {
 
 impl SingleParser {
     /// Returns an error if failed to parse
-    pub fn parse(&mut self, target: &mut Instruction, source: &mut dyn Read) -> Result<(), ParserErrors> {
+    pub fn parse(&self, target: &mut Instruction, source: &mut dyn Read) -> Result<(), Errors> {
         let mut buffer = [0 as u8; 1];
 
         let mut byte_index = 0;
@@ -140,19 +141,19 @@ impl SingleParser {
 
         for _ in 0..expected {
             let bytes_received = match source.read(&mut buffer) {
-                Err(_) => return Err(ParserErrors::EndOfStream),
+                Err(_) => return Err(Errors::EndOfStream),
                 Ok(value) => value
             };
 
             if bytes_received == 0 {
-                return Err(ParserErrors::EndOfStream);
+                return Err(Errors::EndOfStream);
             }
 
             let value = buffer[0];
             match byte_index {
                 0 => {
                     if value != self.operation {
-                        return Err(ParserErrors::OperationUnmatched);
+                        return Err(Errors::OperationUnmatched);
                     }
 
                     target.operation = value;
@@ -171,10 +172,10 @@ impl SingleParser {
                 MultiSizedData::Byte(_) => {
                     let mut immediate_buffer = [0 as u8; BYTE as usize];
                     match source.read(&mut immediate_buffer) {
-                        Err(_) => return Err(ParserErrors::EndOfStream),
+                        Err(_) => return Err(Errors::EndOfStream),
                         Ok(bytes_read) => {
                             if bytes_read == 0 || bytes_read != BYTE as usize {
-                                return Err(ParserErrors::EndOfStream);
+                                return Err(Errors::EndOfStream);
                             }
                         }
                     }
@@ -184,10 +185,10 @@ impl SingleParser {
                 MultiSizedData::Word(_) => {
                     let mut immediate_buffer = [0 as u8; WORD as usize];
                     match source.read(&mut immediate_buffer) {
-                        Err(_) => return Err(ParserErrors::EndOfStream),
+                        Err(_) => return Err(Errors::EndOfStream),
                         Ok(bytes_read) => {
                             if bytes_read == 0 || bytes_read != WORD as usize {
-                                return Err(ParserErrors::EndOfStream);
+                                return Err(Errors::EndOfStream);
                             }
                         }
                     }
@@ -202,10 +203,10 @@ impl SingleParser {
                 MultiSizedData::DWord(_) => {
                     let mut immediate_buffer = [0 as u8; DWORD as usize];
                     match source.read(&mut immediate_buffer) {
-                        Err(_) => return Err(ParserErrors::EndOfStream),
+                        Err(_) => return Err(Errors::EndOfStream),
                         Ok(bytes_read) => {
                             if bytes_read == 0 || bytes_read != DWORD as usize {
-                                return Err(ParserErrors::EndOfStream);
+                                return Err(Errors::EndOfStream);
                             }
                         }
                     }
@@ -220,10 +221,10 @@ impl SingleParser {
                 MultiSizedData::QWord(_) => {
                     let mut immediate_buffer = [0 as u8; QWORD as usize];
                     match source.read(&mut immediate_buffer) {
-                        Err(_) => return Err(ParserErrors::EndOfStream),
+                        Err(_) => return Err(Errors::EndOfStream),
                         Ok(bytes_read) => {
                             if bytes_read == 0 || bytes_read != QWORD as usize {
-                                return Err(ParserErrors::EndOfStream);
+                                return Err(Errors::EndOfStream);
                             }
                         }
                     }
@@ -324,5 +325,32 @@ impl Parser {
         Self {
             singles
         }
+    }
+
+    pub fn parse<Source: Read + Seek>(&self, target: &mut Instruction, source: &mut Source) -> Result<(), Errors> {
+        for single in &self.singles {
+            let starting_position = match source.stream_position() {
+                Ok(pos) => pos,
+                Err(err) => return Err(Errors::Seek(err))
+            };
+
+            match single.parse(target, source) {
+                Err(err) => {
+                    match err {
+                        Errors::EndOfStream => return Err(err),
+                        Errors::OperationUnmatched => {
+                            match source.seek(std::io::SeekFrom::Start(starting_position)) {
+                                Err(se) => return Err(Errors::Seek(se)),
+                                Ok(_) => {}
+                            };
+                        },
+                        Errors::Seek(se) => return Err(Errors::Seek(se))
+                    }
+                },
+                Ok(_) => return Ok(())
+            };
+        }
+        
+        Err(Errors::OperationUnmatched)
     }
 }
