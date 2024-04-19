@@ -1,5 +1,11 @@
 use crate::register;
 
+pub enum Permission {
+    None,
+    NonSafe,
+    All
+}
+
 pub struct Core {
     pub registers: register::File,
     safe: bool
