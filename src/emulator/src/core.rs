@@ -7,7 +7,7 @@ pub enum Permission {
 }
 
 pub struct Core {
-    pub registers: register::File,
+    registers: register::File,
     safe: bool
 }
 
@@ -20,8 +20,13 @@ impl Core {
     }
 
     pub fn perform_register(&mut self) {
-        // self.registers.
-        unimplemented!()
+        let safe = self.is_safe();
+        let qwrd = self.registers.find_mut(register::Codes::General00).unwrap();
+        match qwrd.set_value(safe, 20) {
+            Ok(_) => {},
+            Err(_) => panic!("Failed to set register")
+        }
+        println!("QuadWord Register (value): {:?}", qwrd.get_value(safe));
     }
 
     pub fn is_safe(&self) -> bool {
@@ -29,6 +34,6 @@ impl Core {
     }
 
     pub fn set_safe(&mut self, safe: bool) {
-        unimplemented!()
+        todo!()
     }
 }
