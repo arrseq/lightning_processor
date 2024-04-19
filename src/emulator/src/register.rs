@@ -1,6 +1,6 @@
 use std::mem::discriminant;
 
-use crate::core::{Core, Permission};
+use crate::core::{Permission};
 
 #[repr(u8)]
 pub enum Codes {    
