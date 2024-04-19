@@ -1,11 +1,13 @@
-use crate::core::Core;
+use std::mem::discriminant;
+
+use crate::core::{Core, Permission};
 
 #[repr(u8)]
 pub enum Codes {    
     Core,                      // 8 bits  - cre
     CurrentInstruction,        // 64 bits - cir
-    ArithmeticResult,          // xx bits - artr
-    FloatingResult,            // xx bits - fltr
+    ArithmeticSideEffect,          // xx bits - artr
+    FloatingSideEffect,            // xx bits - fltr
     StackPointer,              // 64 bits - stpr
 
     // Safe mode
@@ -48,15 +50,16 @@ pub enum Codes {
 }
 
 pub struct Register {
-    /// Whether this register allows safe cores to read.
-    pub allow_safe_read: bool,
-    /// Whether this register allows safe cores to write.
-    pub allow_safe_write: bool,
-
     pub identifier: Codes,
 
-    // USIZE is used because an enum variant would be less memory efficient regardless of the value size
-    value: usize
+    /// Whether this register allows safe cores to read.
+    pub allow_safe_read: bool,
+    /// Permission that a core writer has when modifying this register.
+    pub core_write: Permission,
+
+    /// USIZE is used because an enum variant would be less memory efficient regardless of the value size
+    /// This is public to allow direct writes.
+    pub value: usize
 }
 
 impl Register {
@@ -71,9 +74,15 @@ impl Register {
 
     /// Returns `Result::Err` if the core is safe while this register rejects safe writes.
     pub fn set_value(&mut self, core: &Core, value: usize) -> Result<(), ()> {
-        if !self.allow_safe_read && core.is_safe() {
-            return Err(());
-        }
+        match self.core_write {
+            Permission::None => return Err(()),
+            Permission::All => {},
+            Permission::NonSafe => {
+                if core.is_safe() {
+                    return Err(());
+                }
+            }
+        };
 
         self.value = value;
         Ok(())
@@ -86,8 +95,111 @@ pub struct File {
 
 impl File {
     pub fn new() -> Self {
+        let mut registers = Vec::new();
+
+        registers.push(Register {
+            identifier: Codes::Core,
+            allow_safe_read: true,
+            core_write: Permission::None,
+            value: 0
+        });
+        registers.push(Register {
+            identifier: Codes::CurrentInstruction,
+            allow_safe_read: true,
+            core_write: Permission::None,
+            value: 0
+        });
+        registers.push(Register {
+            identifier: Codes::ArithmeticSideEffect,
+            allow_safe_read: true,
+            core_write: Permission::None,
+            value: 0
+        });
+        registers.push(Register {
+            identifier: Codes::FloatingSideEffect,
+            allow_safe_read: true,
+            core_write: Permission::None,
+            value: 0
+        });
+
+        registers.push(Register {
+            identifier: Codes::StackPointer,
+            allow_safe_read: true,
+            core_write: Permission::All,
+            value: 0
+        });
+        registers.push(Register {
+            identifier: Codes::PageHierarchy,
+            allow_safe_read: true,
+            core_write: Permission::All,
+            value: 0
+        });
+
+        registers.push(Register {
+            identifier: Codes::True,
+            allow_safe_read: true,
+            core_write: Permission::None,
+            value: 1
+        });
+        registers.push(Register {
+            identifier: Codes::False,
+            allow_safe_read: true,
+            core_write: Permission::None,
+            value: 1
+        });
+        registers.push(Register {
+            identifier: Codes::Byte,
+            allow_safe_read: true,
+            core_write: Permission::None,
+            value: 1
+        });
+        registers.push(Register {
+            identifier: Codes::Word,
+            allow_safe_read: true,
+            core_write: Permission::None,
+            value: 2
+        });
+        registers.push(Register {
+            identifier: Codes::DoubleWord,
+            allow_safe_read: true,
+            core_write: Permission::None,
+            value: 4
+        });
+        registers.push(Register {
+            identifier: Codes::QuadWord,
+            allow_safe_read: true,
+            core_write: Permission::None,
+            value: 8
+        });
+
+        registers.push(Register {
+            identifier: Codes::Interrupt0,
+            allow_safe_read: true,
+            core_write: Permission::All,
+            value: 8
+        });
+        
+        registers.push(Register {
+            identifier: Codes::Interrupt1,
+            allow_safe_read: true,
+            core_write: Permission::All,
+            value: 8
+        });
+        
+        registers.push(Register {
+            identifier: Codes::Interrupt2,
+            allow_safe_read: true,
+            core_write: Permission::All,
+            value: 8
+        });
+
         File {
-            registers: Vec::new()
+            registers
         }
+    }
+
+    /// Returns `Result::Err` if the register by the ID specified doesn't exist.
+    pub fn find(&mut self, identifier: Codes) -> Option<&Register> {
+        self.registers.iter().find(|pred| discriminant(&pred.identifier) == discriminant(&identifier))
     }
 }

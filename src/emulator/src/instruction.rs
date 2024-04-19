@@ -276,3 +276,8 @@ pub fn read_sized_unit(byte_stream: &mut dyn Read) -> Result<Vec<u8>, ()> {
     
     Ok(bytes) 
 }
+
+// TODO: Implement instruction stream with `Read` trait.
+pub struct Stream {
+
+}
