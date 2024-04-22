@@ -24,9 +24,15 @@ pub enum Operations {
     LoadInterconnect,       // lic, s0
     CloneRegister,          // cln, s0, s1
 
-    // Random access memory
-    LoadFromMemory,         // lfm, s0, s1, s2
-    LoadToMemory,           // ltm, s0, s1
+    // Random access memory 
+    ByteToMemory,           // btm, s0, s1
+    WordToMemory,           // wtm, s0, s1
+    DWordToMemory,          // dtm, s0, s1
+    QWordToMemory,          // qtm, s0, s1
+    ByteFromMemory,         // bfm, s0, s1
+    WordFromMemory,         // wfm, s0, s1
+    DWordFromMemory,        // dfm, s0, s1
+    QWordFromMemory,        // qfm, s0, s1
 
     // Arithmetic
     Add,                    // add, s0, s1, s2
@@ -92,7 +98,7 @@ pub fn multi_sized_to_usize(multi: MultiSizedData) -> usize {
 pub struct OperandsPresence {
     pub source0: bool,
     pub source1: bool,
-    /// Register write location
+    /// Register write location, this cannot be used for anything beyond the register scope.
     pub destination: bool,
     /// If this is Some() then the value provided in multi-sized data will be ignored
     pub immediate: Option<MultiSizedData>
@@ -374,6 +380,79 @@ impl Parser {
                 destination: true,
                 source0: true,
                 source1: false,
+                immediate: None
+            }
+        });
+
+        singles.push(SingleParser {
+            operation: Operations::ByteFromMemory as u8,
+            operands_presence: OperandsPresence {
+                destination: false,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::WordFromMemory as u8,
+            operands_presence: OperandsPresence {
+                destination: false,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::DWordFromMemory as u8,
+            operands_presence: OperandsPresence {
+                destination: false,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::QWordFromMemory as u8,
+            operands_presence: OperandsPresence {
+                destination: false,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::ByteToMemory as u8,
+            operands_presence: OperandsPresence {
+                destination: false,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::WordToMemory as u8,
+            operands_presence: OperandsPresence {
+                destination: false,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::DWordToMemory as u8,
+            operands_presence: OperandsPresence {
+                destination: false,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::QWordToMemory as u8,
+            operands_presence: OperandsPresence {
+                destination: false,
+                source0: true,
+                source1: true,
                 immediate: None
             }
         });
