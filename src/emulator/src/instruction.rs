@@ -457,6 +457,52 @@ impl Parser {
             }
         });
 
+        singles.push(SingleParser {
+            operation: Operations::Branch as u8,
+            operands_presence: OperandsPresence {
+                destination: false,
+                source0: true,
+                source1: false,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::BranchEqual as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::BranchUnequal as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::BranchGreater as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::BranchGreaterOrEqual as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+
         Self {
             singles
         }
