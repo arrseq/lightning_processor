@@ -458,6 +458,188 @@ impl Parser {
         });
 
         singles.push(SingleParser {
+            operation: Operations::Add as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::AddFloat as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::AddDouble as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::Subtract as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::SubtractFloat as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::SubtractDouble as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::Multiply as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::MultiplyInteger as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::MultiplyFloat as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::MultiplyDouble as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::Divide as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::DivideInteger as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::DivideFloat as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::DivideDouble as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::And as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::Or as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::ExclusiveOr as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::Not as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::ShiftStart as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::ShiftEnd as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        // TODO: Implement trailing zeros when the instruction specs are determined.
+
+        singles.push(SingleParser {
             operation: Operations::Branch as u8,
             operands_presence: OperandsPresence {
                 destination: false,

@@ -12,4 +12,8 @@ https://discord.gg/4zt8sUEbNy
 Read information for how to write code for the processor, how to emulate, and more.
 
 ### License
-There is no official for this project. We own the code and you may clone, fork, or take the code as a copy and not face legal repricussions. 
+There is no official for this project. We own the code and you may clone, fork, or take the code as a copy and not face legal repercussions. 
+
+### Recommended Extensions
+- TODO Highlight
+- Todo Tree
