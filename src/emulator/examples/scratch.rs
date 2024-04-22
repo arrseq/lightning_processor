@@ -1,6 +1,6 @@
 use std::io::Cursor;
 
-use emulator::instruction::{self, Instruction};
+use emulator::instruction::{self, Instruction, Operations};
 
 fn main() {
     // let mut core0 = emulator::core::Core::new();
@@ -8,7 +8,7 @@ fn main() {
     // core0.perform_register();
     let parser = instruction::Parser::new();
     let mut rom = {
-        let inner: Vec<u8> = vec![0, 0];
+        let inner: Vec<u8> = vec![Operations::LoadImmediateByte as u8, 0, 10, Operations::Safe as u8, 0];
         Cursor::new(inner)
     };
 
