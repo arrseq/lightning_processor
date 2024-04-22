@@ -10,7 +10,8 @@ fn main() {
 
     let parser = instruction::Parser::new();
     let mut rom = {
-        let inner: Vec<u8> = vec![Operations::LoadImmediateByte as u8, 0, 10, Operations::Safe as u8, 0, Operations::Add as u8, 0, 1, 2];
+        // let inner: Vec<u8> = vec![Operations::LoadImmediateByte as u8, 0, 10, Operations::Safe as u8, 0, Operations::Add as u8, 0, 1, 2, Operations::Nothing as u8];
+        let inner: Vec<u8> = vec![Operations::Safe as u8, 20];
         Cursor::new(inner)
     };
 
