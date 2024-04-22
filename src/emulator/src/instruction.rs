@@ -287,6 +287,8 @@ impl SingleParser {
                     target.immediate = Some(MultiSizedData::QWord(imm_store));
                 }
             }
+        } else {
+            target.immediate = None;
         }
 
         Ok(())
