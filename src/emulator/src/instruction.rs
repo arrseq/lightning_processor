@@ -24,9 +24,15 @@ pub enum Operations {
     LoadInterconnect,       // lic, s0
     CloneRegister,          // cln, s0, s1
 
-    // Random access memory
-    LoadFromMemory,         // lfm, s0, s1, s2
-    LoadToMemory,           // ltm, s0, s1
+    // Random access memory 
+    ByteToMemory,           // btm, s0, s1
+    WordToMemory,           // wtm, s0, s1
+    DWordToMemory,          // dtm, s0, s1
+    QWordToMemory,          // qtm, s0, s1
+    ByteFromMemory,         // bfm, s0, s1
+    WordFromMemory,         // wfm, s0, s1
+    DWordFromMemory,        // dfm, s0, s1
+    QWordFromMemory,        // qfm, s0, s1
 
     // Arithmetic
     Add,                    // add, s0, s1, s2
@@ -92,6 +98,7 @@ pub fn multi_sized_to_usize(multi: MultiSizedData) -> usize {
 pub struct OperandsPresence {
     pub source0: bool,
     pub source1: bool,
+    /// Register write location, this cannot be used for anything beyond the register scope.
     pub destination: bool,
     /// If this is Some() then the value provided in multi-sized data will be ignored
     pub immediate: Option<MultiSizedData>
@@ -318,6 +325,362 @@ impl Parser {
                 destination: false,
                 source0: true,
                 source1: false,
+                immediate: None
+            }
+        });
+        
+        singles.push(SingleParser {
+            operation: Operations::LoadImmediateByte as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: false,
+                source1: false,
+                immediate: Some(MultiSizedData::Byte(0))
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::LoadImmediateWord as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: false,
+                source1: false,
+                immediate: Some(MultiSizedData::Word(0))
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::LoadImmediateDWord as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: false,
+                source1: false,
+                immediate: Some(MultiSizedData::DWord(0))
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::LoadImmediateQWord as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: false,
+                source1: false,
+                immediate: Some(MultiSizedData::QWord(0))
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::LoadInterconnect as u8,
+            operands_presence: OperandsPresence {
+                destination: false,
+                source0: true,
+                source1: false,
+                immediate: Some(MultiSizedData::QWord(0))
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::CloneRegister as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: false,
+                immediate: None
+            }
+        });
+
+        singles.push(SingleParser {
+            operation: Operations::ByteFromMemory as u8,
+            operands_presence: OperandsPresence {
+                destination: false,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::WordFromMemory as u8,
+            operands_presence: OperandsPresence {
+                destination: false,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::DWordFromMemory as u8,
+            operands_presence: OperandsPresence {
+                destination: false,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::QWordFromMemory as u8,
+            operands_presence: OperandsPresence {
+                destination: false,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::ByteToMemory as u8,
+            operands_presence: OperandsPresence {
+                destination: false,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::WordToMemory as u8,
+            operands_presence: OperandsPresence {
+                destination: false,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::DWordToMemory as u8,
+            operands_presence: OperandsPresence {
+                destination: false,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::QWordToMemory as u8,
+            operands_presence: OperandsPresence {
+                destination: false,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+
+        singles.push(SingleParser {
+            operation: Operations::Add as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::AddFloat as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::AddDouble as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::Subtract as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::SubtractFloat as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::SubtractDouble as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::Multiply as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::MultiplyInteger as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::MultiplyFloat as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::MultiplyDouble as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::Divide as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::DivideInteger as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::DivideFloat as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::DivideDouble as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::And as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::Or as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::ExclusiveOr as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::Not as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::ShiftStart as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::ShiftEnd as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        // TODO: Implement trailing zeros when the instruction specs are determined.
+
+        singles.push(SingleParser {
+            operation: Operations::Branch as u8,
+            operands_presence: OperandsPresence {
+                destination: false,
+                source0: true,
+                source1: false,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::BranchEqual as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::BranchUnequal as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::BranchGreater as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
+                immediate: None
+            }
+        });
+        singles.push(SingleParser {
+            operation: Operations::BranchGreaterOrEqual as u8,
+            operands_presence: OperandsPresence {
+                destination: true,
+                source0: true,
+                source1: true,
                 immediate: None
             }
         });

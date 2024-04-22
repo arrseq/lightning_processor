@@ -9,10 +9,11 @@ https://discord.gg/4zt8sUEbNy
 > [!IMPORTANT] 
 > The documentation is currently not finish or developed yet.
 
-Read information for how to write code for the processor, how to emulate, and more.
+Read information for how to write code for the processor, how to emulate, and more. 
 
-### License
-There is no license for this project. We own the code and you may clone, fork, or take the code as a copy and not face legal repricussions. 
+### Recommended Extensions
+- TODO Highlight
+- Todo Tree
 
 ### Setting up your development environment
 <!-- TODO: Add OpenCL once it is used in the emulation core -->
@@ -30,3 +31,6 @@ Download the dependencies and build the project.
 ```bash
 > cargo build
 ```
+
+### License
+There is no official for this project. We own the code and you may clone, fork, or take the code as a copy and not face legal repercussions.
