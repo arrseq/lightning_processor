@@ -9,6 +9,12 @@ pub type Word = u16;
 pub type Dword = u32;
 pub type Qword = u64;
 
+/// The number of bytes an instruction can be while excluding the immediate
+pub const MAX_BYTES_EXCLUDING_IMM: u8 = 1  // Operand
+                                      + 1  // Destination
+                                      + 1  // Source 0
+                                      + 1; // Source 1
+
 #[repr(u8)]
 pub enum Operations {
     Nothing,                // ntg
@@ -141,33 +147,70 @@ impl SingleParser {
         let mut buffer = [0 as u8; 1];
 
         let mut byte_index = 0;
-        let expected = 1
-            + self.operands_presence.destination as u8
-            + self.operands_presence.source0 as u8
-            + self.operands_presence.source1 as u8;
+        let mut bytes_received;
 
-        for _ in 0..expected {
-            let bytes_received = match source.read(&mut buffer) {
-                Err(_) => return Err(Errors::EndOfStream),
-                Ok(value) => value
-            };
-
-            if bytes_received == 0 {
-                return Err(Errors::EndOfStream);
-            }
-
-            let value = buffer[0];
+        for _ in 0..MAX_BYTES_EXCLUDING_IMM {
             match byte_index {
                 0 => {
-                    if value != self.operation {
+                    bytes_received = match source.read(&mut buffer) {
+                        Err(_) => return Err(Errors::EndOfStream),
+                        Ok(value) => value
+                    };
+                    if bytes_received == 0 {
+                        return Err(Errors::EndOfStream);
+                    }
+
+                    if buffer[0] != self.operation {
                         return Err(Errors::OperationUnmatched);
                     }
 
-                    target.operation = value;
+                    target.operation = buffer[0];
                 },
-                1 => target.destination = Some(value),
-                2 => target.source0 = Some(value),
-                3 => target.source1 = Some(value),
+                1 => {
+                    if self.operands_presence.destination {
+                        bytes_received = match source.read(&mut buffer) {
+                            Err(_) => return Err(Errors::EndOfStream),
+                            Ok(value) => value
+                        };
+                        if bytes_received == 0 {
+                            return Err(Errors::EndOfStream);
+                        }
+
+                        target.destination = Some(buffer[0]);
+                    } else {
+                        target.destination = None;
+                    }
+                },
+                2 => {
+                    if self.operands_presence.source0 {
+                        bytes_received = match source.read(&mut buffer) {
+                            Err(_) => return Err(Errors::EndOfStream),
+                            Ok(value) => value
+                        };
+                        if bytes_received == 0 {
+                            return Err(Errors::EndOfStream);
+                        }
+
+                        target.source0 = Some(buffer[0]);
+                    } else {
+                        target.source0 = None;
+                    }
+                },
+                3 => {
+                    if self.operands_presence.source1 {
+                        bytes_received = match source.read(&mut buffer) {
+                            Err(_) => return Err(Errors::EndOfStream),
+                            Ok(value) => value
+                        };
+                        if bytes_received == 0 {
+                            return Err(Errors::EndOfStream);
+                        }
+
+                        target.source1 = Some(buffer[0]);
+                    } else {
+                        target.source1 = None;
+                    }
+                },
                 _ => unreachable!()
             };
 
