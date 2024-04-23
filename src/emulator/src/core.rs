@@ -1,6 +1,6 @@
 use std::io::{self, Read, Seek, Write};
 
-use crate::{instruction::{self, Errors, Instruction}, register}; 
+use crate::{instruction::{self, Errors, Instruction, Operations}, memory::{self, Memory}}; 
 
 pub enum Permission {
     None,
@@ -9,7 +9,7 @@ pub enum Permission {
 }
 
 pub struct Core {
-    registers: register::File,
+    pub registers: memory::File,
     safe: bool,
     parser: instruction::Parser,
     instruction: Instruction
@@ -19,25 +19,21 @@ impl Core {
     pub fn new() -> Self {
         Core {
             safe: false,
-            registers: register::File::new(),
+            registers: memory::File::new(),
             parser: instruction::Parser::new(),
             instruction: Instruction::default()
         }
     }
 
-    pub fn step<Source: Read + Seek + Write>(&mut self, memory: &mut Source) -> Result<(), instruction::Errors> {
+    pub fn step(&mut self, memory: &mut Memory) -> Result<(), instruction::Errors> {
         match self.parser.parse(&mut self.instruction, memory) {
             Err(error) => return Err(error),
             Ok(_) => {}
         }
 
-        println!("INSTRUCTION CODE: {}", self.instruction.operation);
-        println!("-- Destination: {:?}", self.instruction.destination);
-        println!("-- Source 0: {:?} -- Source 1: {:?}", self.instruction.source0, self.instruction.source1);
-
-        match &self.instruction.immediate {
-            None => println!("-- Immediate: None"),
-            Some(imm) => println!("-- Immediate: {}", imm.into_qword())
+        if self.instruction.operation == Operations::Divert as u8 {
+            println!("Jump detected");
+            memory.seek(io::SeekFrom::Start(0));
         }
 
         Ok(())
