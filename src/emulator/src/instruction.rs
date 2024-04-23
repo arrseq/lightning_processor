@@ -83,6 +83,17 @@ pub enum MultiSizedData {
     QWord(u64)
 }
 
+impl MultiSizedData {
+    pub fn into_qword(&self) -> Qword {
+        match self {
+            MultiSizedData::Byte(byte) => *byte as Qword,
+            MultiSizedData::Word(word) => *word as Qword,
+            MultiSizedData::DWord(dword) => *dword as Qword,
+            MultiSizedData::QWord(qword) => *qword as Qword,
+        }
+    }
+}
+
 pub fn multi_sized_to_bytes(multi: MultiSizedData) -> u8 {
     match multi {
         MultiSizedData::Byte(_) => BYTE,
@@ -287,6 +298,8 @@ impl SingleParser {
                     target.immediate = Some(MultiSizedData::QWord(imm_store));
                 }
             }
+        } else {
+            target.immediate = None;
         }
 
         Ok(())
