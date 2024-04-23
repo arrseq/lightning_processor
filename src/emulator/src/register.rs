@@ -6,8 +6,8 @@ use crate::core::{Permission};
 pub enum Codes {    
     Core,                      // 8 bits  - cre
     CurrentInstruction,        // 64 bits - cir
-    ArithmeticSideEffect,          // xx bits - artr
-    FloatingSideEffect,            // xx bits - fltr
+    ArithmeticSideEffect,      // xx bits - artr
+    FloatingSideEffect,        // xx bits - fltr
     StackPointer,              // 64 bits - stpr
 
     // Safe mode

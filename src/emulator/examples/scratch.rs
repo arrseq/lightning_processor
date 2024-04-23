@@ -5,46 +5,26 @@ use emulator::instruction::{self, Instruction, OperandsPresence, Operations};
 fn main() {
     let mut core0 = emulator::core::Core::new();
 
-    // core0.perform_register();
-    // core0.perform_register();
-
-    let parser = instruction::Parser::new();
-    let mut rom = {
-        let inner: Vec<u8> = vec![Operations::LoadImmediateByte as u8, 14, 10, Operations::Safe as u8, 0, Operations::Add as u8, 0, 1, 2, Operations::Nothing as u8];
-        // let inner: Vec<u8> = vec![Operations::Safe as u8, 20];
+    let mut ram = {
+        let inner: Vec<u8> = vec![
+            Operations::LoadImmediateByte as u8, 14, 10, 
+            Operations::Safe as u8, 0, 
+            Operations::Add as u8, 0, 1, 2, 
+            Operations::Nothing as u8
+        ];
         Cursor::new(inner)
     };
 
-    let mut ins = Instruction::default();
     loop {
-        match parser.parse(&mut ins, &mut rom) {
-            Err(variant) => match variant {
+        match core0.step(&mut ram) {
+            Err(ecode) => match ecode {
                 instruction::Errors::EndOfStream => break,
-                instruction::Errors::OperationUnmatched => panic!("Invalid operation"),
-                instruction::Errors::Seek(_) => panic!("An IO error occurred")
+                instruction::Errors::OperationUnmatched => panic!("Improper format"),
+                instruction::Errors::Seek(_) => panic!("THIS SHOULD NOT HAPPEN")
             },
-            Ok(_) => {}
-        };
-    
-        println!("INS CODE: {:?}", ins.operation);
-        println!("Dest Reg: {:?}", ins.destination);
-        println!("S0 P: {:?}", ins.source0);
-        println!("S1 P: {:?}", ins.source1);
-        
-        let imm = match ins.immediate {
-            None => 0,
-            Some(ref dy) => match &dy {
-                instruction::MultiSizedData::Byte(u) => *u as u64,
-                instruction::MultiSizedData::Word(u) => *u as u64,
-                instruction::MultiSizedData::DWord(u) => *u as u64,
-                instruction::MultiSizedData::QWord(u) => *u as u64,
-            }
-        };
-        
-        println!("Imm: {}", imm);
-        println!();
+            Ok(_) => println!("Successful execution")
+        }
     }
 
-
-    println!("Parsing complete");
+    println!("Graceful completion of core0 execution");
 }
