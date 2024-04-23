@@ -3,6 +3,11 @@ use std::{cmp::min, io::{Error, ErrorKind, Read, Seek}, mem::discriminant};
 use crate::{core::Permission, instruction::ArchSize};
 
 pub struct Memory {
+    /// Address of the address translation table
+    pub translation_table: usize,
+    /// Enable address translation
+    pub translation: bool,
+
     memory: Vec<u8>,
     size: ArchSize,
     max_size: Option<ArchSize>,
@@ -12,6 +17,8 @@ pub struct Memory {
 impl Memory {
     pub fn new(max_size: Option<ArchSize>) -> Self {
         Self {
+            translation_table: 0, // TODO
+            translation: false,   // TODO
             memory: vec![0, 1, 2],
             size: 0,
             max_size,
@@ -59,6 +66,7 @@ impl Seek for Memory {
 #[repr(u8)]
 pub enum RegisterCodes {    
     Core,                      // 8 bits  - cre
+    Cores,                     // 8 bits  - crs
     CurrentInstruction,        // 64 bits - cir
     ArithmeticSideEffect,      // xx bits - artr
     FloatingSideEffect,        // xx bits - fltr
