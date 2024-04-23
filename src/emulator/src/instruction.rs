@@ -15,6 +15,9 @@ pub const MAX_BYTES_EXCLUDING_IMM: u8 = 1  // Operand
                                       + 1  // Source 0
                                       + 1; // Source 1
 
+pub type ArchSize = u64;
+pub const ARCH_SIZE: ArchSize = QWORD as ArchSize;
+
 #[repr(u8)]
 pub enum Operations {
     Nothing,                // ntg
@@ -67,12 +70,12 @@ pub enum Operations {
     ShiftEnd,               // she, s0, s1, s2
     TrailingZeros,          // tzr, TODO: Undecided
 
-    // Branching
-    Branch,                 // bch, s0
-    BranchEqual,            // beq, s0, s1, s2
-    BranchUnequal,          // buq, s0, s1, s2
-    BranchGreater,          // bgr, s0, s1, s2
-    BranchGreaterOrEqual,   // bge, s0, s1, s2
+    // Position diversion
+    Divert,                 // dvt, s0
+    DivertEqual,            // deq, s0, s1, s2
+    DivertUnequal,          // duq, s0, s1, s2
+    DivertGreater,          // dgr, s0, s1, s2
+    DivertGreaterOrEqual,   // dge, s0, s1, s2
 }
 
 #[derive(Clone)]
@@ -696,7 +699,7 @@ impl Parser {
         // TODO: Implement trailing zeros when the instruction specs are determined.
 
         singles.push(SingleParser {
-            operation: Operations::Branch as u8,
+            operation: Operations::Divert as u8,
             operands_presence: OperandsPresence {
                 destination: false,
                 source0: true,
@@ -705,7 +708,7 @@ impl Parser {
             }
         });
         singles.push(SingleParser {
-            operation: Operations::BranchEqual as u8,
+            operation: Operations::DivertEqual as u8,
             operands_presence: OperandsPresence {
                 destination: true,
                 source0: true,
@@ -714,7 +717,7 @@ impl Parser {
             }
         });
         singles.push(SingleParser {
-            operation: Operations::BranchUnequal as u8,
+            operation: Operations::DivertUnequal as u8,
             operands_presence: OperandsPresence {
                 destination: true,
                 source0: true,
@@ -723,7 +726,7 @@ impl Parser {
             }
         });
         singles.push(SingleParser {
-            operation: Operations::BranchGreater as u8,
+            operation: Operations::DivertGreater as u8,
             operands_presence: OperandsPresence {
                 destination: true,
                 source0: true,
@@ -732,7 +735,7 @@ impl Parser {
             }
         });
         singles.push(SingleParser {
-            operation: Operations::BranchGreaterOrEqual as u8,
+            operation: Operations::DivertGreaterOrEqual as u8,
             operands_presence: OperandsPresence {
                 destination: true,
                 source0: true,

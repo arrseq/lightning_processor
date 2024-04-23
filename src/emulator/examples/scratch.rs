@@ -1,30 +1,31 @@
-use std::io::Cursor;
+use std::io::{Cursor, Read};
 
-use emulator::instruction::{self, Instruction, OperandsPresence, Operations};
+use emulator::{instruction::{self, Instruction, OperandsPresence, Operations}, memory::Memory};
 
 fn main() {
     let mut core0 = emulator::core::Core::new();
 
-    let mut ram = {
-        let inner: Vec<u8> = vec![
-            Operations::LoadImmediateByte as u8, 14, 10, 
-            Operations::Safe as u8, 0, 
-            Operations::Add as u8, 0, 1, 2, 
-            Operations::Nothing as u8
-        ];
-        Cursor::new(inner)
-    };
+    let mut buf = [0 as u8; 2];
+    let mut ram = Memory::new(Some(10));
 
-    loop {
-        match core0.step(&mut ram) {
-            Err(ecode) => match ecode {
-                instruction::Errors::EndOfStream => break,
-                instruction::Errors::OperationUnmatched => panic!("Improper format"),
-                instruction::Errors::Seek(_) => panic!("THIS SHOULD NOT HAPPEN")
-            },
-            Ok(_) => println!("Successful execution")
+    for _ in 0..30 {
+        match ram.read(&mut buf) {
+            Err(_) => panic!("HUH"),
+            Ok(len) => println!("Read {} bytes", len)
         }
+        println!("{} {}", buf[0], buf[1]);
     }
 
-    println!("Graceful completion of core0 execution");
+    // loop {
+    //     match core0.step(&mut ram) {
+    //         Err(ecode) => match ecode {
+    //             instruction::Errors::EndOfStream => break,
+    //             instruction::Errors::OperationUnmatched => panic!("Improper format"),
+    //             instruction::Errors::Seek(_) => panic!("THIS SHOULD NOT HAPPEN")
+    //         },
+    //         Ok(_) => println!("Successful step")
+    //     }
+    // }
+
+    // println!("Graceful completion of core0 execution");
 }

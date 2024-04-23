@@ -1,9 +1,63 @@
-use std::mem::discriminant;
+use std::{cmp::min, io::{Error, ErrorKind, Read, Seek}, mem::discriminant};
 
-use crate::core::{Permission};
+use crate::{core::Permission, instruction::ArchSize};
+
+pub struct Memory {
+    memory: Vec<u8>,
+    size: ArchSize,
+    max_size: Option<ArchSize>,
+    pointer: ArchSize
+}
+
+impl Memory {
+    pub fn new(max_size: Option<ArchSize>) -> Self {
+        Self {
+            memory: vec![0, 1, 2],
+            size: 0,
+            max_size,
+            pointer: 0
+        }
+    }
+}
+
+impl Read for Memory {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        // TODO: Reconsider? Probably not. Remove this. let len = min(buf.len(), self.memory.len() - self.pointer as usize);
+        let original_pointer = self.pointer;
+
+        for index in 0..buf.len() {
+            match self.memory.get(self.pointer as usize) {
+                None => buf[index] = 0,
+                Some(value) => {
+                    buf[index] = *value;
+                    self.pointer += 1;
+                }
+            }
+        }
+
+        Ok((self.pointer - original_pointer) as usize)
+    }
+}
+
+impl Seek for Memory {
+    fn seek(&mut self, pos: std::io::SeekFrom) -> std::io::Result<ArchSize> {
+        let old = self.pointer;
+        match pos {
+            std::io::SeekFrom::Current(rel) => self.pointer = (self.pointer as i64 + rel) as ArchSize,
+            std::io::SeekFrom::End(rel) => self.pointer = (self.memory.len() as i64 - rel) as ArchSize,
+            std::io::SeekFrom::Start(rel) => self.pointer = rel as ArchSize
+        }
+
+        if self.pointer as usize > self.memory.len() - 1 {
+            return Err(Error::new(ErrorKind::UnexpectedEof, ""));
+        }
+
+        Ok(self.pointer)
+    }
+}
 
 #[repr(u8)]
-pub enum Codes {    
+pub enum RegisterCodes {    
     Core,                      // 8 bits  - cre
     CurrentInstruction,        // 64 bits - cir
     ArithmeticSideEffect,      // xx bits - artr
@@ -47,7 +101,7 @@ pub enum Codes {
 }
 
 pub struct Register {
-    pub identifier: Codes,
+    pub identifier: RegisterCodes,
 
     /// Whether this register allows safe cores to read.
     pub allow_safe_read: bool,
@@ -95,191 +149,191 @@ impl File {
         let mut registers = Vec::new();
 
         registers.push(Register {
-            identifier: Codes::Core,
+            identifier: RegisterCodes::Core,
             allow_safe_read: true,
             core_write: Permission::None,
             value: 0
         });
         registers.push(Register {
-            identifier: Codes::CurrentInstruction,
+            identifier: RegisterCodes::CurrentInstruction,
             allow_safe_read: true,
             core_write: Permission::None,
             value: 0
         });
         registers.push(Register {
-            identifier: Codes::ArithmeticSideEffect,
+            identifier: RegisterCodes::ArithmeticSideEffect,
             allow_safe_read: true,
             core_write: Permission::None,
             value: 0
         });
         registers.push(Register {
-            identifier: Codes::FloatingSideEffect,
+            identifier: RegisterCodes::FloatingSideEffect,
             allow_safe_read: true,
             core_write: Permission::None,
             value: 0
         });
 
         registers.push(Register {
-            identifier: Codes::StackPointer,
+            identifier: RegisterCodes::StackPointer,
             allow_safe_read: true,
             core_write: Permission::All,
             value: 0
         });
         registers.push(Register {
-            identifier: Codes::PageHierarchy,
+            identifier: RegisterCodes::PageHierarchy,
             allow_safe_read: true,
             core_write: Permission::All,
             value: 0
         });
 
         registers.push(Register {
-            identifier: Codes::True,
+            identifier: RegisterCodes::True,
             allow_safe_read: true,
             core_write: Permission::None,
             value: 1
         });
         registers.push(Register {
-            identifier: Codes::False,
+            identifier: RegisterCodes::False,
             allow_safe_read: true,
             core_write: Permission::None,
             value: 1
         });
         registers.push(Register {
-            identifier: Codes::Byte,
+            identifier: RegisterCodes::Byte,
             allow_safe_read: true,
             core_write: Permission::None,
             value: 1
         });
         registers.push(Register {
-            identifier: Codes::Word,
+            identifier: RegisterCodes::Word,
             allow_safe_read: true,
             core_write: Permission::None,
             value: 2
         });
         registers.push(Register {
-            identifier: Codes::DoubleWord,
+            identifier: RegisterCodes::DoubleWord,
             allow_safe_read: true,
             core_write: Permission::None,
             value: 4
         });
         registers.push(Register {
-            identifier: Codes::QuadWord,
+            identifier: RegisterCodes::QuadWord,
             allow_safe_read: true,
             core_write: Permission::None,
             value: 8
         });
 
         registers.push(Register {
-            identifier: Codes::Interrupt0,
+            identifier: RegisterCodes::Interrupt0,
             allow_safe_read: true,
             core_write: Permission::All,
             value: 8
         });
         registers.push(Register {
-            identifier: Codes::Interrupt1,
+            identifier: RegisterCodes::Interrupt1,
             allow_safe_read: true,
             core_write: Permission::All,
             value: 8
         });
         registers.push(Register {
-            identifier: Codes::Interrupt2,
+            identifier: RegisterCodes::Interrupt2,
             allow_safe_read: true,
             core_write: Permission::All,
             value: 8
         });
 
         registers.push(Register {
-            identifier: Codes::General00,
+            identifier: RegisterCodes::General00,
             allow_safe_read: true,
             core_write: Permission::All,
             value: 8
         });
         registers.push(Register {
-            identifier: Codes::General01,
+            identifier: RegisterCodes::General01,
             allow_safe_read: true,
             core_write: Permission::All,
             value: 8
         });
         registers.push(Register {
-            identifier: Codes::General02,
+            identifier: RegisterCodes::General02,
             allow_safe_read: true,
             core_write: Permission::All,
             value: 8
         });
         registers.push(Register {
-            identifier: Codes::General03,
+            identifier: RegisterCodes::General03,
             allow_safe_read: true,
             core_write: Permission::All,
             value: 8
         });
         registers.push(Register {
-            identifier: Codes::General04,
+            identifier: RegisterCodes::General04,
             allow_safe_read: true,
             core_write: Permission::All,
             value: 8
         });
         registers.push(Register {
-            identifier: Codes::General05,
+            identifier: RegisterCodes::General05,
             allow_safe_read: true,
             core_write: Permission::All,
             value: 8
         });
         registers.push(Register {
-            identifier: Codes::General06,
+            identifier: RegisterCodes::General06,
             allow_safe_read: true,
             core_write: Permission::All,
             value: 8
         });
         registers.push(Register {
-            identifier: Codes::General07,
+            identifier: RegisterCodes::General07,
             allow_safe_read: true,
             core_write: Permission::All,
             value: 8
         });
         registers.push(Register {
-            identifier: Codes::General08,
+            identifier: RegisterCodes::General08,
             allow_safe_read: true,
             core_write: Permission::All,
             value: 8
         });
         registers.push(Register {
-            identifier: Codes::General09,
+            identifier: RegisterCodes::General09,
             allow_safe_read: true,
             core_write: Permission::All,
             value: 8
         });
         registers.push(Register {
-            identifier: Codes::General10,
+            identifier: RegisterCodes::General10,
             allow_safe_read: true,
             core_write: Permission::All,
             value: 8
         });
         registers.push(Register {
-            identifier: Codes::General11,
+            identifier: RegisterCodes::General11,
             allow_safe_read: true,
             core_write: Permission::All,
             value: 8
         });
         registers.push(Register {
-            identifier: Codes::General12,
+            identifier: RegisterCodes::General12,
             allow_safe_read: true,
             core_write: Permission::All,
             value: 8
         });
         registers.push(Register {
-            identifier: Codes::General13,
+            identifier: RegisterCodes::General13,
             allow_safe_read: true,
             core_write: Permission::All,
             value: 8
         });
         registers.push(Register {
-            identifier: Codes::General14,
+            identifier: RegisterCodes::General14,
             allow_safe_read: true,
             core_write: Permission::All,
             value: 8
         });
         registers.push(Register {
-            identifier: Codes::General15,
+            identifier: RegisterCodes::General15,
             allow_safe_read: true,
             core_write: Permission::All,
             value: 8
@@ -291,12 +345,12 @@ impl File {
     }
 
     /// Returns `Result::Err` if the register by the ID specified doesn't exist.
-    pub fn find(&self, identifier: Codes) -> Option<&Register> {
+    pub fn find(&self, identifier: RegisterCodes) -> Option<&Register> {
         self.registers.iter().find(|pred| discriminant(&pred.identifier) == discriminant(&identifier))
     }
 
     /// Returns `Result::Err` if the register by the ID specified doesn't exist.
-    pub fn find_mut(&mut self, identifier: Codes) -> Option<&mut Register> {
+    pub fn find_mut(&mut self, identifier: RegisterCodes) -> Option<&mut Register> {
         self.registers.iter_mut().find(|pred| discriminant(&pred.identifier) == discriminant(&identifier))
     }
 }
