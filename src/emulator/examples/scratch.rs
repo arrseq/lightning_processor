@@ -1,23 +1,19 @@
-use std::{io::{Cursor, Read}, thread, time::Duration};
+use std::io::Cursor;
 
-use emulator::{instruction::{self, Instruction, OperandsPresence, Operations}, memory::Memory};
+use emulator::binary;
 
 fn main() {
-    let mut core0 = emulator::core::Core::new(0);
-    let mut ram = Memory::new(Some(10));
+    let bin = [0 as u8, 4, 2, 8, 2, 9, 3, 5];
+    let mut stream = Cursor::new(bin);
+    let mut reader = binary::Traverser::new(&mut stream);
 
     loop {
-        match core0.step(&mut ram) {
-            Err(ecode) => match ecode {
-                instruction::Errors::EndOfStream => break,
-                instruction::Errors::OperationUnmatched => panic!("Improper format"),
-                instruction::Errors::Seek(_) => panic!("THIS SHOULD NOT HAPPEN")
-            },
-            Ok(_) => println!("Successful step")
-        }
+        let res = match reader.read_word() {
+            None => break,
+            Some(value) => value
+        };
 
-        thread::sleep(Duration::from_millis(500));
+        println!("Res: {:?}", res);
     }
-
-    println!("Graceful completion of core0 execution");
 }
+
