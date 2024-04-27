@@ -18,31 +18,7 @@ use std::io::Read;
 
 use crate::binary;
 
-use super::MacroOperation;
-
-pub struct ClassARegisterOperand {
-    destination: u8,
-    first: u8,
-    second: u8
-}
-
-pub struct ClassBRegisterOperand {
-    first: u8,
-    second: u8
-}
-
-pub struct ClassCRegisterOperand {
-    first: u8
-}
-
-pub struct ClassDRegisterOperand {
-    destination: u8
-}
-
-pub struct ClassERegisterOperand {
-    destination: u8,
-    first: u8
-}
+use super::{ClassARegisterOperand, ClassBRegisterOperand, ClassCRegisterOperand, ClassDRegisterOperand, ClassERegisterOperand, MacroOperation};
 
 pub fn decode_class_a_register_operand<Stream: Read>(stream: &mut Stream) -> Option<ClassARegisterOperand> {
     let destination = match binary::read_byte(stream) {
