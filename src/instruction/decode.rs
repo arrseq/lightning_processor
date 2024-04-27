@@ -20,7 +20,7 @@ use crate::binary;
 
 use super::{ClassARegisterOperand, ClassBRegisterOperand, ClassCRegisterOperand, ClassDRegisterOperand, ClassERegisterOperand, MacroOperation};
 
-pub fn decode_class_a_register_operand<Stream: Read>(stream: &mut Stream) -> Option<ClassARegisterOperand> {
+pub fn decode_class_a_register_operand(stream: &mut impl Read) -> Option<ClassARegisterOperand> {
     let destination = match binary::read_byte(stream) {
         None => return None,
         Some(destination) => destination
@@ -39,7 +39,7 @@ pub fn decode_class_a_register_operand<Stream: Read>(stream: &mut Stream) -> Opt
     Some(ClassARegisterOperand { destination, first, second })
 }
 
-pub fn decode_class_b_register_operand<Stream: Read>(stream: &mut Stream) -> Option<ClassBRegisterOperand> {
+pub fn decode_class_b_register_operand(stream: &mut impl Read) -> Option<ClassBRegisterOperand> {
     let first = match binary::read_byte(stream) {
         None => return None,
         Some(first) => first
@@ -53,7 +53,7 @@ pub fn decode_class_b_register_operand<Stream: Read>(stream: &mut Stream) -> Opt
     Some(ClassBRegisterOperand { first, second })
 }
 
-pub fn decode_class_c_register_operand<Stream: Read>(stream: &mut Stream) -> Option<ClassCRegisterOperand> {
+pub fn decode_class_c_register_operand(stream: &mut impl Read) -> Option<ClassCRegisterOperand> {
     let first = match binary::read_byte(stream) {
         None => return None,
         Some(first) => first
@@ -62,7 +62,7 @@ pub fn decode_class_c_register_operand<Stream: Read>(stream: &mut Stream) -> Opt
     Some(ClassCRegisterOperand { first })
 }
 
-pub fn decode_class_d_register_operand<Stream: Read>(stream: &mut Stream) -> Option<ClassDRegisterOperand> {
+pub fn decode_class_d_register_operand(stream: &mut impl Read) -> Option<ClassDRegisterOperand> {
     let destination = match binary::read_byte(stream) {
         None => return None,
         Some(destination) => destination
@@ -71,7 +71,7 @@ pub fn decode_class_d_register_operand<Stream: Read>(stream: &mut Stream) -> Opt
     Some(ClassDRegisterOperand { destination })
 }
 
-pub fn decode_class_e_register_operand<Stream: Read>(stream: &mut Stream) -> Option<ClassERegisterOperand> {
+pub fn decode_class_e_register_operand(stream: &mut impl Read) -> Option<ClassERegisterOperand> {
     let destination = match binary::read_byte(stream) {
         None => return None,
         Some(destination) => destination
@@ -85,7 +85,7 @@ pub fn decode_class_e_register_operand<Stream: Read>(stream: &mut Stream) -> Opt
     Some(ClassERegisterOperand { destination, first })
 }
 
-pub fn decode_immediate_byte<Stream: Read>(stream: &mut Stream) -> Option<u8> {
+pub fn decode_immediate_byte(stream: &mut impl Read) -> Option<u8> {
     let immediate = match binary::read_byte(stream) {
         None => return None,
         Some(some) => some
@@ -94,7 +94,7 @@ pub fn decode_immediate_byte<Stream: Read>(stream: &mut Stream) -> Option<u8> {
     Some(immediate)
 }
 
-pub fn decode_immediate_word<Stream: Read>(stream: &mut Stream) -> Option<u16> {
+pub fn decode_immediate_word(stream: &mut impl Read) -> Option<u16> {
     let immediate = match binary::read_word(stream) {
         None => return None,
         Some(some) => some
@@ -103,7 +103,7 @@ pub fn decode_immediate_word<Stream: Read>(stream: &mut Stream) -> Option<u16> {
     Some(immediate)
 }
 
-pub fn decode_immediate_double_word<Stream: Read>(stream: &mut Stream) -> Option<u32> {
+pub fn decode_immediate_double_word(stream: &mut impl Read) -> Option<u32> {
     let immediate = match binary::read_double_word(stream) {
         None => return None,
         Some(some) => some
@@ -112,7 +112,7 @@ pub fn decode_immediate_double_word<Stream: Read>(stream: &mut Stream) -> Option
     Some(immediate)
 }
 
-pub fn decode_immediate_quad_word<Stream: Read>(stream: &mut Stream) -> Option<u64> {
+pub fn decode_immediate_quad_word(stream: &mut impl Read) -> Option<u64> {
     let immediate = match binary::read_quad_word(stream) {
         None => return None,
         Some(some) => some
@@ -122,7 +122,7 @@ pub fn decode_immediate_quad_word<Stream: Read>(stream: &mut Stream) -> Option<u
 }
 
 /// Decode the macro instruction.
-pub fn decode_macro<Stream: Read>(stream: &mut Stream) -> Option<MacroOperation> {
+pub fn decode_macro(stream: &mut impl Read) -> Option<MacroOperation> {
     let operation_byte = match binary::read_byte(stream) {
         None => return None,
         Some(byte) => byte
