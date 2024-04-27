@@ -1,4 +1,5 @@
 pub mod decode;
+pub mod encode;
 
 pub const BYTE: u8 = 1;
 pub const WORD: u8 = 2;
@@ -58,6 +59,30 @@ pub enum RiscOperation {
     DivertUnequal,          // duq, s0, s1, s2
     DivertGreater,          // dgr, s0, s1, s2
     DivertGreaterOrEqual,   // dge, s0, s1, s2
+}
+
+pub struct ClassARegisterOperand {
+    destination: u8,
+    first: u8,
+    second: u8
+}
+
+pub struct ClassBRegisterOperand {
+    first: u8,
+    second: u8
+}
+
+pub struct ClassCRegisterOperand {
+    first: u8
+}
+
+pub struct ClassDRegisterOperand {
+    destination: u8
+}
+
+pub struct ClassERegisterOperand {
+    destination: u8,
+    first: u8
 }
 
 pub enum MacroOperation {
