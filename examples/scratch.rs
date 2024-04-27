@@ -1,6 +1,6 @@
 use std::io::Cursor;
 
-use emulator::instruction::{self, MacroOperation};
+use exr_p::instruction::{self, MacroOperation};
 
 fn main() {
     let bin = [3, 0, 0, 0, 0, 0, 0, 0, 2];
