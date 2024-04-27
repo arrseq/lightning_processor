@@ -1,5 +1,6 @@
 pub mod decode;
 pub mod encode;
+pub mod interrupt;
 
 pub const BYTE: u8 = 1;
 pub const WORD: u8 = 2;
@@ -62,27 +63,27 @@ pub enum RiscOperation {
 }
 
 pub struct ClassARegisterOperand {
-    destination: u8,
-    first: u8,
-    second: u8
+    pub destination: u8,
+    pub first: u8,
+    pub second: u8
 }
 
 pub struct ClassBRegisterOperand {
-    first: u8,
-    second: u8
+    pub first: u8,
+    pub second: u8
 }
 
 pub struct ClassCRegisterOperand {
-    first: u8
+    pub first: u8
 }
 
 pub struct ClassDRegisterOperand {
-    destination: u8
+    pub destination: u8
 }
 
 pub struct ClassERegisterOperand {
-    destination: u8,
-    first: u8
+    pub destination: u8,
+    pub first: u8
 }
 
 pub enum MacroOperation {
