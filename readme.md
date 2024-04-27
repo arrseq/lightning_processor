@@ -27,9 +27,9 @@ This project is written in [Rust](https://www.rust-lang.org/). Download [Rust Up
 
 Clone the processor to your computer and enter the directory.
 ```bash
-> mkdir Silver-Skies
-> cd Silver-Skies
-> git clone https://github.com/Silver-Skies/Processor
+> mkdir The_Four_Elements
+> cd The_Four_Elements
+> git clone https://github.com/tfe-exr/Processor
 > cd Processor
 ```
 
