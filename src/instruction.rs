@@ -1,5 +1,6 @@
 pub mod decode;
 pub mod encode;
+pub mod interrupt;
 
 pub const BYTE: u8 = 1;
 pub const WORD: u8 = 2;
