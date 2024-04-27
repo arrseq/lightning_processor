@@ -1,69 +1,66 @@
+pub mod decode;
+
 pub const BYTE: u8 = 1;
 pub const WORD: u8 = 2;
 pub const DWORD: u8 = 4;
 pub const QWORD: u8 = 8;
 
-// #[repr(u8)]
-// pub enum Operations {
-//     Nothing,                // ntg
-//     Terminate,              // trm
-//     Interrupt,              // int, s0
-//     Safe,                   // sfe, s0, 21
-    
-//     // Data flow
-//     LoadImmediateByte,      // lib, s0, bt
-//     LoadImmediateWord,      // liw, s0, wd
-//     LoadImmediateDWord,     // ldw, s0, dw
-//     LoadImmediateQWord,     // lqw, s0, qw
-//     LoadInterconnect,       // lic, s0
-//     CloneRegister,          // cln, s0, s1
+#[deprecated]
+pub enum RiscOperation {
+    // Data flow
+    LoadImmediateByte,      // lib, s0, bt
+    LoadImmediateWord,      // liw, s0, wd
+    LoadImmediateDWord,     // ldw, s0, dw
+    LoadImmediateQWord,     // lqw, s0, qw
+    LoadInterconnect,       // lic, s0
+    CloneRegister,          // cln, s0, s1
 
-//     // Random access memory 
-//     ByteToMemory,           // btm, s0, s1
-//     WordToMemory,           // wtm, s0, s1
-//     DWordToMemory,          // dtm, s0, s1
-//     QWordToMemory,          // qtm, s0, s1
-//     ByteFromMemory,         // bfm, s0, s1
-//     WordFromMemory,         // wfm, s0, s1
-//     DWordFromMemory,        // dfm, s0, s1
-//     QWordFromMemory,        // qfm, s0, s1
+    // Random access memory 
+    ByteToMemory,           // btm, s0, s1
+    WordToMemory,           // wtm, s0, s1
+    DWordToMemory,          // dtm, s0, s1
+    QWordToMemory,          // qtm, s0, s1
+    ByteFromMemory,         // bfm, s0, s1
+    WordFromMemory,         // wfm, s0, s1
+    DWordFromMemory,        // dfm, s0, s1
+    QWordFromMemory,        // qfm, s0, s1
 
-//     // Arithmetic
-//     Add,                    // add, s0, s1, s2
-//     AddFloat,               // aft, s0, s1, s2
-//     AddDouble,              // adb, s0, s1, s2
+    // Arithmetic
+    Add,                    // add, s0, s1, s2
+    AddFloat,               // aft, s0, s1, s2
+    AddDouble,              // adb, s0, s1, s2
 
-//     Subtract,               // sub, s0, s1, s2
-//     SubtractFloat,          // sft, s0, s1, s2
-//     SubtractDouble,         // sdb, s0, s1, s2
+    Subtract,               // sub, s0, s1, s2
+    SubtractFloat,          // sft, s0, s1, s2
+    SubtractDouble,         // sdb, s0, s1, s2
 
-//     Multiply,               // mul, s0, s1, s2
-//     MultiplyInteger,        // mit, s0, s1, s2
-//     MultiplyFloat,          // mft, s0, s1, s2
-//     MultiplyDouble,         // mdb, s0, s1, s2
+    Multiply,               // mul, s0, s1, s2
+    MultiplyInteger,        // mit, s0, s1, s2
+    MultiplyFloat,          // mft, s0, s1, s2
+    MultiplyDouble,         // mdb, s0, s1, s2
 
-//     Divide,                 // div, s0, s1, s2
-//     DivideInteger,          // dit, s0, s1, s2
-//     DivideFloat,            // dft, s0, s1, s2
-//     DivideDouble,           // ddb, s0, s1, s2
+    Divide,                 // div, s0, s1, s2
+    DivideInteger,          // dit, s0, s1, s2
+    DivideFloat,            // dft, s0, s1, s2
+    DivideDouble,           // ddb, s0, s1, s2
 
-//     And,                    // and, s0, s1, s2
-//     Or,                     // or , s0, s1, s2
-//     ExclusiveOr,            // xor, s0, s1, s2
-//     Not,                    // not, s0, s1, s2
-//     ShiftStart,             // shs, s0, s1, s2
-//     ShiftEnd,               // she, s0, s1, s2
-//     TrailingZeros,          // tzr, TODO: Undecided
+    And,                    // and, s0, s1, s2
+    Or,                     // or , s0, s1, s2
+    ExclusiveOr,            // xor, s0, s1, s2
+    Not,                    // not, s0, s1, s2
+    ShiftStart,             // shs, s0, s1, s2
+    ShiftEnd,               // she, s0, s1, s2
+    TrailingZeros,          // tzr, TODO: Undecided
 
-//     // Position diversion
-//     Divert,                 // dvt, s0
-//     DivertEqual,            // deq, s0, s1, s2
-//     DivertUnequal,          // duq, s0, s1, s2
-//     DivertGreater,          // dgr, s0, s1, s2
-//     DivertGreaterOrEqual,   // dge, s0, s1, s2
-// }
+    // Position diversion
+    Divert,                 // dvt, s0
+    DivertEqual,            // deq, s0, s1, s2
+    DivertUnequal,          // duq, s0, s1, s2
+    DivertGreater,          // dgr, s0, s1, s2
+    DivertGreaterOrEqual,   // dge, s0, s1, s2
+}
 
-pub enum Operation {
+pub enum MacroOperation {
     Nothing,
     Terminate,
 
@@ -71,37 +68,24 @@ pub enum Operation {
     /// in unsafe mode. Once the interrupt completes then it will
     /// return back to the next address after the initial interrupt
     /// call.
-    Interrupt {
-        code: u8 
-    },
+    Interrupt { code: u8 },
     
     /// Enter safe mode in the process and divert to a different
     /// address. Once this completes it will return to the next
     /// instruction after the safe call.
-    Safe {
-        divert_location: u64
-    },
+    Safe { divert_location: u64 },
 
     /// Load a byte sized immediate value from the instruction into 
     /// a register.
-    LoadImmediateByte { 
-        target: u8,
-        value: u8 
-    },     
+    LoadImmediateByte { target: u8, value: u8 },     
 
     /// Load a word sized immediate value from the instruction into 
     /// a register.
-    LoadImmediateWord { 
-        target: u8, 
-        value: u16 
-    },  
+    LoadImmediateWord { target: u8, value: u16 },  
 
     /// Load a double word sized immediate value from the instruction 
     /// into a register.
-    LoadImmediateDWord { 
-        target: u8, 
-        value: u32 
-    },   
+    LoadImmediateDWord { target: u8, value: u32 },   
 
     /// Load a quad word sized immediate value from the instruction 
     /// into a register.
@@ -118,3 +102,6 @@ pub enum Operation {
     CloneRegister { target: u8, source: u8 }      
 }
 
+pub enum MicroOperation {
+    
+}
