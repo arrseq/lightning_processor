@@ -31,7 +31,7 @@ pub fn read_word<Stream: Read>(stream: &mut Stream) -> Option<u16> {
 }
 
 /// Read a double word from the byte stream.
-pub fn read_dword<Stream: Read>(stream: &mut Stream) -> Option<u32> {
+pub fn read_double_word<Stream: Read>(stream: &mut Stream) -> Option<u32> {
     let mut buffer = [0 as u8; 4];
     match stream.read(&mut buffer) {
         Err(_) => return None,
@@ -46,7 +46,7 @@ pub fn read_dword<Stream: Read>(stream: &mut Stream) -> Option<u32> {
 }
 
 /// Read a quad word from the byte stream.
-pub fn read_qword<Stream: Read>(stream: &mut Stream) -> Option<u64> {
+pub fn read_quad_word<Stream: Read>(stream: &mut Stream) -> Option<u64> {
     let mut buffer = [0 as u8; 8];
     match stream.read(&mut buffer) {
         Err(_) => return None,

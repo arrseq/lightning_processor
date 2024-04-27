@@ -1,3 +1,19 @@
+//! Why are we using separate functions for each type?
+//! - To reduce conditional and match statements during execution of a core.
+//! 
+//! # Instruction Potential Allocation
+//! Everything except the operation is optional.
+//! 
+//! **Macro Instruction**
+//! ```
+//! | Operation | Destination | First | Second | Immediate |
+//! ```
+//! 
+//! **Micro Instruction**
+//! ```
+//! | Operation | Destination | First | Second | 
+//! ```
+
 use std::io::Read;
 
 use crate::binary;
@@ -93,6 +109,42 @@ pub fn decode_class_e_register_operand<Stream: Read>(stream: &mut Stream) -> Opt
     Some(ClassERegisterOperand { destination, first })
 }
 
+pub fn decode_immediate_byte<Stream: Read>(stream: &mut Stream) -> Option<u8> {
+    let immediate = match binary::read_byte(stream) {
+        None => return None,
+        Some(some) => some
+    };
+
+    Some(immediate)
+}
+
+pub fn decode_immediate_word<Stream: Read>(stream: &mut Stream) -> Option<u16> {
+    let immediate = match binary::read_word(stream) {
+        None => return None,
+        Some(some) => some
+    };
+
+    Some(immediate)
+}
+
+pub fn decode_immediate_double_word<Stream: Read>(stream: &mut Stream) -> Option<u32> {
+    let immediate = match binary::read_double_word(stream) {
+        None => return None,
+        Some(some) => some
+    };
+
+    Some(immediate)
+}
+
+pub fn decode_immediate_quad_word<Stream: Read>(stream: &mut Stream) -> Option<u64> {
+    let immediate = match binary::read_quad_word(stream) {
+        None => return None,
+        Some(some) => some
+    };
+
+    Some(immediate)
+}
+
 /// Decode the macro instruction.
 pub fn decode_macro<Stream: Read>(stream: &mut Stream) -> Option<MacroOperation> {
     let operation_byte = match binary::read_byte(stream) {
@@ -112,12 +164,12 @@ pub fn decode_macro<Stream: Read>(stream: &mut Stream) -> Option<MacroOperation>
             return Some(MacroOperation::Interrupt { code: decoded.first })
         },
         3 => {
-            let decoded = match decode_class_c_register_operand(stream) {
+            let immediate = match decode_immediate_quad_word(stream) {
                 None => return None,
                 Some(some) => some 
             };
 
-            return Some(MacroOperation::Safe { divert_location: decoded.first })
+            return Some(MacroOperation::Safe { divert_location: immediate })
         }
         _ => return None
     }
