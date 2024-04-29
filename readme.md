@@ -5,7 +5,11 @@ A processor project focused on speed, efficiency, cost, and performance. **Curre
 - **Boot process?** Undecided.
 - **Micro architecture?** Yes.
 - **Micro translation only?** Only translation, no `program counter` in engine bounds.
-- **System Verilog provided?** Eventually. 
+- **System Verilog provided?** Eventually.
+
+> [!NOTE]
+> ### Who is Logie457?
+> He is my friend who Is helping me developm this and many other projects. Currently still teaching him Rust and computer architecture.
 
 > [!NOTE]
 > This is a modern CPU architecture, so you may expect a microcode engine to exist but there will never be one for this CPU. The reason is there is simply no good use or high enough benefits to use it. It reduces performance and was mainly to prevent hardwiring. But now CPUs are made in Verilog so this becomes unnecessary.
