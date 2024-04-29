@@ -1,10 +1,11 @@
 # The Four Elements - Processor (TFEP)
-A processor project focused on speed, efficiency, cost, and performance. **Current implementations will be for FPGAs and in Verilog.**
+A processor project focused on speed, efficiency, cost, and performance. **Current implementations will be for FPGAs and in System Verilog.**
 
+- > Not many features below may be implemented yet, but are planned. 
 - **Instruction firmware provided?** Sure.
 - **Boot process?** Undecided.
 - **Micro architecture?** Yes.
-- **Micro translation only?** Only translation, no `program counter` in engine bounds.
+- **Micro code engine supports complex behaviors?** Yes.
 - **System Verilog provided?** Eventually.
 
 > [!NOTE]
