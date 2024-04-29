@@ -18,14 +18,9 @@ use std::io::Read;
 
 use crate::binary;
 
-use super::{ClassARegisterOperand, ClassBRegisterOperand, ClassCRegisterOperand, ClassDRegisterOperand, ClassERegisterOperand, MacroOperation};
+use super::{ClassARegisterOperand, ClassBRegisterOperand, MacroOperation};
 
 pub fn decode_class_a_register_operand(stream: &mut impl Read) -> Option<ClassARegisterOperand> {
-    let destination = match binary::read_byte(stream) {
-        None => return None,
-        Some(destination) => destination
-    };
-
     let first = match binary::read_byte(stream) {
         None => return None,
         Some(first) => first
@@ -36,7 +31,7 @@ pub fn decode_class_a_register_operand(stream: &mut impl Read) -> Option<ClassAR
         Some(second) => second
     };
 
-    Some(ClassARegisterOperand { destination, first, second })
+    Some(ClassARegisterOperand { first, second })
 }
 
 pub fn decode_class_b_register_operand(stream: &mut impl Read) -> Option<ClassBRegisterOperand> {
@@ -45,44 +40,7 @@ pub fn decode_class_b_register_operand(stream: &mut impl Read) -> Option<ClassBR
         Some(first) => first
     };
 
-    let second = match binary::read_byte(stream) {
-        None => return None,
-        Some(second) => second
-    };
-
-    Some(ClassBRegisterOperand { first, second })
-}
-
-pub fn decode_class_c_register_operand(stream: &mut impl Read) -> Option<ClassCRegisterOperand> {
-    let first = match binary::read_byte(stream) {
-        None => return None,
-        Some(first) => first
-    };
-
-    Some(ClassCRegisterOperand { first })
-}
-
-pub fn decode_class_d_register_operand(stream: &mut impl Read) -> Option<ClassDRegisterOperand> {
-    let destination = match binary::read_byte(stream) {
-        None => return None,
-        Some(destination) => destination
-    };
-
-    Some(ClassDRegisterOperand { destination })
-}
-
-pub fn decode_class_e_register_operand(stream: &mut impl Read) -> Option<ClassERegisterOperand> {
-    let destination = match binary::read_byte(stream) {
-        None => return None,
-        Some(destination) => destination
-    };
-
-    let first = match binary::read_byte(stream) {
-        None => return None,
-        Some(first) => first
-    };
-
-    Some(ClassERegisterOperand { destination, first })
+    Some(ClassBRegisterOperand { first })
 }
 
 pub fn decode_immediate_byte(stream: &mut impl Read) -> Option<u8> {
