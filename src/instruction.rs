@@ -62,27 +62,14 @@ pub enum RiscOperation {
     DivertGreaterOrEqual,   // dge, s0, s1, s2
 }
 
+// FIXME Remove destination parameter for performance reasons
+
 pub struct ClassARegisterOperand {
-    pub destination: u8,
     pub first: u8,
     pub second: u8
 }
 
 pub struct ClassBRegisterOperand {
-    pub first: u8,
-    pub second: u8
-}
-
-pub struct ClassCRegisterOperand {
-    pub first: u8
-}
-
-pub struct ClassDRegisterOperand {
-    pub destination: u8
-}
-
-pub struct ClassERegisterOperand {
-    pub destination: u8,
     pub first: u8
 }
 
