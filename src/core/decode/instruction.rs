@@ -1,3 +1,12 @@
+/// This instruction is indeterminate and dynamic. The behavior 
+/// and parameters are determined by the firmware.
+pub struct MacroInstruction<Immediate> {
+    operation: u8,
+    register_a: Option<u8>,
+    register_b: Option<u8>,
+    immediate: Option<Immediate>
+}
+
 pub enum MicroInstruction {
     // Data flow
     CloneRegister { target_register: u8, source_register: u8 }, 
