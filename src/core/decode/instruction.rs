@@ -106,7 +106,7 @@ impl MicroInstruction {
             Self::DivertEqual { diversion_address, register_a, register_b }          => Some(36),
             Self::DivertUnequal { diversion_address, register_a, register_b }        => Some(37),
             Self::DivertGreater { diversion_address, register_a, register_b }        => Some(38),
-            Self::DivertGreaterOrEqual { diversion_address, register_a, register_b } => Some(39)
+            Self::DivertGreaterOrEqual { diversion_address, register_a, register_b } => Some(39),
 
             _ => None
         }
