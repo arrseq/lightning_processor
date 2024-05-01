@@ -1,3 +1,12 @@
+/// This instruction is indeterminate and dynamic. The behavior 
+/// and parameters are determined by the firmware.
+pub struct MacroInstruction<Immediate> {
+    operation: u8,
+    register_a: Option<u8>,
+    register_b: Option<u8>,
+    immediate: Option<Immediate>
+}
+
 pub enum MicroInstruction {
     // Data flow
     CloneRegister { target_register: u8, source_register: u8 }, 
@@ -56,59 +65,57 @@ pub enum MicroInstruction {
 }
 
 impl MicroInstruction {
-    pub fn into_identifier(&self) -> Option<u8> {
+    pub fn into_identifier(&self) -> u8 {
         match self {
-            Self::CloneRegister { target_register, source_register }                       => Some(0),
+            Self::CloneRegister { target_register: _, source_register: _ }                    => 0,
             
-            Self::ByteToRegister { target_register, data }                                 => Some(1),
-            Self::WordToRegister { target_register, data }                                => Some(2),
-            Self::DoubleWordToRegister { target_register, data }                          => Some(3),
-            Self::QuadWordToRegister { target_register, data }                            => Some(4),
+            Self::ByteToRegister { target_register: _, data: _ }                              => 1,
+            Self::WordToRegister { target_register: _, data: _ }                              => 2,
+            Self::DoubleWordToRegister { target_register: _, data: _ }                        => 3,
+            Self::QuadWordToRegister { target_register: _, data: _ }                          => 4,
 
-            Self::ByteToMemory { target_address, source_register }                        => Some(5),
-            Self::WordToMemory { target_address, source_register }                        => Some(6),
-            Self::DoubleWordToMemory { target_address, source_register }                  => Some(7),
-            Self::QuadWordToMemory { target_address, source_register }                    => Some(8),
+            Self::ByteToMemory { target_address: _ , source_register: _ }                     => 5,
+            Self::WordToMemory { target_address: _ , source_register: _ }                     => 6,
+            Self::DoubleWordToMemory { target_address: _, source_register: _ }                => 7,
+            Self::QuadWordToMemory { target_address: _, source_register: _ }                  => 8,
 
-            Self::ByteFromMemory { target_register, source_address }                      => Some(9),
-            Self::WordFromMemory { target_register, source_address }                      => Some(10),
-            Self::DoubleWordFromMemory { target_register, source_address }                => Some(11),
-            Self::QuadWordFromMemory { target_register, source_address }                  => Some(12),
+            Self::ByteFromMemory { target_register: _, source_address: _ }                    => 9,
+            Self::WordFromMemory { target_register: _, source_address: _ }                    => 10,
+            Self::DoubleWordFromMemory { target_register: _, source_address: _ }              => 11,
+            Self::QuadWordFromMemory { target_register: _, source_address: _ }                => 12,
 
-            Self::Add { register_a, register_b }                                           => Some(13),
-            Self::Subtract { register_a, register_b }                                      => Some(14),
-            Self::Multiply { register_a, register_b }                                      => Some(15),
-            Self::MultiplyInteger { register_a, register_b }                               => Some(16),
-            Self::Divide { register_a, register_b }                                        => Some(17),
-            Self::DivideInteger { register_a, register_b }                                 => Some(18),
+            Self::Add { register_a: _, register_b: _ }                                        => 13,
+            Self::Subtract { register_a: _, register_b: _ }                                   => 14,
+            Self::Multiply { register_a: _, register_b: _ }                                   => 15,
+            Self::MultiplyInteger { register_a: _, register_b: _ }                            => 16,
+            Self::Divide { register_a: _, register_b: _ }                                     => 17,
+            Self::DivideInteger { register_a: _, register_b: _ }                              => 18,
 
-            Self::AddFloat { register_a, register_b }                                      => Some(19),
-            Self::AddDouble { register_a, register_b }                                     => Some(20),
-            Self::SubtractFloat { register_a, register_b }                                 => Some(21),
-            Self::SubtractDouble { register_a, register_b }                                => Some(22),
+            Self::AddFloat { register_a: _, register_b: _ }                                   => 19,
+            Self::AddDouble { register_a: _, register_b: _ }                                  => 20,
+            Self::SubtractFloat { register_a: _, register_b: _ }                              => 21,
+            Self::SubtractDouble { register_a: _, register_b: _ }                             => 22,
             
-            Self::MultiplyFloat { register_a, register_b }                                 => Some(23),
-            Self::MultiplyDouble { register_a, register_b }                                => Some(24),
-            Self::DivideFloat { register_a, register_b }                                   => Some(25),
-            Self::DivideDouble { register_a, register_b }                                  => Some(26),
+            Self::MultiplyFloat { register_a: _, register_b: _ }                              => 23,
+            Self::MultiplyDouble { register_a: _, register_b: _ }                             => 24,
+            Self::DivideFloat { register_a: _, register_b: _ }                                => 25,
+            Self::DivideDouble { register_a: _, register_b: _ }                               => 26,
 
-            Self::And { register_a, register_b }                                           => Some(27),
-            Self::Or { register_a, register_b }                                            => Some(28),
-            Self::ExclusiveOr { register_a, register_b }                                   => Some(29),
-            Self::Not { register_a, register_b }                                           => Some(30),
-            Self::ShiftStart { register_a, register_b }                                    => Some(31),
-            Self::ShiftEnd { register_a, register_b }                                      => Some(32),
-            Self::TrailingZeros { register_a, register_b }                                 => Some(33),
+            Self::And { register_a: _, register_b: _ }                                        => 27,
+            Self::Or { register_a: _, register_b: _ }                                         => 28,
+            Self::ExclusiveOr { register_a: _, register_b: _ }                                => 29,
+            Self::Not { register_a: _, register_b: _ }                                        => 30,
+            Self::ShiftStart { register_a: _, register_b: _ }                                 => 31,
+            Self::ShiftEnd { register_a: _, register_b: _ }                                   => 32,
+            Self::TrailingZeros { register_a: _, register_b: _ }                              => 33,
 
-            Self::Divert { diversion_address }                                                 => Some(34),
+            Self::Divert { diversion_address: _ }                                             => 34,
             
-            Self::DivertTrue { diversion_address, condition }                             => Some(35),
-            Self::DivertEqual { diversion_address, register_a, register_b }          => Some(36),
-            Self::DivertUnequal { diversion_address, register_a, register_b }        => Some(37),
-            Self::DivertGreater { diversion_address, register_a, register_b }        => Some(38),
-            Self::DivertGreaterOrEqual { diversion_address, register_a, register_b } => Some(39)
-
-            _ => None
+            Self::DivertTrue { diversion_address: _, condition: _ }                           => 35,
+            Self::DivertEqual { diversion_address: _, register_a: _, register_b: _ }          => 36,
+            Self::DivertUnequal { diversion_address: _, register_a: _, register_b: _ }        => 37,
+            Self::DivertGreater { diversion_address: _, register_a: _, register_b: _ }        => 38,
+            Self::DivertGreaterOrEqual { diversion_address: _, register_a: _, register_b: _ } => 39
         }
     }
 }
