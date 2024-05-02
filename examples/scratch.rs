@@ -40,14 +40,13 @@ fn main() {
         0xFF, 0xFF // Imm
     ]);
 
-    let block = Firmware::read_block(&mut instruction, RawEntry {
-        operation: 0,
+    let entry = Firmware::read_entry(&mut instruction, &RawEntry {
         address: 0,
         length: 1,
-        flags: 0b00000000
+        operation: 0,
+        flags: 0,
     });
 
-    println!("{:?}", block);
-
+    println!("Entry: {:?}", entry);
 }
 
