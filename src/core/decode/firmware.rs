@@ -10,6 +10,12 @@ use std::io::{self, Read, Seek};
 
 use super::instruction::{ImmediatePresence, MicroInstruction, RegisterPresence};
 
+pub const ADDRESS_BYTE:      u8 = 0;
+pub const LENGTH_BYTE:       u8 = 1;
+pub const OPERATION_BYTE:    u8 = 2;
+pub const FLAGS_BYTE:        u8 = 3;
+pub const ENTRY_BUFFER_SIZE: u8 = 4;
+
 #[repr(u8)]
 pub enum FlagPositions {
     NoneA,
@@ -30,7 +36,7 @@ pub struct FirmwareEntry {
     pub instructions:       Vec<MicroInstruction>
 } 
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct RawEntry {
     pub address:   u8,
     pub length:    u8,
@@ -114,7 +120,7 @@ impl Firmware {
     }
 
     pub fn read_raw_entry(microcode: &mut impl Read, target: &mut RawEntry) -> Result<(), EntryErrors> {
-        let mut buffer: [u8; 4] = [0, 0, 0, 0];
+        let mut buffer: [u8; ENTRY_BUFFER_SIZE as usize] = [0, 0, 0, 0];
 
         match microcode.read(&mut buffer) {
             Err(error) => return Err(EntryErrors::StreamError(error)),
@@ -123,10 +129,11 @@ impl Firmware {
                     return Err(EntryErrors::StreamTooShort)
                 }
 
-                target.address   = buffer[0];
-                target.length    = buffer[1];
-                target.operation = buffer[2];
-                target.flags     = buffer[3];
+
+                target.address   = buffer[ADDRESS_BYTE   as usize];
+                target.length    = buffer[LENGTH_BYTE    as usize];
+                target.operation = buffer[OPERATION_BYTE as usize];
+                target.flags     = buffer[FLAGS_BYTE     as usize];
 
                 return Ok(());
             }
@@ -293,7 +300,7 @@ impl Firmware {
 
     /// Load the microcode firmware onto this firmware interface.
     /// If ok, then it resolves with the number of detected operations
-    pub fn load_binary(&mut self, microcode: &mut impl Read) -> Result<u16, Errors> {
+    pub fn load_binary(&mut self, microcode: &mut (impl Read + Seek)) -> Result<u16, Errors> {
         self.entries.clear();
         let raw_entires = match Firmware::read_raw_entries(microcode) {
             // Translate the error to allow for better error mitigation.
@@ -306,6 +313,10 @@ impl Firmware {
 
         if raw_entires.len() == 0 {
             return Ok(0);
+        }
+
+        for raw_entry in &raw_entires {
+            let entry = Firmware::read_entry(microcode, raw_entry);
         }
 
         Err(Errors::StreamTooShort)
