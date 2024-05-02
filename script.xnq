@@ -1,0 +1,8 @@
+structure scheduler {
+    curr_xwpt: unsigned_byte
+};
+
+function sp_lock() {
+    let the_tg = 1782;
+    let clone = the tg->clone();
+};
