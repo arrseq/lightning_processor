@@ -1,9 +1,9 @@
 use std::io::Cursor;
 
-use exr_p::core::decode::{firmware::{Firmware, RawEntry}, instruction::MicroInstruction};
+use exr_p::core::decode::{firmware::{Firmware}, instruction::MicroInstruction};
 
 fn main() {
-    let _fmw = Firmware::new();
+    let mut fmw = Firmware::new();
     let mut firmware_source = Cursor::new([  // Address
         0x02, // Number of entries                                   // 0
 
@@ -33,10 +33,11 @@ fn main() {
         MicroInstruction::Nothing.into_identifier(), // No operation // 15                                   
     ]);
 
-    // fmw.load_binary(&mut firmware_source)
-    //     .expect("Failed to load firmware binary");
-    let entries = Firmware::read_raw_entries(&mut firmware_source);
+    let loaded = fmw.load_binary(&mut firmware_source)
+        .expect("Failed to load firmware binary");
 
-    println!("Entry: {:?}", entries);
+    println!("Detected {} entires in firmware", loaded);
+
+    // println!("Entry: {:?}", entries);
 }
 

@@ -300,8 +300,9 @@ impl Firmware {
 
     /// Load the microcode firmware onto this firmware interface.
     /// If ok, then it resolves with the number of detected operations
-    pub fn load_binary(&mut self, microcode: &mut (impl Read + Seek)) -> Result<u16, Errors> {
+    pub fn load_binary(&mut self, microcode: &mut (impl Read + Seek)) -> Result<u8, Errors> {
         self.entries.clear();
+
         let raw_entires = match Firmware::read_raw_entries(microcode) {
             // Translate the error to allow for better error mitigation.
             Err(error) => return Err(match error {
@@ -316,9 +317,17 @@ impl Firmware {
         }
 
         for raw_entry in &raw_entires {
-            let entry = Firmware::read_entry(microcode, raw_entry);
+            let entry = match Firmware::read_entry(microcode, raw_entry) {
+                Err(error) => return Err(match error {
+                    EntryErrors::StreamError(io_error) => Errors::StreamError(io_error),
+                    EntryErrors::StreamTooShort => Errors::StreamTooShort
+                }),
+                Ok(result) => result
+            };
+
+            self.entries.push(entry);
         }
 
-        Err(Errors::StreamTooShort)
+        Ok(raw_entires.len() as u8)
     }
 }
