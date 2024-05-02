@@ -1,10 +1,55 @@
 /// This instruction is indeterminate and dynamic. The behavior 
 /// and parameters are determined by the firmware.
+
+pub const MAX_IMMEDIATE_BYTES: u8 = 8;
+pub const MAX_INSTRUCTION_BYTES: u8 = 1
+                                    + 1
+                                    + MAX_IMMEDIATE_BYTES;
+
+#[derive(Default)]
+pub enum ImmediatePresence {
+    #[default]
+    None,
+    Byte,
+    Word,
+    DoubleWord,
+    QuadWord
+}
+
+impl ImmediatePresence {
+    pub fn is_none(&self) -> bool {
+        match self {
+            Self::None => false,
+            _ => true
+        }
+    }
+}
+
+#[derive(Default, Debug)]
+pub enum RegisterPresence {
+    #[default]
+    None,
+    AB,
+    A,
+}
+
+impl RegisterPresence {
+    pub fn from(a: bool, b: bool) -> RegisterPresence {
+        if a && b {
+            RegisterPresence::AB
+        } else if a ^ b {
+            RegisterPresence::A
+        } else {
+            RegisterPresence::None
+        }
+    }
+}
+
 pub struct MacroInstruction<Immediate> {
-    operation:  u8,
-    register_a: Option<u8>,
-    register_b: Option<u8>,
-    immediate:  Option<Immediate>
+    pub operation:  u8,
+    pub register_a: Option<u8>,
+    pub register_b: Option<u8>,
+    pub immediate:  Option<Immediate>
 }
 
 pub enum MicroInstruction {

@@ -8,7 +8,7 @@
 
 use std::{fmt::Display, io::{self, Read}};
 
-use super::instruction::MicroInstruction;
+use super::instruction::{ImmediatePresence, MicroInstruction, RegisterPresence, MAX_INSTRUCTION_BYTES};
 
 #[repr(u8)]
 pub enum FlagPositions {
@@ -23,45 +23,6 @@ pub enum FlagPositions {
 }
 
 #[derive(Default)]
-pub enum ImmediatePresence {
-    #[default]
-    None,
-    Byte,
-    Word,
-    DoubleWord,
-    QuadWord
-}
-
-impl ImmediatePresence {
-    pub fn is_none(&self) -> bool {
-        match self {
-            Self::None => false,
-            _ => true
-        }
-    }
-}
-
-#[derive(Default, Debug)]
-pub enum RegisterPresence {
-    #[default]
-    None,
-    AB,
-    A,
-}
-
-impl RegisterPresence {
-    pub fn from(a: bool, b: bool) -> RegisterPresence {
-        if a && b {
-            RegisterPresence::AB
-        } else if a ^ b {
-            RegisterPresence::A
-        } else {
-            RegisterPresence::None
-        }
-    }
-}
-
-#[derive(Default)]
 pub struct FirmwareEntry {
     pub operation:          u8,
     pub registers_presence: RegisterPresence,
@@ -71,8 +32,11 @@ pub struct FirmwareEntry {
 
 #[derive(Default, Clone)]
 pub struct RawEntry {
+    pub address:   u8,
     pub operation: u8,
-    pub flags:     u8
+    pub flags:     u8,
+    /// The number of bytes this entry took up in the firmware file.
+    pub bytes:     u8
 }
 
 impl RawEntry {
@@ -113,11 +77,11 @@ pub fn get_bits_of_byte(byte: u8) -> [u8; 8] {
     for i in 0..=7 {
         let shifted_byte = byte >> i;
         // Get the rightmost bit of the shifted byte (least significant bit)
-        let cur_bit = shifted_byte & 1;
+        let cur_bit      = shifted_byte & 1;
         // For the first iteration, the cur_bit is the
         // least significant bit and therefore we place
         // that bit at index 7 of the array (rightmost bit)
-        bits[7 - i] = cur_bit;
+        bits[7 - i]          = cur_bit;
     }
     bits
 }
@@ -134,7 +98,7 @@ impl Firmware {
     }
 
     pub fn read_entry(microcode: &mut impl Read, target: &mut RawEntry) -> Result<(), EntryErrors> {
-        let mut buffer: [u8; 2] = [0, 0];
+        let mut buffer: [u8; 3] = [0, 0, 0];
 
         match microcode.read(&mut buffer) {
             Err(error) => return Err(EntryErrors::StreamError(error)),
@@ -143,8 +107,11 @@ impl Firmware {
                     return Err(EntryErrors::StreamTooShort)
                 }
 
-                target.operation = buffer[0];
-                target.flags     = buffer[1];
+                target.address   = buffer[0];
+                target.operation = buffer[1];
+                target.flags     = buffer[2];
+                target.bytes     = buffer.len() as u8;
+
                 return Ok(());
             }
         };
@@ -166,7 +133,7 @@ impl Firmware {
         };
 
         let mut entries = Vec::new();
-        let mut raw_entry: RawEntry = RawEntry { operation: 0, flags: 0 };
+        let mut raw_entry: RawEntry    = RawEntry { address: 0, operation: 0, flags: 0, bytes: 0 };
 
         for _ in 0..length {
             match Self::read_entry(microcode, &mut raw_entry) {
@@ -184,8 +151,6 @@ impl Firmware {
     /// If ok, then it resolves with the number of detected operations
     pub fn load_binary(&mut self, microcode: &mut impl Read) -> Result<u16, Errors> {
         self.entries.clear();
-        // First instruction address of the instruction block
-        let mut address = 0;
         let raw_entires = match Firmware::read_entries(microcode) {
             // Translate the error to allow for better error mitigation.
             Err(error) => return Err(match error {
@@ -194,11 +159,23 @@ impl Firmware {
             }),
             Ok(entires) => entires
         };
+
+        if raw_entires.len() == 0 {
+            return Ok(0);
+        }
         
         // Read buffer which is used to read the instruction bytes
         let mut buffer: [u8; 1] = [0];
 
+        for entry in raw_entires {
+            for byte_index in 0..MAX_INSTRUCTION_BYTES {
 
+            }
+
+            let flags = entry.decode_flags();
+            let register_presence   = flags.0;
+            let immediate_presence = flags.1;
+        }
 
         Err(Errors::StreamTooShort)
     }
