@@ -1,10 +1,10 @@
 use std::io::Cursor;
 
-use exr_p::core::decode::{firmware::{Firmware, FirmwareEntry, RawEntry}, instruction::MicroInstruction};
+use exr_p::core::decode::{firmware::{Firmware, RawEntry}, instruction::MicroInstruction};
 
 fn main() {
-    let mut fmw = Firmware::new();
-    let mut firmware_source = Cursor::new([
+    let _fmw = Firmware::new();
+    let _firmware_source = Cursor::new([
         0x02, // Number of entries
 
         // First entry

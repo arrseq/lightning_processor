@@ -6,9 +6,9 @@
 // Code Section (Should contain any executable code)
 // 0xFF 0xAF 0x4B 0x00 0x00 0x00 0xAA
 
-use std::{fmt::Display, io::{self, Read, Seek}};
+use std::io::{self, Read, Seek};
 
-use super::instruction::{ImmediatePresence, MicroInstruction, RegisterPresence, MAX_INSTRUCTION_BYTES, OPERATION_BYTES};
+use super::instruction::{ImmediatePresence, MicroInstruction, RegisterPresence};
 
 #[repr(u8)]
 pub enum FlagPositions {
@@ -211,7 +211,7 @@ impl Firmware {
                         immediate_presence = ImmediatePresence::QuadWord;
                     }
                 }
-                _ => todo!()
+                _ => todo!() // TODO
             };
 
             let mut register_a: Option<u8> = None;
