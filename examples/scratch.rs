@@ -35,15 +35,15 @@ fn main() {
     //     .expect("Failed to load firmware binary");
 
     let mut instruction = Cursor::new([
-        0x01,       // operation
+        0x03,       // operation
         0b11110010, // registers ab
-        0x00
+        0xFF, 0xFF // Imm
     ]);
 
     let block = Firmware::read_block(&mut instruction, RawEntry {
         operation: 0,
         address: 0,
-        length: 2,
+        length: 1,
         flags: 0b00000000
     });
 

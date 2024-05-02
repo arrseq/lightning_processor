@@ -195,12 +195,28 @@ impl Firmware {
                 1 => {
                     // Clone register
                     register_presence = RegisterPresence::Ab;
+                },
+                2 | 3 | 4 | 5 => {
+                    // ??? to register
+                    register_presence = RegisterPresence::A;
+
+                    if operation == 2 {
+                        // Byte
+                        immediate_presence = ImmediatePresence::Byte;
+                    } else if operation == 3 {
+                        immediate_presence = ImmediatePresence::Word;
+                    } else if operation == 4 {
+                        immediate_presence = ImmediatePresence::DoubleWord;
+                    } else {
+                        immediate_presence = ImmediatePresence::QuadWord;
+                    }
                 }
                 _ => todo!()
             };
 
             let mut register_a: Option<u8> = None;
             let mut register_b: Option<u8> = None;
+            let mut immediate: Option<u64> = None;
 
             if register_presence.get_bytes_count() > 0 {
                 let register_byte = {
@@ -222,12 +238,53 @@ impl Firmware {
                 register_b = Some(bits_to_u8(&bits[4..8]).unwrap_or(0));
             }
 
+            let mut immediate_bytes: [u8; 8] = [
+                0x00, 0x00, 0x00, 0x00, 
+                0x00, 0x00, 0x00, 0x00
+            ];
+
+            let immediate_bytes_count = immediate_presence.get_bytes_count();
+
+            for index in 0..immediate_bytes_count {
+                match microcode.read(&mut buffer) {
+                    Err(error) => return Err(EntryErrors::StreamError(error)),
+                    Ok(bytes_read)    => {
+                        if bytes_read != buffer.len() {
+                            return Err(EntryErrors::StreamTooShort);
+                        }
+                    }
+                }
+    
+                immediate_bytes[index as usize] = buffer[0];
+            }
+
+            if immediate_bytes_count > 0 {
+                immediate = Some(u64::from_le_bytes(immediate_bytes));
+            }
+
             match operation {
                 0 => instructions.push(MicroInstruction::Nothing),
                 1 => instructions.push(MicroInstruction::CloneRegister { 
                     target_register: register_a.unwrap_or(0), 
                     source_register: register_b.unwrap_or(0)
                 }),
+                2 => instructions.push(MicroInstruction::ByteToRegister { 
+                    target_register: register_a.unwrap_or(0), 
+                    data: immediate.unwrap_or(0) as u8
+                }),
+                3 => instructions.push(MicroInstruction::WordToRegister { 
+                    target_register: register_a.unwrap_or(0), 
+                    data: immediate.unwrap_or(0) as u16
+                }),
+                4 => instructions.push(MicroInstruction::DoubleWordToRegister { 
+                    target_register: register_a.unwrap_or(0), 
+                    data: immediate.unwrap_or(0) as u32
+                }),
+                5 => instructions.push(MicroInstruction::QuadWordToRegister { 
+                    target_register: register_a.unwrap_or(0), 
+                    data: immediate.unwrap_or(0) as u64
+                }),
+                
                 _ => todo!()
             };
         }
