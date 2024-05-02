@@ -10,6 +10,12 @@ use std::io::{self, Read, Seek};
 
 use super::instruction::{ImmediatePresence, MicroInstruction, RegisterPresence};
 
+pub const ADDRESS_BYTE:      u8 = 0;
+pub const LENGTH_BYTE:       u8 = 1;
+pub const OPERATION_BYTE:    u8 = 2;
+pub const FLAGS_BYTE:        u8 = 3;
+pub const ENTRY_BUFFER_SIZE: u8 = 4;
+
 #[repr(u8)]
 pub enum FlagPositions {
     NoneA,
@@ -22,7 +28,7 @@ pub enum FlagPositions {
     RegisterA
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct FirmwareEntry {
     pub operation:          u8,
     pub registers_presence: RegisterPresence,
@@ -30,7 +36,7 @@ pub struct FirmwareEntry {
     pub instructions:       Vec<MicroInstruction>
 } 
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct RawEntry {
     pub address:   u8,
     pub length:    u8,
@@ -113,8 +119,8 @@ impl Firmware {
         self.entries = entires;
     }
 
-    pub fn read_entry(microcode: &mut impl Read, target: &mut RawEntry) -> Result<(), EntryErrors> {
-        let mut buffer: [u8; 4] = [0, 0, 0, 0];
+    pub fn read_raw_entry(microcode: &mut impl Read, target: &mut RawEntry) -> Result<(), EntryErrors> {
+        let mut buffer: [u8; ENTRY_BUFFER_SIZE as usize] = [0, 0, 0, 0];
 
         match microcode.read(&mut buffer) {
             Err(error) => return Err(EntryErrors::StreamError(error)),
@@ -123,17 +129,18 @@ impl Firmware {
                     return Err(EntryErrors::StreamTooShort)
                 }
 
-                target.address   = buffer[0];
-                target.length    = buffer[1];
-                target.operation = buffer[2];
-                target.flags     = buffer[3];
+
+                target.address   = buffer[ADDRESS_BYTE   as usize];
+                target.length    = buffer[LENGTH_BYTE    as usize];
+                target.operation = buffer[OPERATION_BYTE as usize];
+                target.flags     = buffer[FLAGS_BYTE     as usize];
 
                 return Ok(());
             }
         };
     }
 
-    pub fn read_entries(microcode: &mut impl Read) -> Result<Vec<RawEntry>, EntryErrors> {
+    pub fn read_raw_entries(microcode: &mut impl Read) -> Result<Vec<RawEntry>, EntryErrors> {
         let length = {
             let mut length_buffer: [u8; 1] = [0];
             match microcode.read(&mut length_buffer) {
@@ -152,9 +159,9 @@ impl Firmware {
         let mut raw_entry: RawEntry    = RawEntry { address: 0, length: 0, operation: 0, flags: 0 };
 
         for _ in 0..length {
-            match Self::read_entry(microcode, &mut raw_entry) {
+            match Self::read_raw_entry(microcode, &mut raw_entry) {
                 Err(error) => return Err(error),
-                Ok(_) => {} 
+                Ok(_) => () 
             }
 
             entries.push(raw_entry.clone());
@@ -163,14 +170,9 @@ impl Firmware {
         Ok(entries)
     }
 
-    pub fn read_block(microcode: &mut (impl Read + Seek), entry: RawEntry) -> Result<Vec<MicroInstruction>, EntryErrors> {
+    pub fn read_block(microcode: &mut impl Read, entry: &RawEntry) -> Result<Vec<MicroInstruction>, EntryErrors> {
         // Read buffer which is used to read the instruction bytes
         let mut buffer: [u8; 1] = [0];
-
-        match microcode.seek(io::SeekFrom::Start(entry.address as u64)) {
-            Err(error) => return Err(EntryErrors::StreamError(error)),
-            Ok(_)             => {}
-        }
 
         let mut instructions = Vec::new();
         for _ in 0..entry.length {
@@ -191,7 +193,7 @@ impl Firmware {
             let mut immediate_presence = ImmediatePresence::None;
     
             match operation {
-                0 => {},
+                0 => (),
                 1 => {
                     // Clone register
                     register_presence = RegisterPresence::Ab;
@@ -273,11 +275,35 @@ impl Firmware {
         Ok(instructions)
     } 
 
+    pub fn read_entry(microcode: &mut (impl Read + Seek), entry: &RawEntry) -> Result<FirmwareEntry, EntryErrors> {
+        match microcode.seek(io::SeekFrom::Start(entry.address as u64)) {
+            Err(error) => return Err(EntryErrors::StreamError(error)),
+            Ok(_) => ()
+        };
+
+        let block = match Firmware::read_block(microcode, &entry) {
+            Err(error) => return Err(error),
+            Ok(result) => result
+        };
+
+        let flags = entry.decode_flags();
+        let registers_presence = flags.0;
+        let immediate_presence = flags.1;
+
+        Ok(FirmwareEntry {
+            operation: entry.operation,
+            registers_presence, 
+            immediate_presence,
+            instructions: block
+        })
+    }
+
     /// Load the microcode firmware onto this firmware interface.
     /// If ok, then it resolves with the number of detected operations
-    pub fn load_binary(&mut self, microcode: &mut impl Read) -> Result<u16, Errors> {
+    pub fn load_binary(&mut self, microcode: &mut (impl Read + Seek)) -> Result<u8, Errors> {
         self.entries.clear();
-        let raw_entires = match Firmware::read_entries(microcode) {
+
+        let raw_entires = match Firmware::read_raw_entries(microcode) {
             // Translate the error to allow for better error mitigation.
             Err(error) => return Err(match error {
                 EntryErrors::StreamError(io_error) => Errors::StreamError(io_error),
@@ -290,6 +316,18 @@ impl Firmware {
             return Ok(0);
         }
 
-        Err(Errors::StreamTooShort)
+        for raw_entry in &raw_entires {
+            let entry = match Firmware::read_entry(microcode, raw_entry) {
+                Err(error) => return Err(match error {
+                    EntryErrors::StreamError(io_error) => Errors::StreamError(io_error),
+                    EntryErrors::StreamTooShort => Errors::StreamTooShort
+                }),
+                Ok(result) => result
+            };
+
+            self.entries.push(entry);
+        }
+
+        Ok(raw_entires.len() as u8)
     }
 }

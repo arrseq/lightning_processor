@@ -8,7 +8,7 @@ pub const MAX_INSTRUCTION_BYTES: u8 = 1
                                     + 1
                                     + MAX_IMMEDIATE_BYTES;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub enum ImmediatePresence {
     #[default]
     None,

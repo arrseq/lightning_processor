@@ -1,53 +1,43 @@
 use std::io::Cursor;
 
-use exr_p::core::decode::{firmware::{Firmware, RawEntry}, instruction::MicroInstruction};
+use exr_p::core::decode::{firmware::{Firmware}, instruction::MicroInstruction};
 
 fn main() {
-    let _fmw = Firmware::new();
-    let _firmware_source = Cursor::new([
-        0x02, // Number of entries
+    let mut fmw = Firmware::new();
+    let mut firmware_source = Cursor::new([  // Address
+        0x02, // Number of entries                                   // 0
 
         // First entry
-        0x04, // Address                 
-        0x91, // Operation               
+        0x09, // Address                                             // 1
+        0x02, // length                                              // 2
+        0x91, // Operation                                           // 3
                                          
-        0b00000001, // Disable all flags 
+        0b00000001, // Disable all flags                             // 4
 
         // Second entry
-        0x00, // Address
-        0x01, // Operation
+        0x0B, // Address                                             // 5
+        0x05, // length                                              // 6
+        0x01, // Operation                                           // 7
 
-        0b00000001, // Disable all flags
+        0b00000001, // Disable all flags                             // 8
                                          
         // First program                 
-        0x00, // No operation            
-        0x00,   
-
-        // second program                 
-        MicroInstruction::Nothing.into_identifier(), // No operation            
-        MicroInstruction::Nothing.into_identifier(), // No operation            
-        MicroInstruction::Nothing.into_identifier(), // No operation            
-        MicroInstruction::Nothing.into_identifier(), // No operation            
-        MicroInstruction::Nothing.into_identifier(), // No operation                                       
+        0x00, // No operation                                        // 9
+        0x00,                                                        // 10
+                
+        // second program                                            
+        MicroInstruction::Nothing.into_identifier(), // No operation // 11      
+        MicroInstruction::Nothing.into_identifier(), // No operation // 12         
+        MicroInstruction::Nothing.into_identifier(), // No operation // 13        
+        MicroInstruction::Nothing.into_identifier(), // No operation // 14        
+        MicroInstruction::Nothing.into_identifier(), // No operation // 15                                   
     ]);
 
-    // fmw.load_binary(&mut firmware_source)
-    //     .expect("Failed to load firmware binary");
+    let loaded = fmw.load_binary(&mut firmware_source)
+        .expect("Failed to load firmware binary");
 
-    let mut instruction = Cursor::new([
-        0x03,       // operation
-        0b11110010, // registers ab
-        0xFF, 0xFF // Imm
-    ]);
+    println!("Detected {} entires in firmware", loaded);
 
-    let block = Firmware::read_block(&mut instruction, RawEntry {
-        operation: 0,
-        address: 0,
-        length: 1,
-        flags: 0b00000000
-    });
-
-    println!("{:?}", block);
-
+    // println!("Entry: {:?}", entries);
 }
 
