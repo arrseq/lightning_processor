@@ -184,7 +184,37 @@ impl MicroInstruction {
             Self::DivertEqual              { diversion_address: _, register_a: _, register_b: _ } => 37,
             Self::DivertUnequal            { diversion_address: _, register_a: _, register_b: _ } => 38,
             Self::DivertGreater            { diversion_address: _, register_a: _, register_b: _ } => 39,
-            Self::DivertGreaterOrEqual     { diversion_address: _, register_a: _, register_b: _ } => 40
-        }        
+            Self::DivertGreaterOrEqual     { diversion_address: _, register_a: _, register_b: _ } => 40,
+
+            
+        }     
     }
+
+    pub fn from(identifier: u8, register_a: u8, register_b: u8, immediate: u64) -> MicroInstruction {
+        match identifier {
+            0 => MicroInstruction::Nothing,
+            1 => MicroInstruction::CloneRegister { 
+                target_register: register_a, 
+                source_register: register_b
+            },
+            2 => MicroInstruction::ByteToRegister { 
+                target_register: register_a, 
+                data: immediate as u8
+            },
+            3 => MicroInstruction::WordToRegister { 
+                target_register: register_a, 
+                data: immediate as u16
+            },
+            4 => MicroInstruction::DoubleWordToRegister { 
+                target_register: register_a, 
+                data: immediate as u32
+            },
+            5 => MicroInstruction::QuadWordToRegister { 
+                target_register: register_a, 
+                data: immediate as u64
+            },
+            
+            _ => todo!() // TODO
+        }
+    }   
 }

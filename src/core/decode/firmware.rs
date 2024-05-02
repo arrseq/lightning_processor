@@ -262,31 +262,12 @@ impl Firmware {
                 immediate = Some(u64::from_le_bytes(immediate_bytes));
             }
 
-            match operation {
-                0 => instructions.push(MicroInstruction::Nothing),
-                1 => instructions.push(MicroInstruction::CloneRegister { 
-                    target_register: register_a.unwrap_or(0), 
-                    source_register: register_b.unwrap_or(0)
-                }),
-                2 => instructions.push(MicroInstruction::ByteToRegister { 
-                    target_register: register_a.unwrap_or(0), 
-                    data: immediate.unwrap_or(0) as u8
-                }),
-                3 => instructions.push(MicroInstruction::WordToRegister { 
-                    target_register: register_a.unwrap_or(0), 
-                    data: immediate.unwrap_or(0) as u16
-                }),
-                4 => instructions.push(MicroInstruction::DoubleWordToRegister { 
-                    target_register: register_a.unwrap_or(0), 
-                    data: immediate.unwrap_or(0) as u32
-                }),
-                5 => instructions.push(MicroInstruction::QuadWordToRegister { 
-                    target_register: register_a.unwrap_or(0), 
-                    data: immediate.unwrap_or(0) as u64
-                }),
-                
-                _ => todo!()
-            };
+            instructions.push(MicroInstruction::from(
+                operation, 
+                register_a.unwrap_or(0),
+                register_b.unwrap_or(0),
+                immediate.unwrap_or(0)
+            ));
         }
 
         Ok(instructions)
