@@ -1,7 +1,9 @@
 /// This instruction is indeterminate and dynamic. The behavior 
 /// and parameters are determined by the firmware.
 
-pub const MAX_IMMEDIATE_BYTES: u8 = 8;
+pub const MAX_IMMEDIATE_BYTES:   u8 = 8;
+pub const REGISTER_BYTES:        u8 = 1;
+pub const OPERATION_BYTES:       u8 = 1;
 pub const MAX_INSTRUCTION_BYTES: u8 = 1
                                     + 1
                                     + MAX_IMMEDIATE_BYTES;
@@ -23,24 +25,41 @@ impl ImmediatePresence {
             _ => true
         }
     }
+
+    pub fn get_bytes_count(&self) -> u8 {
+        match self {
+            Self::None       => 0,
+            Self::Byte       => 1,
+            Self::Word       => 2,
+            Self::DoubleWord => 4,
+            Self::QuadWord   => 8
+        }
+    }
 }
 
 #[derive(Default, Debug)]
 pub enum RegisterPresence {
     #[default]
     None,
-    AB,
+    Ab,
     A,
 }
 
 impl RegisterPresence {
     pub fn from(a: bool, b: bool) -> RegisterPresence {
         if a && b {
-            RegisterPresence::AB
+            RegisterPresence::Ab
         } else if a ^ b {
             RegisterPresence::A
         } else {
             RegisterPresence::None
+        }
+    }
+
+    pub fn get_bytes_count(&self) -> u8 {
+        match self {
+            Self::None => 0,
+            _ => 1
         }
     }
 }
@@ -52,6 +71,7 @@ pub struct MacroInstruction<Immediate> {
     pub immediate:  Option<Immediate>
 }
 
+#[derive(Debug)]
 pub enum MicroInstruction {
     Nothing,             
 
@@ -164,7 +184,37 @@ impl MicroInstruction {
             Self::DivertEqual              { diversion_address: _, register_a: _, register_b: _ } => 37,
             Self::DivertUnequal            { diversion_address: _, register_a: _, register_b: _ } => 38,
             Self::DivertGreater            { diversion_address: _, register_a: _, register_b: _ } => 39,
-            Self::DivertGreaterOrEqual     { diversion_address: _, register_a: _, register_b: _ } => 40
-        }        
+            Self::DivertGreaterOrEqual     { diversion_address: _, register_a: _, register_b: _ } => 40,
+
+            
+        }     
     }
+
+    pub fn from(identifier: u8, register_a: u8, register_b: u8, immediate: u64) -> MicroInstruction {
+        match identifier {
+            0 => MicroInstruction::Nothing,
+            1 => MicroInstruction::CloneRegister { 
+                target_register: register_a, 
+                source_register: register_b
+            },
+            2 => MicroInstruction::ByteToRegister { 
+                target_register: register_a, 
+                data: immediate as u8
+            },
+            3 => MicroInstruction::WordToRegister { 
+                target_register: register_a, 
+                data: immediate as u16
+            },
+            4 => MicroInstruction::DoubleWordToRegister { 
+                target_register: register_a, 
+                data: immediate as u32
+            },
+            5 => MicroInstruction::QuadWordToRegister { 
+                target_register: register_a, 
+                data: immediate as u64
+            },
+            
+            _ => todo!() // TODO
+        }
+    }   
 }
