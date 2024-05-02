@@ -24,14 +24,22 @@ fn main() {
         0x00,   
 
         // second program                 
-        0x00, // No operation            
-        0x00,                            
-        0x00,                            
-        0x00,                            
-        0x00,                            
+        MicroInstruction::Nothing.into_identifier(), // No operation            
+        MicroInstruction::Nothing.into_identifier(), // No operation            
+        MicroInstruction::Nothing.into_identifier(), // No operation            
+        MicroInstruction::Nothing.into_identifier(), // No operation            
+        MicroInstruction::Nothing.into_identifier(), // No operation                                       
     ]);
 
-    fmw.load_binary(&mut firmware_source)
-        .expect("Failed to load firmware binary");
+    // fmw.load_binary(&mut firmware_source)
+    //     .expect("Failed to load firmware binary");
+
+    let x = RawEntry {
+        flags: 0b00000010,
+        operation: 0
+    };
+
+    let flags = x.decode_flags();
+    println!("Registers: {:?}", flags.0)
 }
 
