@@ -1,3 +1,5 @@
+use crate::core::environment::register::{self, Register};
+
 /// This instruction is indeterminate and dynamic. The behavior 
 /// and parameters are determined by the firmware.
 
@@ -71,64 +73,68 @@ pub struct MacroInstruction<Immediate> {
     pub immediate:  Option<Immediate>
 }
 
-#[derive(Debug)]
+pub enum Errors {
+    InvalidRegisterPointer
+}
+
+#[derive(Debug, Clone)]
 pub enum MicroInstruction {
     Nothing,             
 
     // Data flow
-    CloneRegister        { target_register: u8, source_register: u8 }, 
+    CloneRegister        { target_register: Register, source_register: Register }, 
 
-    ByteToRegister       { target_register: u8, data: u8 },      
-    WordToRegister       { target_register: u8, data: u16 },     
-    DoubleWordToRegister { target_register: u8, data: u32 },    
-    QuadWordToRegister   { target_register: u8, data: u64 },    
+    ByteToRegister       { target_register: Register, data: u8 },      
+    WordToRegister       { target_register: Register, data: u16 },     
+    DoubleWordToRegister { target_register: Register, data: u32 },    
+    QuadWordToRegister   { target_register: Register, data: u64 },    
 
-    ByteToMemory         { target_address: u64, source_register: u8 },   
-    WordToMemory         { target_address: u64, source_register: u8 },   
-    DoubleWordToMemory   { target_address: u64, source_register: u8 },
-    QuadWordToMemory     { target_address: u64, source_register: u8 }, 
+    ByteToMemory         { target_address: u64, source_register: Register },   
+    WordToMemory         { target_address: u64, source_register: Register },   
+    DoubleWordToMemory   { target_address: u64, source_register: Register },
+    QuadWordToMemory     { target_address: u64, source_register: Register }, 
 
-    ByteFromMemory       { target_register: u8, source_address: u64 }, 
-    WordFromMemory       { target_register: u8, source_address: u64 }, 
-    DoubleWordFromMemory { target_register: u8, source_address: u64 }, 
-    QuadWordFromMemory   { target_register: u8, source_address: u64 }, 
+    ByteFromMemory       { target_register: Register, source_address: u64 }, 
+    WordFromMemory       { target_register: Register, source_address: u64 }, 
+    DoubleWordFromMemory { target_register: Register, source_address: u64 }, 
+    QuadWordFromMemory   { target_register: Register, source_address: u64 }, 
 
     // Arithmetic
-    Add                  { register_a: u8, register_b: u8 },                    
-    Subtract             { register_a: u8, register_b: u8 },               
-    Multiply             { register_a: u8, register_b: u8 },               
-    MultiplyInteger      { register_a: u8, register_b: u8 },                 
-    Divide               { register_a: u8, register_b: u8 },                 
-    DivideInteger        { register_a: u8, register_b: u8 },  
+    Add                  { register_a: Register, register_b: Register },                    
+    Subtract             { register_a: Register, register_b: Register },               
+    Multiply             { register_a: Register, register_b: Register },               
+    MultiplyInteger      { register_a: Register, register_b: Register },                 
+    Divide               { register_a: Register, register_b: Register },                 
+    DivideInteger        { register_a: Register, register_b: Register },  
 
     // Float
-    AddFloat             { register_a: u8, register_b: u8 },               
-    AddDouble            { register_a: u8, register_b: u8 },
-    SubtractFloat        { register_a: u8, register_b: u8 },          
-    SubtractDouble       { register_a: u8, register_b: u8 },
+    AddFloat             { register_a: Register, register_b: Register },               
+    AddDouble            { register_a: Register, register_b: Register },
+    SubtractFloat        { register_a: Register, register_b: Register },          
+    SubtractDouble       { register_a: Register, register_b: Register },
 
-    MultiplyFloat        { register_a: u8, register_b: u8 },          
-    MultiplyDouble       { register_a: u8, register_b: u8 },
-    DivideFloat          { register_a: u8, register_b: u8 },            
-    DivideDouble         { register_a: u8, register_b: u8 },                   
+    MultiplyFloat        { register_a: Register, register_b: Register },          
+    MultiplyDouble       { register_a: Register, register_b: Register },
+    DivideFloat          { register_a: Register, register_b: Register },            
+    DivideDouble         { register_a: Register, register_b: Register },                   
 
     // Logic
-    And                  { register_a: u8, register_b: u8 },                    
-    Or                   { register_a: u8, register_b: u8 },                     
-    ExclusiveOr          { register_a: u8, register_b: u8 },            
-    Not                  { register_a: u8, register_b: u8 },                    
-    ShiftStart           { register_a: u8, register_b: u8 },             
-    ShiftEnd             { register_a: u8, register_b: u8 },               
-    TrailingZeros        { register_a: u8, register_b: u8 },          // tzr, TODO: Undecided
+    And                  { register_a: Register, register_b: Register },                    
+    Or                   { register_a: Register, register_b: Register },                     
+    ExclusiveOr          { register_a: Register, register_b: Register },            
+    Not                  { register_a: Register, register_b: Register },                    
+    ShiftStart           { register_a: Register, register_b: Register },             
+    ShiftEnd             { register_a: Register, register_b: Register },               
+    TrailingZeros        { register_a: Register, register_b: Register },          // tzr, TODO: Undecided
 
     // Position diversion
     Divert               { diversion_address: u64 },      
 
-    DivertTrue           { diversion_address: u64, condition: u8 },            
-    DivertEqual          { diversion_address: u64, register_a: u8, register_b: u8 },            
-    DivertUnequal        { diversion_address: u64, register_a: u8, register_b: u8 },          
-    DivertGreater        { diversion_address: u64, register_a: u8, register_b: u8 },          
-    DivertGreaterOrEqual { diversion_address: u64, register_a: u8, register_b: u8 },   
+    DivertTrue           { diversion_address: u64, condition: Register },            
+    DivertEqual          { diversion_address: u64, register_a: Register, register_b: Register },            
+    DivertUnequal        { diversion_address: u64, register_a: Register, register_b: Register },          
+    DivertGreater        { diversion_address: u64, register_a: Register, register_b: Register },          
+    DivertGreaterOrEqual { diversion_address: u64, register_a: Register, register_b: Register },   
 }
 
 impl MicroInstruction {
@@ -190,7 +196,7 @@ impl MicroInstruction {
         }     
     }
 
-    pub fn from(identifier: u8, register_a: u8, register_b: u8, immediate: u64) -> MicroInstruction {
+    pub fn from(identifier: u8, register_a: Register, register_b: Register, immediate: u64) -> MicroInstruction {
         match identifier {
             0 => MicroInstruction::Nothing,
             1 => MicroInstruction::CloneRegister { 
@@ -216,5 +222,56 @@ impl MicroInstruction {
             
             _ => todo!() // TODO
         }
+    }
+
+    pub fn into_bytes(&self) -> Result<Vec<u8>, ()> {
+        let mut bytes = Vec::from([ self.into_identifier() ]);
+        let fallback_register = Register::Void;
+
+        let mut register_operands = Option::from(register::Operands { 
+            register_a: fallback_register.clone(), 
+            register_b: fallback_register.clone() 
+        });
+
+        let mut immediate_byte:        Option<u8>  = None;
+        let mut immediate_word:        Option<u16> = None;
+        let mut immediate_double_word: Option<u32> = None;
+        let mut immediate_quad_word:   Option<u64> = None;
+
+        match self {
+            Self::Nothing => (),
+            Self::CloneRegister { target_register, source_register } => {
+                register_operands = Some(register::Operands { 
+                    register_a: target_register.clone(),
+                    register_b: source_register.clone()
+                });
+            },
+            Self::ByteToRegister { target_register, data } => {
+                register_operands = Some(register::Operands {
+                    register_a: target_register.clone(),
+                    register_b: fallback_register
+                });
+
+                immediate_byte = Some(*data);
+            }
+            _ => todo!() // TODO
+        }
+
+        match register_operands {
+            None => (),
+            Some(operands) => bytes.push(operands.into_byte())
+        }
+
+        if let Some(data) = immediate_byte {
+            bytes.push(data);
+        } else if let Some(data) = immediate_word {
+            bytes.extend(u16::to_le_bytes(data))
+        } else if let Some(data) = immediate_double_word {
+            bytes.extend(u32::to_le_bytes(data))
+        } else if let Some(data) = immediate_quad_word {
+            bytes.extend(u64::to_le_bytes(data))
+        }
+
+        Ok(bytes)
     }   
 }

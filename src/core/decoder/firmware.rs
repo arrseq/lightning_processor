@@ -6,9 +6,11 @@
 // Code Section (Should contain any executable code)
 // 0xFF 0xAF 0x4B 0x00 0x00 0x00 0xAA
 
-use std::io::{self, Read, Seek};
+use std::{collections::HashMap, io::{self, Read, Seek}};
 
-use super::instruction::{ImmediatePresence, MicroInstruction, RegisterPresence};
+use crate::core::environment::register::Register;
+
+use super::{instruction::{ImmediatePresence, MicroInstruction, RegisterPresence}, MacroInstruction};
 
 pub const ADDRESS_BYTE:      u8 = 0;
 pub const LENGTH_BYTE:       u8 = 1;
@@ -17,7 +19,7 @@ pub const FLAGS_BYTE:        u8 = 3;
 pub const ENTRY_BUFFER_SIZE: u8 = 4;
 
 #[repr(u8)]
-pub enum FlagPositions {
+pub enum FlagIndexes {
     NoneA,
     NoneB,
     ImmediateBitA,
@@ -29,7 +31,7 @@ pub enum FlagPositions {
 }
 
 #[derive(Default, Debug)]
-pub struct FirmwareEntry {
+pub struct Entry {
     pub operation:          u8,
     pub registers_presence: RegisterPresence,
     pub immediate_presence: ImmediatePresence,
@@ -52,8 +54,8 @@ impl RawEntry {
         
         (
             RegisterPresence::from(
-                bits[FlagPositions::RegisterA as usize], 
-                bits[FlagPositions::RegisterB as usize]
+                bits[FlagIndexes::RegisterA as usize], 
+                bits[FlagIndexes::RegisterB as usize]
             ),
             // TODO Implement this
             ImmediatePresence::None
@@ -61,7 +63,8 @@ impl RawEntry {
     }
 }
 pub struct Firmware {
-    entries: Vec<FirmwareEntry>
+    /// Key is the macro operation and value is the entry
+    entries: HashMap<u8, Entry>
 }
 
 #[derive(Debug)]
@@ -111,11 +114,11 @@ pub fn bits_to_u8(slice: &[bool]) -> Option<u8> {
 impl Firmware {
     pub fn new() -> Self {
         Self {
-            entries: Vec::new()
+            entries: HashMap::new()
         }
     }
 
-    pub fn load_entries(&mut self, entires: Vec<FirmwareEntry>) {
+    pub fn load_entries(&mut self, entires: HashMap<u8, Entry>) {
         self.entries = entires;
     }
 
@@ -264,10 +267,12 @@ impl Firmware {
                 immediate = Some(u64::from_le_bytes(immediate_bytes));
             }
 
+            let dead_register = Register::from_pointer(0).unwrap();
+
             instructions.push(MicroInstruction::from(
                 operation, 
-                register_a.unwrap_or(0),
-                register_b.unwrap_or(0),
+                Register::from_pointer(register_a.unwrap_or_default()).unwrap_or(dead_register.clone()),
+                Register::from_pointer(register_b.unwrap_or_default()).unwrap_or(dead_register.clone()),
                 immediate.unwrap_or(0)
             ));
         }
@@ -275,7 +280,7 @@ impl Firmware {
         Ok(instructions)
     } 
 
-    pub fn read_entry(microcode: &mut (impl Read + Seek), entry: &RawEntry) -> Result<FirmwareEntry, EntryErrors> {
+    pub fn read_entry(microcode: &mut (impl Read + Seek), entry: &RawEntry) -> Result<Entry, EntryErrors> {
         match microcode.seek(io::SeekFrom::Start(entry.address as u64)) {
             Err(error) => return Err(EntryErrors::StreamError(error)),
             Ok(_) => ()
@@ -290,7 +295,7 @@ impl Firmware {
         let registers_presence = flags.0;
         let immediate_presence = flags.1;
 
-        Ok(FirmwareEntry {
+        Ok(Entry {
             operation: entry.operation,
             registers_presence, 
             immediate_presence,
@@ -325,9 +330,23 @@ impl Firmware {
                 Ok(result) => result
             };
 
-            self.entries.push(entry);
+            self.entries.insert(entry.operation, entry);
         }
 
         Ok(raw_entires.len() as u8)
+    }
+
+    pub fn get_entries(&self) -> &HashMap<u8, Entry> {
+        &self.entries
+    }
+
+    // /// Decode a macro operation
+    pub fn decode_macro(&self, operation: u8) -> Option<&Vec<MicroInstruction>> {
+        let entry = match self.entries.get(&operation) {
+            None => return None,
+            Some(e) => e
+        };
+
+        Some(&entry.instructions)
     }
 }
