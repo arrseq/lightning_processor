@@ -1,9 +1,9 @@
 use std::io::Cursor;
 
-use exr_p::core::{decoder::{firmware::Firmware, instruction::MicroInstruction}, environment::register::Register};
+use exr_p::{environment::register::Register, instruction::{firmware::{Decoder, Encoder}, MicroInstruction}};
 
 fn main() {
-    let mut fmw = Firmware::new();
+    let mut fmw = Decoder::new();
 
     let bytes = MicroInstruction::ByteToRegister { target_register: Register::Accumulator, data: 100 }.into_bytes().unwrap();
 
@@ -47,6 +47,8 @@ fn main() {
     let decoded = fmw.decode_macro(0x01);
 
     println!("uOps: {:?}", decoded);
+
+    let encoder = Encoder::new();
 
     // let reg = Register::from_pointer(0);
     // println!("{:?}", reg);

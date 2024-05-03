@@ -1,1 +1,3 @@
-pub mod core;
+pub mod environment;
+pub mod instruction;
+pub mod utility;

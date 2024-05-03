@@ -1,14 +1,6 @@
-use crate::core::environment::register::{self, Register};
+use crate::environment::register::{self, Register};
 
-/// This instruction is indeterminate and dynamic. The behavior 
-/// and parameters are determined by the firmware.
-
-pub const MAX_IMMEDIATE_BYTES:   u8 = 8;
-pub const REGISTER_BYTES:        u8 = 1;
-pub const OPERATION_BYTES:       u8 = 1;
-pub const MAX_INSTRUCTION_BYTES: u8 = 1
-                                    + 1
-                                    + MAX_IMMEDIATE_BYTES;
+pub mod firmware;
 
 #[derive(Default, Debug)]
 pub enum ImmediatePresence {

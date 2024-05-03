@@ -8,9 +8,9 @@
 
 use std::{collections::HashMap, io::{self, Read, Seek}};
 
-use crate::core::environment::register::Register;
+use crate::environment::register::Register;
 
-use super::{instruction::{ImmediatePresence, MicroInstruction, RegisterPresence}, MacroInstruction};
+use super::{ImmediatePresence, MicroInstruction, RegisterPresence};
 
 pub const ADDRESS_BYTE:      u8 = 0;
 pub const LENGTH_BYTE:       u8 = 1;
@@ -62,10 +62,6 @@ impl RawEntry {
         )
     }
 }
-pub struct Firmware {
-    /// Key is the macro operation and value is the entry
-    entries: HashMap<u8, Entry>
-}
 
 #[derive(Debug)]
 pub enum Errors {
@@ -111,7 +107,12 @@ pub fn bits_to_u8(slice: &[bool]) -> Option<u8> {
     Some(result)
 }
 
-impl Firmware {
+pub struct Decoder {
+    /// Key is the macro operation and value is the entry
+    entries: HashMap<u8, Entry>
+}
+
+impl Decoder {
     pub fn new() -> Self {
         Self {
             entries: HashMap::new()
@@ -286,7 +287,7 @@ impl Firmware {
             Ok(_) => ()
         };
 
-        let block = match Firmware::read_block(microcode, &entry) {
+        let block = match Decoder::read_block(microcode, &entry) {
             Err(error) => return Err(error),
             Ok(result) => result
         };
@@ -308,7 +309,7 @@ impl Firmware {
     pub fn load_binary(&mut self, microcode: &mut (impl Read + Seek)) -> Result<u8, Errors> {
         self.entries.clear();
 
-        let raw_entires = match Firmware::read_raw_entries(microcode) {
+        let raw_entires = match Decoder::read_raw_entries(microcode) {
             // Translate the error to allow for better error mitigation.
             Err(error) => return Err(match error {
                 EntryErrors::StreamError(io_error) => Errors::StreamError(io_error),
@@ -322,7 +323,7 @@ impl Firmware {
         }
 
         for raw_entry in &raw_entires {
-            let entry = match Firmware::read_entry(microcode, raw_entry) {
+            let entry = match Decoder::read_entry(microcode, raw_entry) {
                 Err(error) => return Err(match error {
                     EntryErrors::StreamError(io_error) => Errors::StreamError(io_error),
                     EntryErrors::StreamTooShort => Errors::StreamTooShort
@@ -348,5 +349,19 @@ impl Firmware {
         };
 
         Some(&entry.instructions)
+    }
+}
+
+pub struct Block {
+
+}
+
+pub struct Encoder {
+
+}
+
+impl Encoder {
+    pub fn new() -> Self {
+        Self {}
     }
 }

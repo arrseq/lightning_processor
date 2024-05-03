@@ -1,4 +1,4 @@
-use crate::core::decoder::firmware::{bits_to_u8, get_bits_of_byte};
+use crate::utility::{Bits, Byte};
 
 #[derive(Debug, Clone)]
 #[repr(u8)]
@@ -34,15 +34,14 @@ pub struct Operands {
 
 impl Operands {
     pub fn into_byte(&self) -> u8 {
-        let a_bits = get_bits_of_byte(self.register_a.clone() as u8);
-        let b_bits = get_bits_of_byte(self.register_b.clone() as u8);
+        let a_bits = (self.register_a.clone() as u8).into_bits();
+        let b_bits = (self.register_b.clone() as u8).into_bits();
 
         let byte_bits: [bool; 8] = [
             a_bits[4], a_bits[5], a_bits[6], a_bits[7], 
             b_bits[4], b_bits[5], b_bits[6], b_bits[7]
         ];
 
-        bits_to_u8(&byte_bits)
-            .unwrap_or(0)
+        byte_bits.into_byte()
     }
 }
