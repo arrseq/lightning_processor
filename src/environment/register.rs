@@ -80,12 +80,12 @@ impl File {
     pub fn get_mutable(&mut self, identifier: u8) -> Option<&mut u64> {
         Some(match identifier {
             STACK_POINTER => &mut self.stack_pointer,
-            BASE_POINTER  => &mut self.base_pointer ,
-            ACCUMULATOR   => &mut self.accumulator  ,
-            REGISTER_A    => &mut self.register_a   ,
-            REGISTER_B    => &mut self.register_b   ,
-            FIRST         => &mut self.first        ,
-            SECOND        => &mut self.second       ,
+            BASE_POINTER  => &mut self.base_pointer,
+            ACCUMULATOR   => &mut self.accumulator,
+            REGISTER_A    => &mut self.register_a,
+            REGISTER_B    => &mut self.register_b,
+            FIRST         => &mut self.first,
+            SECOND        => &mut self.second,
             _ => return None
         })
     }
