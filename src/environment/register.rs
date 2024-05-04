@@ -15,6 +15,7 @@ pub struct Operands {
     register_b: u8
 }
 
+#[derive(Debug)]
 pub enum Selector {
     A,
     B
@@ -76,22 +77,20 @@ pub struct File {
 }
 
 impl File {
-    pub fn set_at(&mut self, identifier: u8, value: u64) -> Result<(), ()> {
-        match identifier {
-            STACK_POINTER => self.stack_pointer = value,
-            BASE_POINTER  => self.base_pointer  = value,
-            ACCUMULATOR   => self.accumulator   = value,
-            REGISTER_A    => self.register_a    = value,
-            REGISTER_B    => self.register_b    = value,
-            FIRST         => self.first         = value,
-            SECOND        => self.second        = value,
-            _ => return Err(())
-        };
-
-        Ok(())
+    pub fn get_mutable(&mut self, identifier: u8) -> Option<&mut u64> {
+        Some(match identifier {
+            STACK_POINTER => &mut self.stack_pointer,
+            BASE_POINTER  => &mut self.base_pointer ,
+            ACCUMULATOR   => &mut self.accumulator  ,
+            REGISTER_A    => &mut self.register_a   ,
+            REGISTER_B    => &mut self.register_b   ,
+            FIRST         => &mut self.first        ,
+            SECOND        => &mut self.second       ,
+            _ => return None
+        })
     }
 
-    pub fn at_identifier(&self, identifier: u8) -> Option<u64> {
+    pub fn get(&self, identifier: u8) -> Option<u64> {
         Some(match identifier {
             STACK_POINTER => self.stack_pointer,
             BASE_POINTER  => self.base_pointer,
@@ -103,6 +102,20 @@ impl File {
             _ => return None
         })
     }
+}
+
+#[test]
+fn test_file() {
+    let mut file = File::default();
+
+    assert_eq!(file.get(STACK_POINTER).unwrap(), 0);
+
+    let new_value = 10;
+    *file.get_mutable(STACK_POINTER).unwrap() = new_value;
+    assert_eq!(file.get(STACK_POINTER).unwrap(), new_value);
+
+    // Make sure mutable returned mirrored results
+    assert_eq!(*file.get_mutable(STACK_POINTER).unwrap(), new_value);
 }
 
 #[derive(Default, Debug, Clone)]
@@ -130,4 +143,25 @@ impl RegisterPresence {
             _ => 1
         }
     }
+}
+
+#[test]
+fn test_presence() {
+    let presence = RegisterPresence::from(true, false);
+
+    if let RegisterPresence::A = presence {
+        assert!(true)
+    }
+    
+    let full = RegisterPresence::Ab;
+    assert_eq!(full.get_bytes_count(), 1);
+    assert_eq!(presence.get_bytes_count(), 1);
+
+    let none = RegisterPresence::from(false, false);
+
+    if let RegisterPresence::None = none {
+        assert!(true)
+    }
+
+    assert_eq!(none.get_bytes_count(), 0);
 }
