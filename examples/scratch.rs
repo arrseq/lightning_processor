@@ -5,7 +5,8 @@ use exr_p::{environment::register, instruction::{firmware::{Decoder, Encoder}, t
 fn main() {
     let mut fmw = Decoder::new();
 
-    let bytes = MicroInstruction::ByteToRegister { target_register: register::FIRST, data: 100 }.into_bytes().unwrap();
+    let bytes = MicroInstruction::ByteToRegister { target_register: register::FIRST, data: 100 }
+        .into_bytes().unwrap();
 
     println!("Assembler Bytes: {:?}", bytes);
 

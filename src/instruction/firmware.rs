@@ -9,6 +9,7 @@
 use std::{collections::HashMap, io::{self, Read, Seek}};
 
 use crate::environment::register::RegisterPresence;
+use crate::utility::{Bits, Byte};
 
 use super::{ImmediatePresence, MicroInstruction, ADD, ADD_DOUBLE, ADD_FLOAT, AND, BYTE_FROM_MEMORY, BYTE_TO_MEMORY, BYTE_TO_REGISTER, CLONE_REGISTER, DIVIDE, DIVIDE_DOUBLE, DIVIDE_FLOAT, DIVIDE_INTEGER, DOUBLE_WORD_FROM_MEMORY, DOUBLE_WORD_TO_MEMORY, DOUBLE_WORD_TO_REGISTER, EXCLUSIVE_OR, MULTIPLY, MULTIPLY_DOUBLE, MULTIPLY_FLOAT, MULTIPLY_INTEGER, NOT, NOTHING, OR, QUAD_WORD_FROM_MEMORY, QUAD_WORD_TO_MEMORY, QUAD_WORD_TO_REGISTER, SHIFT_END, SHIFT_START, SUBTRACT, SUBTRACT_DOUBLE, SUBTRACT_FLOAT, TRAILING_ZEROS, WORD_FROM_MEMORY, WORD_TO_MEMORY, WORD_TO_REGISTER};
 
@@ -50,7 +51,7 @@ impl RawEntry {
     pub fn decode_flags(&self) -> (RegisterPresence, ImmediatePresence) {
         // [RA,        RB,        IMM_PRES, IMM_BYTES]
         // [-------x] [------x-] [-----x--] [--xxx---]
-        let bits = get_bits_of_byte(self.flags);
+        let bits = self.flags.into_bits();
         
         (
             RegisterPresence::from(
@@ -62,6 +63,8 @@ impl RawEntry {
         )
     }
 }
+
+// TODO TESTS
 
 #[derive(Debug)]
 pub enum Errors {
@@ -85,38 +88,6 @@ pub enum BlockErrors {
 pub enum EntryErrors {
     StreamError(io::Error),
     StreamTooShort
-}
-
-// TODO REMOVE THIS
-pub fn get_bits_of_byte(byte: u8) -> [bool; 8] {
-    let mut bits = [false; 8];
-    for i in 0..=7 {
-        let shifted_byte = byte >> i;
-        // Get the rightmost bit of the shifted byte (least significant bit)
-        let cur_bit      = shifted_byte & 1;
-        // For the first iteration, the cur_bit is the
-        // least significant bit and therefore we place
-        // that bit at index 7 of the array (rightmost bit)
-        bits[7 - i]          = cur_bit == 1;
-    }
-    
-    bits
-}
-
-// TODO REMOVE THIS
-pub fn bits_to_u8(slice: &[bool]) -> Option<u8> {
-    if slice.len() != 4 {
-        return None;
-    }
-
-    let mut result = 0;
-
-    for &bit in slice {
-        result <<= 1; // Shift the result left by 1 bit
-        result |= bit as u8; // Set the least significant bit to the current bit
-    }
-
-    Some(result)
 }
 
 pub struct Decoder {
@@ -284,10 +255,10 @@ impl Decoder {
                     buffer[0]
                 };
 
-                let bits = get_bits_of_byte(register_byte);
+                let bits = register_byte.into_bits();
 
-                register_a = Some(bits_to_u8(&bits[0..4]).unwrap_or(0));
-                register_b = Some(bits_to_u8(&bits[4..8]).unwrap_or(0));
+                register_a = Some([bits[0], bits[1], bits[2], bits[3], false, false, false, false].into_byte());
+                register_b = Some([bits[4], bits[5], bits[6], bits[7], false, false, false, false].into_byte());
             }
 
             let mut immediate_bytes: [u8; 8] = [

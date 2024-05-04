@@ -40,8 +40,8 @@ impl Traverser {
         match micro_instruction.clone() {
             MicroInstruction::Divert { diversion_address } => self.instruction_pointer = diversion_address,
             MicroInstruction::DivertEqual { diversion_address, target, source } => {
-                if registers.at_identifier(target).unwrap_or_default() >
-                    registers.at_identifier(source).unwrap_or_default() {
+                if registers.get(target).unwrap_or_default() >
+                    registers.get(source).unwrap_or_default() {
                     self.instruction_pointer = diversion_address;
                 }
             },
