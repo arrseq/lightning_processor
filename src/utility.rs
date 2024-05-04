@@ -7,11 +7,22 @@ impl Byte for u8 {
         let mut bits = [false; 8];
         for index in 0..8 {
             let shifted = self >> index;
-            let current = shifted & index;
+            let current = shifted & 1;
             bits[7 - index as usize] = current == 1;
         }
         bits
     }
+}
+
+#[test]
+fn test_byte_into_bits() {
+    let byte = 0b10101100u8;
+    let correct = [
+        true, false, true, false, 
+        true, true, false, false
+    ];
+
+    assert_eq!(byte.into_bits(), correct);
 }
 
 pub trait Bits {
@@ -29,3 +40,14 @@ impl Bits for [bool; 8] {
         byte
     }
 } 
+
+#[test]
+fn test_bits_into_byte() {
+    let bits = [
+        true, false, true, false,
+        true, true, false, false
+    ];
+    let correct = 0b10101100u8;
+
+    assert_eq!(bits.into_byte(), correct);
+}

@@ -8,9 +8,9 @@
 
 use std::{collections::HashMap, io::{self, Read, Seek}};
 
-use crate::environment::register::Register;
+use crate::environment::register::RegisterPresence;
 
-use super::{ImmediatePresence, MicroInstruction, RegisterPresence};
+use super::{ImmediatePresence, MicroInstruction, ADD, ADD_DOUBLE, ADD_FLOAT, AND, BYTE_FROM_MEMORY, BYTE_TO_MEMORY, BYTE_TO_REGISTER, CLONE_REGISTER, DIVIDE, DIVIDE_DOUBLE, DIVIDE_FLOAT, DIVIDE_INTEGER, DOUBLE_WORD_FROM_MEMORY, DOUBLE_WORD_TO_MEMORY, DOUBLE_WORD_TO_REGISTER, EXCLUSIVE_OR, MULTIPLY, MULTIPLY_DOUBLE, MULTIPLY_FLOAT, MULTIPLY_INTEGER, NOT, NOTHING, OR, QUAD_WORD_FROM_MEMORY, QUAD_WORD_TO_MEMORY, QUAD_WORD_TO_REGISTER, SHIFT_END, SHIFT_START, SUBTRACT, SUBTRACT_DOUBLE, SUBTRACT_FLOAT, TRAILING_ZEROS, WORD_FROM_MEMORY, WORD_TO_MEMORY, WORD_TO_REGISTER};
 
 pub const ADDRESS_BYTE:      u8 = 0;
 pub const LENGTH_BYTE:       u8 = 1;
@@ -30,7 +30,7 @@ pub enum FlagIndexes {
     RegisterA
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Entry {
     pub operation:          u8,
     pub registers_presence: RegisterPresence,
@@ -65,6 +65,16 @@ impl RawEntry {
 
 #[derive(Debug)]
 pub enum Errors {
+    InvalidMicroOperation,
+    MissingInstructionEntry,
+    TooManyInstructions,
+    StreamTooShort,
+    StreamError(io::Error)
+}
+
+#[derive(Debug)]
+pub enum BlockErrors {
+    InvalidMicroOperation,
     MissingInstructionEntry,
     TooManyInstructions,
     StreamTooShort,
@@ -77,6 +87,7 @@ pub enum EntryErrors {
     StreamTooShort
 }
 
+// TODO REMOVE THIS
 pub fn get_bits_of_byte(byte: u8) -> [bool; 8] {
     let mut bits = [false; 8];
     for i in 0..=7 {
@@ -92,6 +103,7 @@ pub fn get_bits_of_byte(byte: u8) -> [bool; 8] {
     bits
 }
 
+// TODO REMOVE THIS
 pub fn bits_to_u8(slice: &[bool]) -> Option<u8> {
     if slice.len() != 4 {
         return None;
@@ -174,7 +186,7 @@ impl Decoder {
         Ok(entries)
     }
 
-    pub fn read_block(microcode: &mut impl Read, entry: &RawEntry) -> Result<Vec<MicroInstruction>, EntryErrors> {
+    pub fn decode_block(microcode: &mut impl Read, entry: &RawEntry) -> Result<Vec<MicroInstruction>, BlockErrors> {
         // Read buffer which is used to read the instruction bytes
         let mut buffer: [u8; 1] = [0];
 
@@ -182,10 +194,10 @@ impl Decoder {
         for _ in 0..entry.length {
             let operation = {
                 match microcode.read(&mut buffer) {
-                    Err(error) => return Err(EntryErrors::StreamError(error)),
+                    Err(error) => return Err(BlockErrors::StreamError(error)),
                     Ok(bytes_read)    => {
                         if bytes_read != buffer.len() {
-                            return Err(EntryErrors::StreamTooShort);
+                            return Err(BlockErrors::StreamTooShort);
                         }
                     }
                 }
@@ -197,13 +209,24 @@ impl Decoder {
             let mut immediate_presence = ImmediatePresence::None;
     
             match operation {
-                0 => (),
-                1 => {
+                NOTHING => (),
+                CLONE_REGISTER => {
                     // Clone register
                     register_presence = RegisterPresence::Ab;
                 },
-                2 | 3 | 4 | 5 => {
-                    // ??? to register
+                BYTE_TO_REGISTER          
+                | WORD_TO_REGISTER 
+                | DOUBLE_WORD_TO_REGISTER 
+                | QUAD_WORD_TO_REGISTER
+                | BYTE_TO_MEMORY          
+                | WORD_TO_MEMORY 
+                | DOUBLE_WORD_TO_MEMORY   
+                | QUAD_WORD_TO_MEMORY
+                | BYTE_FROM_MEMORY        
+                | WORD_FROM_MEMORY
+                | DOUBLE_WORD_FROM_MEMORY 
+                | QUAD_WORD_FROM_MEMORY => {
+                    // [size] to register
                     register_presence = RegisterPresence::A;
 
                     if operation == 2 {
@@ -216,6 +239,29 @@ impl Decoder {
                     } else {
                         immediate_presence = ImmediatePresence::QuadWord;
                     }
+                },
+                ADD              
+                | SUBTRACT      
+                | MULTIPLY        
+                | MULTIPLY_INTEGER
+                | DIVIDE          
+                | DIVIDE_INTEGER
+                | ADD_DOUBLE      
+                | ADD_FLOAT     
+                | SUBTRACT_DOUBLE 
+                | SUBTRACT_FLOAT
+                | MULTIPLY_DOUBLE 
+                | MULTIPLY_FLOAT
+                | DIVIDE_DOUBLE   
+                | DIVIDE_FLOAT  
+                | AND             
+                | OR            
+                | EXCLUSIVE_OR    
+                | NOT           
+                | SHIFT_START     
+                | SHIFT_END     
+                | TRAILING_ZEROS => {
+                    register_presence = RegisterPresence::Ab;
                 }
                 _ => todo!() // TODO
             };
@@ -227,10 +273,10 @@ impl Decoder {
             if register_presence.get_bytes_count() > 0 {
                 let register_byte = {
                     match microcode.read(&mut buffer) {
-                        Err(error) => return Err(EntryErrors::StreamError(error)),
+                        Err(error) => return Err(BlockErrors::StreamError(error)),
                         Ok(bytes_read)    => {
                             if bytes_read != buffer.len() {
-                                return Err(EntryErrors::StreamTooShort);
+                                return Err(BlockErrors::StreamTooShort);
                             }
                         }
                     }
@@ -253,10 +299,10 @@ impl Decoder {
 
             for index in 0..immediate_bytes_count {
                 match microcode.read(&mut buffer) {
-                    Err(error) => return Err(EntryErrors::StreamError(error)),
+                    Err(error) => return Err(BlockErrors::StreamError(error)),
                     Ok(bytes_read)    => {
                         if bytes_read != buffer.len() {
-                            return Err(EntryErrors::StreamTooShort);
+                            return Err(BlockErrors::StreamTooShort);
                         }
                     }
                 }
@@ -268,26 +314,29 @@ impl Decoder {
                 immediate = Some(u64::from_le_bytes(immediate_bytes));
             }
 
-            let dead_register = Register::from_pointer(0).unwrap();
-
-            instructions.push(MicroInstruction::from(
+            let instruction = match MicroInstruction::from(
                 operation, 
-                Register::from_pointer(register_a.unwrap_or_default()).unwrap_or(dead_register.clone()),
-                Register::from_pointer(register_b.unwrap_or_default()).unwrap_or(dead_register.clone()),
+                register_a.unwrap_or_default(),
+                register_b.unwrap_or_default(),
                 immediate.unwrap_or(0)
-            ));
+            ) {
+                Err(_) => return Err(BlockErrors::InvalidMicroOperation),
+                Ok(result) => result
+            };
+
+            instructions.push(instruction);
         }
 
         Ok(instructions)
     } 
 
-    pub fn read_entry(microcode: &mut (impl Read + Seek), entry: &RawEntry) -> Result<Entry, EntryErrors> {
+    pub fn decode_entry(microcode: &mut (impl Read + Seek), entry: &RawEntry) -> Result<Entry, BlockErrors> {
         match microcode.seek(io::SeekFrom::Start(entry.address as u64)) {
-            Err(error) => return Err(EntryErrors::StreamError(error)),
+            Err(error) => return Err(BlockErrors::StreamError(error)),
             Ok(_) => ()
         };
 
-        let block = match Decoder::read_block(microcode, &entry) {
+        let block = match Decoder::decode_block(microcode, &entry) {
             Err(error) => return Err(error),
             Ok(result) => result
         };
@@ -306,14 +355,14 @@ impl Decoder {
 
     /// Load the microcode firmware onto this firmware interface.
     /// If ok, then it resolves with the number of detected operations
-    pub fn load_binary(&mut self, microcode: &mut (impl Read + Seek)) -> Result<u8, Errors> {
+    pub fn decode_binary(&mut self, microcode: &mut (impl Read + Seek)) -> Result<u8, Errors> {
         self.entries.clear();
 
         let raw_entires = match Decoder::read_raw_entries(microcode) {
             // Translate the error to allow for better error mitigation.
             Err(error) => return Err(match error {
                 EntryErrors::StreamError(io_error) => Errors::StreamError(io_error),
-                EntryErrors::StreamTooShort => Errors::StreamTooShort
+                EntryErrors::StreamTooShort               => Errors::StreamTooShort
             }),
             Ok(entires) => entires
         };
@@ -323,10 +372,13 @@ impl Decoder {
         }
 
         for raw_entry in &raw_entires {
-            let entry = match Decoder::read_entry(microcode, raw_entry) {
+            let entry = match Decoder::decode_entry(microcode, raw_entry) {
                 Err(error) => return Err(match error {
-                    EntryErrors::StreamError(io_error) => Errors::StreamError(io_error),
-                    EntryErrors::StreamTooShort => Errors::StreamTooShort
+                    BlockErrors::StreamError(io_error) => Errors::StreamError(io_error),
+                    BlockErrors::StreamTooShort               => Errors::StreamTooShort,
+                    BlockErrors::InvalidMicroOperation        => Errors::InvalidMicroOperation,
+                    BlockErrors::MissingInstructionEntry      => Errors::MissingInstructionEntry,
+                    BlockErrors::TooManyInstructions          => Errors::TooManyInstructions
                 }),
                 Ok(result) => result
             };
@@ -341,19 +393,15 @@ impl Decoder {
         &self.entries
     }
 
-    // /// Decode a macro operation
-    pub fn decode_macro(&self, operation: u8) -> Option<&Vec<MicroInstruction>> {
+    /// Get a specific entry
+    pub fn get_entry(&self, operation: u8) -> Option<&Entry> {
         let entry = match self.entries.get(&operation) {
             None => return None,
             Some(e) => e
         };
 
-        Some(&entry.instructions)
+        Some(&entry)
     }
-}
-
-pub struct Block {
-
 }
 
 pub struct Encoder {
