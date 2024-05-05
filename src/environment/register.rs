@@ -52,7 +52,7 @@ impl Operands {
 }
 
 #[test]
-fn operand_into_bytes() {
+fn operand_into_bytes_and_initialization() {
     let operands = Operands {
         register_a: 10,
         register_b: 15
@@ -146,11 +146,11 @@ impl RegisterPresence {
 }
 
 #[test]
-fn test_presence() {
+fn test_presence_and_initialization() {
     let presence = RegisterPresence::from(true, false);
 
     if let RegisterPresence::A = presence {
-        assert!(true)
+        assert!(matches!(RegisterPresence::A, _presence))
     }
     
     let full = RegisterPresence::Ab;
@@ -159,9 +159,7 @@ fn test_presence() {
 
     let none = RegisterPresence::from(false, false);
 
-    if let RegisterPresence::None = none {
-        assert!(true)
-    }
+    assert!(matches!(RegisterPresence::None, _none));
 
     assert_eq!(none.get_bytes_count(), 0);
 }
