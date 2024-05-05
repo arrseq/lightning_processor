@@ -9,10 +9,10 @@ pub enum Type {
 impl From<Data> for Type {
 	fn from(value: Size) -> Self {
 		match value {
-			Size::Byte(_) => Self::Byte,
-			Size::Word(_) => Self::Word,
-			Size::Dual(_) => Self::Dual,
-			Size::Quad(_) => Self::Quad
+			Data::Byte(_) => Self::Byte,
+			Data::Word(_) => Self::Word,
+			Data::Dual(_) => Self::Dual,
+			Data::Quad(_) => Self::Quad
 		}
 	}
 }
@@ -28,10 +28,10 @@ pub enum Data {
 impl From<Type> for Data {
 	fn from(value: Type) -> Self {
 		match value {
-			Type::Byte => Size::Byte(0),
-			Type::Word => Size::Word(0),
-			Type::Dual => Size::Dual(0),
-			Type::Quad => Size::Quad(0)
+			Type::Byte => Self::Byte(0),
+			Type::Word => Self::Word(0),
+			Type::Dual => Self::Dual(0),
+			Type::Quad => Self::Quad(0)
 		}
 	}
 }

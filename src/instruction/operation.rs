@@ -20,6 +20,7 @@ pub enum Bitwise {
 	ExclusiveOr
 }
 
+/// Classified based on similar function and behavior. 
 pub enum Classification {
 	MemoryOperation(Memory),
 	Integer(Numerical),
