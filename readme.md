@@ -1,6 +1,8 @@
-# About the E64
-The E64 is an Extendable Instruction Set Architecture (EISA). The E in E64 stands for extendable and the 64 stands for the 64 bit wide bus channel and register size.
-The E64 allows for custom instructions through the process of firmware initialization, firmware for the processor is written and loaded onto the firmware rom. Once the processor is powered and initialized, it is ready to execute.
+# About the TXE Architecture
+Custom instruction-architecture developed by The Four Elements. 
+- Supports classified operations.
+- Can be translated to and from x86 with moderate translation.
+- 64 bit only with support for addressing below 64 bits (But faults will be thrown by design).
 
 # The Four Elements - Processor (TFEP)
 A processor project focused on speed, efficiency, cost, and performance. **Current implementations will be for FPGAs and in System Verilog.**
