@@ -7,7 +7,7 @@ pub enum Type {
 }
 
 impl From<Data> for Type {
-	fn from(value: Size) -> Self {
+	fn from(value: Data) -> Self {
 		match value {
 			Data::Byte(_) => Self::Byte,
 			Data::Word(_) => Self::Word,

@@ -14,7 +14,7 @@ pub struct First {
 	pub second: Dynamic
 }
 
-pub enum Modes {
+pub enum Storage {
 	Full(Full),
 	Second(Second),
 	First(First),
@@ -27,6 +27,6 @@ pub enum Destination {
 }
 
 pub struct Operands {
-	pub storage: Modes,
-	pub direction: Destination
+	pub storage: Storage,
+	pub destination: Destination
 }

@@ -1,3 +1,4 @@
+use rhdl_bits::Bits;
 use crate::instruction::absolute;
 
 pub enum Register {
@@ -5,9 +6,14 @@ pub enum Register {
 	Dereference
 }
 
-pub enum Dynamic {
+pub enum Addressing {
 	Register(Register),
-	RegisterOffset(absolute::Type),
-	Address(absolute::Type),
-	Constant(absolute::Type)
+	RegisterOffset(absolute::Data),
+	Address(absolute::Data),
+	Constant(absolute::Data)
+}
+
+pub struct Dynamic {
+	pub addressing: Addressing,
+	pub value: Bits<3>
 }
