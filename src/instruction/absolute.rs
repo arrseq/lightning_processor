@@ -1,3 +1,9 @@
+//! Unsized absolute number. 
+//! While Rust has u8, u16... for absolute values, it does not have a simple enum for variable length
+//! absolute integers.
+
+/// Absolute modes.
+/// Base type variants for representing an absolute value.
 #[derive(Debug)]
 pub enum Type {
 	Byte,
@@ -17,6 +23,9 @@ impl From<Data> for Type {
 	}
 }
 
+/// Variable absolute data type.
+/// Complete variants that annotate numbers with their type in the same enum allowing for the data type to be changed
+/// during runtime.
 #[derive(Debug)]
 pub enum Data {
 	Byte(u8),

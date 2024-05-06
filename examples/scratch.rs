@@ -1,8 +1,9 @@
 use rhdl_bits::Bits;
 use exr_p::instruction::dynamic::{Addressing, Dynamic, Register};
 use exr_p::instruction::{absolute, Instruction};
+use exr_p::instruction::dynamic::Addressing::Address;
 use exr_p::instruction::operand::{Destination, Full, Storage, Operands};
-use exr_p::instruction::operation::{Classification, Numerical};
+use exr_p::instruction::operation::{Classification, Memory, Numerical};
 
 fn main() {
 	// add r0, r1
@@ -20,7 +21,7 @@ fn main() {
 		}
 	};
 	
-	// add [r0], r1 // Add r1 to the data at the memory address dereferenced by r0.
+	// add [r0+10], r1 // Add r1 to the data at the memory address dereferenced by r0.
 	let add_r2m = Instruction {
 		operation: Classification::Magnitude(Numerical::Add),
 		operands: Operands {
@@ -30,7 +31,22 @@ fn main() {
 				first: Bits::from(0),
 				second: Dynamic {
 					value: Bits::from(0),
-					addressing: Addressing::RegisterOffset(absolute::Data::Byte(0))
+					addressing: Addressing::DereferenceOffset(absolute::Data::Byte(10))
+				}
+			})
+		}
+	};
+	
+	// clo r0, #FF
+	let clo_c2r = Instruction {
+		operation: Classification::Memory(Memory::Clone),
+		operands: Operands {
+			destination: Destination::First,
+			storage: Storage::Full(Full {
+				first: Bits::from(0),
+				second: Dynamic {
+					value: Bits::from(0),
+					addressing: Addressing::DereferenceOffset(absolute::Data::Byte(10))
 				}
 			})
 		}
