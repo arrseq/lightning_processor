@@ -15,7 +15,7 @@ pub const MAX_CLASSIFICATIONS: usize = 2^7;
 pub const MAX_OPERATIONS: usize = 2^4;
 
 /// Thrown when trying to convert numbers into operation variants.
-pub struct Error {}
+pub struct InvalidOperation {}
 
 /// Memory based operations.
 #[derive(Debug)]
@@ -25,17 +25,17 @@ pub enum Memory {
 }
 
 impl TryFrom<u8> for Memory {
-	type Error = Error;
+	type Error = InvalidOperation;
 
 	/// Convert a numerical index into a variant.
 	fn try_from(value: u8) -> Result<Self, Self::Error> {
-		if variant_count::<Memory>() > value as usize {
-			return Err(Error {});
+		if variant_count::<Memory>() < value as usize {
+			return Err(InvalidOperation {});
 		}
-		
+
 		Ok(match value {
 			0 => Self::Clone,
-			_ => return Err(Error {})
+			_ => return Err(InvalidOperation {})
 		})
 	}
 }
@@ -53,12 +53,12 @@ pub enum Numerical {
 }
 
 impl TryFrom<u8> for Numerical {
-	type Error = Error;
+	type Error = InvalidOperation;
 
 	/// Convert a numerical index into a variant.
 	fn try_from(value: u8) -> Result<Self, Self::Error> {
-		if variant_count::<Numerical>() > value as usize {
-			return Err(Error {});
+		if variant_count::<Numerical>() < value as usize {
+			return Err(InvalidOperation {});
 		}
 
 		Ok(match value {
@@ -66,7 +66,7 @@ impl TryFrom<u8> for Numerical {
 			1 => Self::Subtract,
 			2 => Self::Multiply,
 			3 => Self::Divide,
-			_ => return Err(Error {})
+			_ => return Err(InvalidOperation {})
 		})
 	}
 }
@@ -80,18 +80,18 @@ pub enum IntegerSign {
 }
 
 impl TryFrom<u8> for IntegerSign {
-	type Error = Error;
+	type Error = InvalidOperation;
 
 	/// Convert a numerical index into a variant.
 	fn try_from(value: u8) -> Result<Self, Self::Error> {
-		if variant_count::<IntegerSign>() > value as usize {
-			return Err(Error {});
+		if variant_count::<IntegerSign>() < value as usize {
+			return Err(InvalidOperation {});
 		}
 
 		Ok(match value {
 			0 => Self::Negate,
 			1 => Self::Invert,
-			_ => return Err(Error {})
+			_ => return Err(InvalidOperation {})
 		})
 	}
 }
@@ -105,24 +105,24 @@ pub enum Logical {
 }
 
 impl TryFrom<u8> for Logical {
-	type Error = Error;
+	type Error = InvalidOperation;
 
 	/// Convert a numerical index into a variant.
 	fn try_from(value: u8) -> Result<Self, Self::Error> {
-		if variant_count::<Logical>() > value as usize {
-			return Err(Error {});
+		if variant_count::<Logical>() < value as usize {
+			return Err(InvalidOperation {});
 		}
 
 		Ok(match value {
 			0 => Self::And,
 			1 => Self::Or,
 			2 => Self::ExclusiveOr,
-			_ => return Err(Error {})
+			_ => return Err(InvalidOperation {})
 		})
 	}
 }
 
-/// Classified based on similar function and behavior. 
+/// Classified based on similar function and behavior.
 #[derive(Debug)]
 #[repr(u8)]
 pub enum Classification {
@@ -133,41 +133,45 @@ pub enum Classification {
 	IntegerSign(IntegerSign),
 	/// Bitwise operations that apply logical operations to every bit in a byte.
 	Logical(Logical),
-	/// Bytewise operations apply to manipulate the entire byte and manipulation the positioning of bits.
-	/// TODO: Add
+	// Bytewise operations apply to manipulate the entire byte and manipulation the positioning of bits.
+	// TODO: Add
 }
 
-pub struct RawOperationTarget { classification: u8, operation: u8 }
+pub struct RawOperationTarget { pub classification: u8, pub operation: u8 }
+pub enum Invalid {
+	Classification,
+	Operation
+}
 
 impl TryFrom<RawOperationTarget> for Classification {
-	type Error = Error;
+	type Error = Invalid;
 
 	/// Convert a numerical index into a variant.
 	fn try_from(value: RawOperationTarget) -> Result<Self, Self::Error> {
 		// Number of variants.
 		let variants = variant_count::<Classification>();
 		if value.classification as usize > variants || variants > MAX_CLASSIFICATIONS {
-			return Err(Error {});
+			return Err(Invalid::Classification);
 		}
-		
+
 		Ok(match value.classification {
 			0 => match Memory::try_from(value.operation) {
-				Err(error) => return Err(error),
+				Err(_) => return Err(Invalid::Operation),
 				Ok(operation) => Self::Memory(operation)
 			},
 			1 => match Numerical::try_from(value.operation) {
-				Err(error) => return Err(error),
+				Err(_) => return Err(Invalid::Operation),
 				Ok(operation) => Self::Integer(operation)
 			},
 			3 => match IntegerSign::try_from(value.operation) {
-				Err(error) => return Err(error),
+				Err(_) => return Err(Invalid::Operation),
 				Ok(operation) => Self::IntegerSign(operation)
 			},
 			4 => match Logical::try_from(value.operation) {
-				Err(error) => return Err(error),
+				Err(_) => return Err(Invalid::Operation),
 				Ok(operation) => Self::Logical(operation)
 			},
-			_ => return Err(Error {})
+			_ => return Err(Invalid::Classification)
 		})
 	}
 }
