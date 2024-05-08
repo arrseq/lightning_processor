@@ -38,6 +38,7 @@ pub enum Storage {
 /// Destination operand.
 /// The operand that should be read to determine the location in which the successful result of the computation will
 /// be stored. 
+#[derive(Debug)]
 pub enum Destination {
 	First,
 	Second
