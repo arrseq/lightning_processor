@@ -6,9 +6,12 @@ use exr_p::instruction::dynamic::{Addressing, Dynamic, Register};
 use exr_p::instruction::{absolute, coder, Instruction};
 use exr_p::instruction::dynamic::Addressing::Address;
 use exr_p::instruction::operand::{Destination, Full, Storage, Operands};
-use exr_p::instruction::operation::{Classification, Memory, Numerical};
+use exr_p::instruction::operation::{Classification, Memory, Numerical, RawOperationTarget};
 
 fn main() {
+
+	println!("DX V{:?}", Memory::try_from(1).is_err());
+	return;
 	// add r0, r1
 	let add_r2r  = Instruction {
 		operation: Classification::Magnitude(Numerical::Add),
@@ -57,7 +60,7 @@ fn main() {
 	
 	let mut stream = Cursor::new([
 		// Collection, destination
-		0b0000001_1,
+		0b0000100_0,
 
 		// Operation, mode, addressing
 		0b0001_00_00,
@@ -70,4 +73,6 @@ fn main() {
 	]);
 
 	coder::decoder::decode(&mut stream, &mut clo_c2r).expect("Failed");
+	
+	println!("{:#?}", clo_c2r);
 }

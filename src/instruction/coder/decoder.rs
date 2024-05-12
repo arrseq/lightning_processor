@@ -3,9 +3,10 @@
 
 use std::io;
 use std::io::Read;
-use crate::instruction::Instruction;
+use crate::instruction::{Instruction, operand};
 use crate::instruction::operand::Destination;
-use crate::instruction::operation::{Classification, Invalid, RawOperationTarget};
+use crate::instruction::operation::{Classification, Invalid, Logical, Memory, Numerical, RawOperationTarget,  
+									StorageMode, IntegerSign};
 
 #[derive(Debug)]
 pub enum SyntaxError {
@@ -39,8 +40,10 @@ pub fn decode(stream: &mut impl Read, instruction: &mut Instruction) -> Result<(
 		}
 	};
 
+	// Operation and flow.
+
 	// 7 most significant bits are the classifier identifier. 
-	let classification = {
+	instruction.operation = {
 		let raw = RawOperationTarget {
 			classification: control_bytes[0] >> 1,
 			operation: control_bytes[1] >> 4
@@ -58,13 +61,36 @@ pub fn decode(stream: &mut impl Read, instruction: &mut Instruction) -> Result<(
 	};
 	
 	// Read last bit and match to a destination enum.
-	let destination = match control_bytes[0] & 0b0000000_1 {
+	instruction.operands.destination = match control_bytes[0] & 0b0000000_1 {
 		0 => Destination::First,
 		_ => Destination::Second, // This counts at doing 1 => ... because the arm cannot match anything other than 
 		// 0-1.
 	};
 	
-	println!("{:?}", classification);
-
+	// Addressing
+	{
+		let capture_mask = 0b00000011;
+		// The method used for addressing and what it mainly affects.
+		// The bits 4 and 5 contain the value.
+		let method = control_bytes[1] >> 2 & capture_mask;
+		
+		// The specific mode the addressing method should be in.
+		// Last 2 bits contain the value.
+		let mode = control_bytes[1] & capture_mask;
+		
+		// Determine the parameter signature
+		let storage_mode = match instruction.operation {
+			Classification::Memory(_) => Memory::get_storage(),
+			Classification::Integer(_) | Classification::Magnitude(_) => Numerical::get_storage(),
+			Classification::IntegerSign(_) => IntegerSign::get_storage(),
+			Classification::Logical(_) => Logical::get_storage()
+		};
+		
+		match storage_mode {
+		    operand::StorageMode::Full => todo!(),
+			
+		}
+	}
+	
 	Ok(())
 }

@@ -10,6 +10,7 @@ pub mod operand;
 pub mod operation;
 pub mod coder;
 
+#[derive(Debug)]
 pub struct Instruction {
 	pub operation: Classification,
 	pub operands: Operands
