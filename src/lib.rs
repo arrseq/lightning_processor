@@ -4,4 +4,4 @@
 
 extern crate core;
 
-pub mod instruction;
+pub mod programming;

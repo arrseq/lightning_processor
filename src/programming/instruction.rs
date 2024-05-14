@@ -1,8 +1,8 @@
 //! Instruction.
 //! Tools and structures used for storing, decoding and encoding instructions.
 
-use crate::instruction::operand::Operands;
-use crate::instruction::operation::Classification;
+use crate::programming::instruction::operand::Operands;
+use crate::programming::instruction::operation::Classification;
 
 pub mod absolute;
 pub mod dynamic;

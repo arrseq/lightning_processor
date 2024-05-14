@@ -4,8 +4,7 @@
 //! - Supports architecture sized data through an immediate.
 
 use std::intrinsics::variant_count;
-use rhdl_bits::Bits;
-use crate::instruction::absolute;
+use crate::programming::instruction::absolute;
 
 pub const MAX_MODE_VARIANTS: u8 = 2^2;
 pub const MAX_METHOD_VARIANTS: u8 = 2^2;
@@ -77,5 +76,5 @@ impl Default for Addressing {
 #[derive(Debug, Default)]
 pub struct Dynamic {
 	pub addressing: Addressing,
-	pub value: Bits<3>
+	pub value: u8
 }
