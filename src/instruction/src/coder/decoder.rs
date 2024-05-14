@@ -3,9 +3,8 @@
 
 use std::io;
 use std::io::Read;
-use crate::programming::instruction::{Instruction, operand, operation};
-use crate::programming::instruction::operation::{Classification, IntegerSign, Logical, Memory, Numerical, 
-												 RawOperationTarget, Operation};
+use crate::{Instruction, operand, operation};
+use crate::operation::{Classification, Operation, RawOperationTarget};
 
 #[derive(Debug)]
 pub enum SyntaxError {
