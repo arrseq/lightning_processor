@@ -2,7 +2,7 @@
 //! Contains the tools for operands in instructions as well as a structure containing both of the 2 operands 
 //! supported by an instruction.
 
-use crate::programming::instruction::dynamic::Dynamic;
+use crate::dynamic::Dynamic;
 
 /// First operand.
 /// This always takes the register and reads the value from it to do processing. Offsets and other settings cannot be

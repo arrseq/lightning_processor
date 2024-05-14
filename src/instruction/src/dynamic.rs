@@ -4,10 +4,10 @@
 //! - Supports architecture sized data through an immediate.
 
 use std::intrinsics::variant_count;
-use crate::programming::instruction::absolute;
+use crate::absolute;
 
-pub const MAX_MODE_VARIANTS: u8 = 2^2;
-pub const MAX_METHOD_VARIANTS: u8 = 2^2;
+pub const MAX_MODE_VARIANTS: u8=2^2;
+pub const MAX_METHOD_VARIANTS: u8=2^2;
 
 /// If the addressing mode is invalid or does not exist.
 pub struct ModeError {}
@@ -30,7 +30,7 @@ pub enum Register {
 }
 
 impl TryFrom<u8> for Register {
-	type Error = ModeError;
+	type Error=ModeError;
 
 	fn try_from(value: u8) -> Result<Self, Self::Error> {
 		if value as usize > variant_count::<Register>() {

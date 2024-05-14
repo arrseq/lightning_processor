@@ -8,12 +8,12 @@
 //! - Target: Serves as the destination and unit to base an operation on.
 
 use std::intrinsics::variant_count;
-use crate::programming::instruction::operand;
+use crate::operand;
 
 /// Maximum number of classifications supported by the coding.
-pub const MAX_CLASSIFICATIONS: usize = 2^7;
+pub const MAX_CLASSIFICATIONS: usize=2^7;
 /// Maximum number of operations supported by the coding of a single classification.
-pub const MAX_OPERATIONS: usize = 2^4;
+pub const MAX_OPERATIONS: usize=2^4;
 /// Operation code type used for referring to operations by their numeric identifier.
 pub struct OperationCode(pub u8);
 
@@ -44,7 +44,7 @@ impl Operation for Memory {
 }
 
 impl TryFrom<OperationCode> for Memory {
-	type Error = InvalidOperation;
+	type Error=InvalidOperation;
 
 	/// Convert a numerical index into a variant.
 	fn try_from(value: OperationCode) -> Result<Self, Self::Error> {
@@ -85,7 +85,7 @@ impl Operation for Numerical {
 }
 
 impl TryFrom<OperationCode> for Numerical {
-	type Error = InvalidOperation;
+	type Error=InvalidOperation;
 
 	/// Convert a numerical index into a variant.
 	fn try_from(value: OperationCode) -> Result<Self, Self::Error> {
@@ -123,7 +123,7 @@ impl Operation for IntegerSign {
 }
 
 impl TryFrom<OperationCode> for IntegerSign {
-	type Error = InvalidOperation;
+	type Error=InvalidOperation;
 
 	/// Convert a numerical index into a variant.
 	fn try_from(value: OperationCode) -> Result<Self, Self::Error> {
@@ -159,7 +159,7 @@ impl Operation for Logical {
 }
 
 impl TryFrom<OperationCode> for Logical {
-	type Error = InvalidOperation;
+	type Error=InvalidOperation;
 
 	/// Convert a numerical index into a variant.
 	fn try_from(value: OperationCode) -> Result<Self, Self::Error> {
@@ -199,13 +199,13 @@ pub enum Invalid {
 }
 
 impl TryFrom<RawOperationTarget> for Classification {
-	type Error = Invalid;
+	type Error=Invalid;
 
 	/// Convert a numerical index into a variant.
 	///
 	fn try_from(value: RawOperationTarget) -> Result<Self, Self::Error> {
 		// Number of variants.
-		let variants = variant_count::<Classification>();
+		let variants=variant_count::<Classification>();
 		if value.classification as usize > variants || variants > MAX_CLASSIFICATIONS {
 			return Err(Invalid::Classification);
 		}

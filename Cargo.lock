@@ -3,5 +3,9 @@
 version = 3
 
 [[package]]
-name = "exr-p"
+name = "em-compiler"
+version = "0.1.0"
+
+[[package]]
+name = "em-instruction"
 version = "0.1.0"
