@@ -8,10 +8,11 @@ Custom instruction-architecture developed by The Four Elements.
 A processor project focused on speed, efficiency, cost, and performance. **Current implementations will be for FPGAs and in System Verilog.**
 
 - > Not many features below may be implemented yet, but are planned. 
-- **Instruction firmware provided?** Sure.
+- **Instruction firmware provided?** No longer.
 - **Boot process?** Undecided.
-- **Micro architecture?** Yes.
-- **Micro code engine supports complex behaviors?** Yes.
+- **Micro architecture?** No.
+- **Micro code engine supports complex behaviors?** No. Instructions are complex but executing them does not involve 
+  microcode anymore.
 - **System Verilog provided?** Eventually.
 
 > [!NOTE]
@@ -27,10 +28,6 @@ https://discord.gg/4zt8sUEbNy
 > The documentation is currently not finish or developed yet.
 
 Read information for how to write code for the processor, how to emulate, and more. 
-
-### Recommended Extensions
-- TODO Highlight
-- Todo Tree
 
 ### Setting up your development environment
 <!-- TODO: Add OpenCL once it is used in the emulation core -->

@@ -2,13 +2,13 @@
 //! Contains the tools for operands in instructions as well as a structure containing both of the 2 operands 
 //! supported by an instruction.
 
-use rhdl_bits::Bits;
-use crate::instruction::dynamic::Dynamic;
+use crate::dynamic::Dynamic;
 
 /// First operand.
 /// This always takes the register and reads the value from it to do processing. Offsets and other settings cannot be
 /// applied to this specific operand.
-pub type FirstOperand = Bits<3>;
+#[derive(Debug, Default)]
+pub struct FirstOperand(pub u8);
 
 /// Dual operands.
 #[derive(Debug, Default)]
@@ -40,20 +40,20 @@ pub enum Storage {
 	None
 }
 
-impl From<StorageMode> for Storage {
-	fn from(value: StorageMode) -> Self {
+impl From<Mode> for Storage {
+	fn from(value: Mode) -> Self {
 		match value {
-			StorageMode::Full => Self::Full(Full::default()),
-			StorageMode::Second => Self::Second(Second::default()),
-			StorageMode::First => Self::First(First::default()),
-			StorageMode::None => Self::None
+			Mode::Full => Self::Full(Full::default()),
+			Mode::Second => Self::Second(Second::default()),
+			Mode::First => Self::First(First::default()),
+			Mode::None => Self::None
 		}
 	}
 }
 
 /// Operand presence storage mode with no storage.
 #[derive(Debug, Default)]
-pub enum StorageMode {
+pub enum Mode {
 	Full,
 	Second,
 	First,
@@ -61,7 +61,7 @@ pub enum StorageMode {
 	None
 }
 
-impl From<Storage> for StorageMode {
+impl From<Storage> for Mode {
 	fn from(value: Storage) -> Self {
 		match value {
 			Storage::Full(_) => Self::Full,
