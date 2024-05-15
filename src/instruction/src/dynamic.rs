@@ -6,8 +6,8 @@
 use std::intrinsics::variant_count;
 use crate::absolute;
 
-pub const MAX_MODE_VARIANTS: u8=2^2;
-pub const MAX_METHOD_VARIANTS: u8=2^2;
+pub const MAX_MODE_VARIANTS: u8=2*2; // exp(2, 2)
+pub const MAX_METHOD_VARIANTS: u8=MAX_MODE_VARIANTS;
 
 /// If the addressing mode is invalid or does not exist.
 pub struct ModeError {}

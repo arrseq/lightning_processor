@@ -1,2 +1,2 @@
 [workspace]
-members=["src/compiler", "src/instruction"]
+members=["src/compiler", "src/instruction", "src/macros"]

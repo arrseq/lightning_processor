@@ -29,8 +29,8 @@ pub struct Second {
 	pub second: Dynamic
 }
 
-/// Operand presence modes.
-/// Package containing configurations of how the operands accepted.
+/// Operand storage.
+/// Package containing configurations of how the operands accepted and also a place to store the operand values.
 #[derive(Debug, Default)]
 pub enum Storage {
 	Full(Full),
@@ -51,7 +51,8 @@ impl From<Mode> for Storage {
 	}
 }
 
-/// Operand presence storage mode with no storage.
+/// Operand presence modes.
+/// Operand presence storage mode which indicates what operands an instruction accepts.
 #[derive(Debug, Default)]
 pub enum Mode {
 	Full,
@@ -82,7 +83,8 @@ pub enum Destination {
 	Second
 }
 
-/// Operands and data flow. 
+/// Operands and data flow. This specifies where the data should be stored in (if the instruction has support for 
+/// storing results in an operand target) and also the operands with storage.
 #[derive(Debug, Default)]
 pub struct Operands {
 	pub destination: Destination,
