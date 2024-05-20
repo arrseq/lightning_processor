@@ -1,10 +1,8 @@
 [package]
-name="em-instruction"
-version="0.1.0"
-edition="2021"
+name = "em-macro-shared"
+version = "0.1.0"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-em-macro={path="../macro"}
-em-macro-shared={path="../macro-shared"}
