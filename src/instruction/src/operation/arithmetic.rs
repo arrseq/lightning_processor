@@ -1,62 +1,36 @@
-use crate::fault::Fault;
-use crate::operation::Operation;
+use crate::operation::{Operation, OperationCode};
 
-pub struct Adder {
-	
+pub const ADD_CODE: u8 = 0;
+pub const SUBTRACT_CODE: u8 = 1;
+
+#[derive(Debug)]
+pub enum Arithmetic {
+	Add,
+	Subtract
 }
 
-impl Operation for Adder {
+impl Operation for Arithmetic {
 	fn get_code(&mut self) -> u8 {
-		todo!()
+		0
 	}
 
-	fn from_code(code: u8) -> Result<(), impl Self> {
-		todo!()
-	}
-
-	fn accepts_primary(&mut self) -> bool {
+	fn accepts_static(&mut self) -> bool {
 		todo!()
 	}
 
 	fn accepts_dynamic(&mut self) -> bool {
 		todo!()
 	}
-
-	fn accepts_immediate(&mut self) -> bool {
-		todo!()
-	}
-
-	fn execute(&mut self) -> Result<(), Fault> {
-		todo!()
-	}
 }
 
-pub struct IntegerAdder {
-	
-}
+impl TryFrom<OperationCode> for Arithmetic {
+	type Error = ();
 
-impl Operation for IntegerAdder {
-	fn get_code(&mut self) -> u8 {
-		todo!()
-	}
-
-	fn from_code(code: u8) -> Result<(), impl Self> {
-		todo!()
-	}
-
-	fn accepts_primary(&mut self) -> bool {
-		todo!()
-	}
-
-	fn accepts_dynamic(&mut self) -> bool {
-		todo!()
-	}
-
-	fn accepts_immediate(&mut self) -> bool {
-		todo!()
-	}
-
-	fn execute(&mut self) -> Result<(), Fault> {
-		todo!()
+	fn try_from(value: OperationCode) -> Result<Self, Self::Error> {
+		Ok(match value.0 {
+			ADD_CODE => Self::Add,
+			SUBTRACT_CODE => Self::Subtract,
+			_ => return Err(())
+		})
 	}
 }

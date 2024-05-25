@@ -9,7 +9,8 @@
       <sourceFolder url="file://$MODULE_DIR$/src/instruction/examples" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/graphical-interface/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/macro-shared/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/src/macro/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/macros/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/operation/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
