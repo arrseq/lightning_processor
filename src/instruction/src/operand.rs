@@ -14,12 +14,11 @@ pub struct RawRegisterCode(pub u8);
 /// pick either of the addressing modes.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Dynamic {
-	/// No value.
 	None,
-	/// Register code.
 	Register(u8),
-	/// Immediate value.
-	Immediate(absolute::Data)
+	Offset(absolute::Data),
+	Constant(absolute::Data),
+	Address(absolute::Data)
 }
 
 /// Operands provide the operation the arguments necessary for computing, There are 2 types of operands, static and 

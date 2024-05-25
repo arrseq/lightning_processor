@@ -10,6 +10,6 @@ fn main() {
 		operation: Extension::Arithmetic(Arithmetic::Add),
 		destination: Destination::Static, // Store value in r0
 		x_static: Static(Some(0)), // r0 target
-		x_dynamic: Dynamic::Immediate(Data::Byte(5))
+		x_dynamic: Dynamic::Constant(Data::Byte(5))
 	};
 }
