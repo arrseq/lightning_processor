@@ -20,14 +20,15 @@
 // }
 
 pub mod absolute;
-pub mod operation;
 pub mod fault;
+pub mod operation;
 
 use std::io;
 use std::io::Read;
+use crate::operation::{Extension};
 
 pub struct Instruction {
-    
+    operation: Extension
 }
 
 pub enum DecodeError {
