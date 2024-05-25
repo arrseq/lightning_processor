@@ -1,5 +1,7 @@
 use crate::operation::{Operation, OperationCode};
 
+// Operation codes
+
 pub const ADD_CODE: u8 = 0;
 pub const SUBTRACT_CODE: u8 = 1;
 
@@ -8,6 +10,8 @@ pub enum Arithmetic {
 	Add,
 	Subtract
 }
+
+// Implementation
 
 impl Operation for Arithmetic {
 	fn get_code(&mut self) -> u8 {

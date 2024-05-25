@@ -5,7 +5,7 @@ pub mod arithmetic;
 // Extension identifier codes
 
 pub const ARITHMETIC_CODE: u8 = 0;
-pub const FLOAT_CODE: u8 = 1;
+pub const DATA_CODE: u8 = 1;
 
 // Operation
 
@@ -14,7 +14,9 @@ pub struct OperationCode(pub u8);
 pub trait Operation: TryFrom<OperationCode> {
 	fn get_code(&mut self) -> u8;
 	
+	/// Whether the operation requires the static operand.
 	fn accepts_static(&mut self) -> bool;
+	/// Whether the operation requires the dynamic operand.
 	fn accepts_dynamic(&mut self) -> bool;
 }
 
@@ -42,9 +44,9 @@ pub enum ExtensionFromCodeInvalid {
 /// compiled for the architecture.
 #[derive(Debug)]
 pub enum Extension {
-	/// Operations based on the arithmetic field of math which operates on non-floating numbers.
 	Arithmetic(Arithmetic),
-	Float(/* TODO */)
+	/// Allows movement of data, fetching and storing.
+	Data(/* TODO */)
 }
 
 impl TryFrom<ExtensionCode> for Extension {
@@ -59,7 +61,6 @@ impl TryFrom<ExtensionCode> for Extension {
 				Ok(operation) => operation,
 				Err(error) => return invalid_operation
 			}),
-			// FLOAT_CODE => {} // TODO
 			_ => return Err(ExtensionFromCodeInvalid::Extension)
 		})
 	}

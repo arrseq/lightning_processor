@@ -1,11 +1,15 @@
 //! Unsized absolute number. 
 //! While Rust has u8, u16... for absolute values, it does not have a simple enum for variable length
-//! absolute integers.
+//! absolute integers. 
 
-pub const BYTE: u8 = 2^0;
+// Constants
+
+pub const BYTE: u8 = 1;
 pub const WORD: u8 = 2^1;
-pub const DUAL: u8 = 2^2;
+pub const DUAL: u8 = 2*2;
 pub const QUAD: u8 = 2^3;
+
+// Implementations
 
 /// Absolute modes.
 /// Base type variants for representing an absolute value.
