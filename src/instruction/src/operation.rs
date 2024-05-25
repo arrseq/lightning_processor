@@ -5,15 +5,17 @@ pub mod arithmetic;
 // Extension identifier codes
 
 pub const ARITHMETIC_CODE: u8 = 0;
-pub const DATA_CODE: u8 = 1;
+pub const DATA_CODE      : u8 = 1;
 
 // Operation
 
-pub struct OperationCode(pub u8);
+/// There are no guarantees that this code is valid.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RawOperationCode(pub u8);
 
-pub trait Operation: TryFrom<OperationCode> {
+pub trait Operation: TryFrom<RawOperationCode> {
 	fn get_code(&mut self) -> u8;
-	
+
 	/// Whether the operation requires the static operand.
 	fn accepts_static(&mut self) -> bool;
 	/// Whether the operation requires the dynamic operand.
@@ -21,28 +23,29 @@ pub trait Operation: TryFrom<OperationCode> {
 }
 
 // Extension
-// Used to group operations into categories. Also allows the instruction set to be expanded without breaking 
+// Used to group operations into categories. Also allows the instruction set to be expanded without breaking
 // pre-existing code.
 
 /// Path to a specific operation based on codes.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExtensionCode {
 	/// Extension code
 	pub extension: u8,
 	/// Operation code
-	pub operation: OperationCode
+	pub operation: RawOperationCode
 }
 
 /// Used to indicate that one of the codes were invalid for the target.
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ExtensionFromCodeInvalid {
 	Extension,
 	Operation
 }
 
-/// Contains groups of operations which are categorized by extension. This allows for operations to have duplicate 
-/// names and also allows for the operation set to extended in the future without breaking code that is already 
+/// Contains groups of operations which are categorized by extension. This allows for operations to have duplicate
+/// names and also allows for the operation set to extended in the future without breaking code that is already
 /// compiled for the architecture.
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Extension {
 	Arithmetic(Arithmetic),
 	/// Allows movement of data, fetching and storing.

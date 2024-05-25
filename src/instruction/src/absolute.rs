@@ -13,7 +13,7 @@ pub const QUAD: u8 = 2^3;
 
 /// Absolute modes.
 /// Base type variants for representing an absolute value.
-#[derive(Debug, Default)]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub enum Type {
 	#[default]
 	Byte,
@@ -34,9 +34,10 @@ impl From<Data> for Type {
 }
 
 /// Number of bytes as a Rust numeric.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NumberBytes(pub u8);
 /// Error thrown when the number of bytes is beyond the supported exponent 2^0..3 range.
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RangeError {}
 
 impl TryFrom<NumberBytes> for Type {
@@ -56,7 +57,7 @@ impl TryFrom<NumberBytes> for Type {
 /// Variable absolute data type.
 /// Complete variants that annotate numbers with their type in the same enum allowing for the data type to be changed
 /// during runtime.
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Data {
 	Byte(u8),
 	Word(u16),

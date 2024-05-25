@@ -10,8 +10,17 @@ use std::io;
 use std::io::Read;
 use crate::operation::{Extension, ExtensionFromCodeInvalid};
 
+/// The operand to dereference store the operation result in.
+pub enum Destination {
+    Static,
+    Dynamic
+}
+
 pub struct Instruction {
-    operation: Extension
+    pub operation: Extension,
+    pub destination: Destination,
+    pub x_static: operand::Static,
+    pub x_dynamic: operand::Dynamic
 }
 
 pub enum DecodeError {
