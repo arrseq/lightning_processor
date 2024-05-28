@@ -1,4 +1,4 @@
-use crate::operation::{Operation, RawOperationCode};
+use crate::operation::{Operation};
 
 // Operation codes
 
@@ -14,30 +14,23 @@ pub enum Arithmetic {
 // Implementation
 
 impl Operation for Arithmetic {
-	fn get_code(&mut self) -> u8 {
+	fn code(&mut self) -> u8 {
 		match self {
 			Self::Add      => ADD_CODE,
 			Self::Subtract => SUBTRACT_CODE
 		}
 	}
 
-	fn accepts_static(&mut self) -> bool {
-		todo!()
-	}
-
-	fn accepts_dynamic(&mut self) -> bool {
-		todo!()
-	}
+	fn accepts_static(&mut self)  -> bool { true }
+	fn accepts_dynamic(&mut self) -> bool { true }
 }
 
-impl TryFrom<RawOperationCode> for Arithmetic {
-	type Error = ();
-
-	fn try_from(value: RawOperationCode) -> Result<Self, Self::Error> {
-		Ok(match value.0 {
+impl Arithmetic {
+	pub fn from_code(code: u8) -> Option<Self> {
+		Some(match code {
 			ADD_CODE      => Self::Add,
 			SUBTRACT_CODE => Self::Subtract,
-			_ => return Err(())
+			_ => return None
 		})
 	}
 }
