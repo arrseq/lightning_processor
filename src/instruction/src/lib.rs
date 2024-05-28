@@ -8,6 +8,7 @@ pub mod operation;
 
 use std::io;
 use std::io::Read;
+use crate::operand::Operands;
 use crate::operation::{Extension, ExtensionFromCodeInvalid};
 
 /// The operand to dereference store the operation result in.
@@ -18,9 +19,10 @@ pub enum Destination {
 
 pub struct Instruction {
     pub operation: Extension,
+    /// Width of operands when dereferenced and for storing result.
+    pub width: absolute::Type,
     pub destination: Destination,
-    pub x_static: operand::Static,
-    pub x_dynamic: operand::Dynamic
+    pub operands: Operands
 }
 
 pub enum DecodeError {

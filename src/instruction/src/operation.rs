@@ -1,6 +1,6 @@
-use crate::operation::arithmetic::Arithmetic;
-
 pub mod arithmetic;
+
+use crate::operation::arithmetic::Arithmetic;
 
 // Extension identifier codes
 
@@ -9,12 +9,8 @@ pub const DATA_CODE      : u8 = 1;
 
 // Operation
 
-/// There are no guarantees that this code is valid.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RawOperationCode(pub u8);
-
-pub trait Operation: TryFrom<RawOperationCode> {
-	fn get_code(&mut self) -> u8;
+pub trait Operation {
+	fn code(&mut self) -> u8;
 
 	/// Whether the operation requires the static operand.
 	fn accepts_static(&mut self) -> bool;
@@ -26,14 +22,8 @@ pub trait Operation: TryFrom<RawOperationCode> {
 // Used to group operations into categories. Also allows the instruction set to be expanded without breaking
 // pre-existing code.
 
-/// Path to a specific operation based on codes.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ExtensionCode {
-	/// Extension code
-	pub extension: u8,
-	/// Operation code
-	pub operation: RawOperationCode
-}
+pub type ExtensionCode = u8;
+pub type OperationCode = u8;
 
 /// Used to indicate that one of the codes were invalid for the target.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -52,19 +42,43 @@ pub enum Extension {
 	Data(/* TODO */)
 }
 
-impl TryFrom<ExtensionCode> for Extension {
-	type Error = ExtensionFromCodeInvalid;
-	
-	/// Create a new extension with an operation through a path.
-	fn try_from(value: ExtensionCode) -> Result<Self, Self::Error> {
+impl Extension {
+	/// Create an extension containing and operation with the extension and operation codes.
+	/// ```
+	/// use em_instruction::operation::{ARITHMETIC_CODE, Extension, Operation};
+	/// use em_instruction::operation::arithmetic::{Arithmetic, SUBTRACT_CODE};
+ 	///
+	/// let subtract = Extension::from_codes(ARITHMETIC_CODE, SUBTRACT_CODE).unwrap();
+	///
+	/// assert_eq!(subtract, Extension::Arithmetic(Arithmetic::Subtract));
+	/// assert_eq!(SUBTRACT_CODE, Arithmetic::Subtract.code());
+	/// ```
+	pub fn from_codes(extension: ExtensionCode, operation: OperationCode) -> Result<Self, ExtensionFromCodeInvalid> {
 		let invalid_operation = Err(ExtensionFromCodeInvalid::Operation);
-		
-		Ok(match value.extension {
-			ARITHMETIC_CODE => Self::Arithmetic(match Arithmetic::try_from(value.operation) {
-				Ok(operation) => operation,
-				Err(error) => return invalid_operation
+
+		Ok(match extension {
+			ARITHMETIC_CODE => Self::Arithmetic(match Arithmetic::from_code(operation) {
+				Some(operation) => operation,
+				None => return invalid_operation
 			}),
 			_ => return Err(ExtensionFromCodeInvalid::Extension)
 		})
+	}
+	
+	/// Retrieve the underlying operation trait.
+	/// ```
+	/// use em_instruction::operation::{ARITHMETIC_CODE, Extension, Operation};
+	/// use em_instruction::operation::arithmetic::{ADD_CODE, Arithmetic};
+	///
+	/// let mut extension = Extension::from_codes(ARITHMETIC_CODE, ADD_CODE).unwrap();
+	/// let operation_generic = extension.operation();
+	///
+	/// assert_eq!(operation_generic.accepts_static(), Arithmetic::Add.accepts_static());
+	/// ```
+	pub fn operation(&mut self) -> &mut impl Operation {
+		match self {
+			Self::Arithmetic(arithmetic) => arithmetic,
+			_ => todo!()
+		}
 	}
 }

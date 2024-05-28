@@ -1,4 +1,6 @@
-use crate::absolute;
+use crate::{absolute};
+
+// Single
 
 /// A register code. This is static because this only serves as a register code operand and can only be used to 
 /// dereference a register. Instruction executors never get access to this value directly, instead they get a 
@@ -25,6 +27,24 @@ pub enum Dynamic {
 /// dynamic operands.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Operand {
+	Static(Static),
+	Dynamic(Dynamic)
+}
+
+// Instruction ready operand parameter that contains addressing for a different modes of having operands.
+
+/// All operands.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AllPresent {
+	pub x_static: Static,
+	pub x_dynamic: Dynamic
+}
+
+/// Multi configuration of operands for an instruction.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Operands {
+	None,
+	AllPresent(AllPresent),
 	Static(Static),
 	Dynamic(Dynamic)
 }

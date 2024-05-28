@@ -2,12 +2,14 @@
 //! While Rust has u8, u16... for absolute values, it does not have a simple enum for variable length
 //! absolute integers. 
 
+// TODO: Use TryFrom<u8..u16..u32..u64> on Data and use a from_bytes function on Type
+
 // Constants
 
 pub const BYTE: u8 = 1;
-pub const WORD: u8 = 2^1;
-pub const DUAL: u8 = 2*2;
-pub const QUAD: u8 = 2^3;
+pub const WORD: u8 = 2;
+pub const DUAL: u8 = 4;
+pub const QUAD: u8 = 8;
 
 // Implementations
 
