@@ -8,6 +8,18 @@ use std::io::Read;
 use crate::operand::{Operand, Operands};
 use crate::operation::{Extension, ExtensionFromCodeInvalid};
 
+// Bit masks for decoding instructions.
+
+pub const DRIVER0_EXTENSION_MASK  : u8 = 0b111111_0_0;
+pub const DRIVER0_LOCK_MASK       : u8 = 0b000000_1_0;
+pub const DRIVER0_DESTINATION_MASK: u8 = 0b000000_0_1;
+
+pub const DRIVER1_OPERATION_MASK  : u8 = 0b1111_00_00;
+pub const DRIVER1_ADDRESSING_MASK : u8 = 0b0000_11_00;
+pub const DRIVER1_ADDRESSING_PARAM: u8 = 0b0000_00_11;
+
+// Instruction implementation, decoder and utilities
+
 /// The operand to dereference store the operation result in.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Destination {
@@ -93,13 +105,13 @@ impl Instruction {
     ///     _                  => true
     /// });
     /// ```
-    pub fn destination(&self) -> Result<Operand, DestinationError> {
+    pub fn destination(&self) -> Result<Operand, DestinationError> { // "I Am NOT AGAINST YOU SIR" lmao
         Ok(match self.destination {
-            Destination::Static => match self.operands.try_x_static() {
+            Destination::Static => match self.operands.x_static() {
                 Some(x_static) => Operand::Static(x_static),
                 None => return Err(DestinationError::Static)
             },
-            Destination::Dynamic => match self.operands.try_x_dynamic() {
+            Destination::Dynamic => match self.operands.x_dynamic() {
                 Some(x_dynamic) => Operand::Dynamic(x_dynamic.clone()),
                 None => return Err(DestinationError::Dynamic)
             }
