@@ -1,17 +1,15 @@
-#![allow(internal_features)]
 #![allow(clippy::unusual_byte_groupings)]
-#![feature(core_intrinsics)]
 
 pub mod absolute;
 pub mod operand;
 pub mod operation;
 
-use std::io;
 use std::io::Read;
 use crate::operand::{Operand, Operands};
 use crate::operation::{Extension, ExtensionFromCodeInvalid};
 
 /// The operand to dereference store the operation result in.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Destination {
     Static,
     Dynamic
@@ -28,11 +26,12 @@ pub enum Destination {
 ///     width:         absolute::Type::Byte,
 ///     destination:   Destination::Static, // Store value in r0
 ///     operands:      Operands::AllPresent(AllPresent {
-///         x_static:  Static(Some(0)), // r0 target
+///         x_static:  0, // r0 target
 ///         x_dynamic: Dynamic::Constant(absolute::Data::Byte(5))
 ///     })
 /// };
 /// ```
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Instruction {
     pub operation: Extension,
     /// Width of operands when dereferenced and for storing result.
@@ -41,16 +40,21 @@ pub struct Instruction {
     pub operands: Operands
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DecodeError {
     /// Caused by the stream.
-    Stream(io::Error),
+    Stream,
     /// The extension of operation code was invalid.
     InvalidCode(ExtensionFromCodeInvalid)
 }
 
 /// Caused by using a destination which corresponds to an operand that is not provided.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DestinationError {
-    
+    /// The static operand wasn't present.
+    Static,
+    /// The dynamic operand wasn't present.
+    Dynamic
 }
 
 impl Instruction {
@@ -60,10 +64,45 @@ impl Instruction {
     }
     
     /// Get the operand that the destination property corresponds to.
+    /// ```
+    /// use em_instruction::{Destination, Instruction};
+    /// use em_instruction::absolute::{Data, Type};
+    /// use em_instruction::operand::{AllPresent, Dynamic, Operand, Operands};
+    /// use em_instruction::operation::arithmetic::Arithmetic;
+    /// use em_instruction::operation::Extension;
+    ///
+    /// let mut instruction = Instruction {
+    ///     operation: Extension::Arithmetic(Arithmetic::Add),
+    ///     width: Type::Byte,
+    ///     destination: Destination::Static,
+    ///     operands: Operands::AllPresent(AllPresent {
+    ///         x_static: 10,
+    ///         x_dynamic: Dynamic::Constant(Data::Byte(5))
+    ///     })
+    /// };
+    ///
+    /// assert!(match instruction.destination().unwrap() {
+    ///     Operand::Static(_) => true,
+    ///     _                  => false
+    /// });
+    /// 
+    /// instruction.destination = Destination::Dynamic;
+    /// 
+    /// assert!(match instruction.destination().unwrap() {
+    ///     Operand::Static(_) => false,
+    ///     _                  => true
+    /// });
+    /// ```
     pub fn destination(&self) -> Result<Operand, DestinationError> {
         Ok(match self.destination {
-            Destination::Static => todo!(),
-            _ => todo!()
+            Destination::Static => match self.operands.try_x_static() {
+                Some(x_static) => Operand::Static(x_static),
+                None => return Err(DestinationError::Static)
+            },
+            Destination::Dynamic => match self.operands.try_x_dynamic() {
+                Some(x_dynamic) => Operand::Dynamic(x_dynamic.clone()),
+                None => return Err(DestinationError::Dynamic)
+            }
         })
     }
 }
