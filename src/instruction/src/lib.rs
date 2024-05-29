@@ -1,6 +1,4 @@
-#![allow(internal_features)]
 #![allow(clippy::unusual_byte_groupings)]
-#![feature(core_intrinsics)]
 
 pub mod absolute;
 pub mod operand;
