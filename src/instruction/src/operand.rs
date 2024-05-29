@@ -46,6 +46,7 @@ pub enum Operands {
 }
 
 impl Operands {
+	/// Try to get the static operand.
 	/// ```
 	/// use em_instruction::absolute::Data;
 	/// use em_instruction::operand::{AllPresent, Dynamic, Operands, Static};
@@ -58,14 +59,28 @@ impl Operands {
 	/// });
 	/// 
 	/// let static_only = Operands::Static(x_static);
+	/// let none = Operands::None;
 	///
 	/// assert_eq!(all.try_x_static().unwrap(), x_static);
 	/// assert_eq!(static_only.try_x_static().unwrap(), x_static);
+	/// assert!(none.try_x_static().is_none());
 	/// ```
 	pub fn try_x_static(&self) -> Option<Static> {
 		Some(match self {
 			Self::Static(x_static) => *x_static,
 			Self::AllPresent(x_all) => x_all.x_static,
+			_ => return None
+		})
+	}
+	
+	/// Try to get the dynamic operand.
+	/// ```
+	///  
+	/// ```
+	pub fn try_x_dynamic(&self) -> Option<&Dynamic> {
+		Some(match self {
+			Self::Dynamic(x_dynamic) => x_dynamic,
+			Self::AllPresent(x_all) => &x_all.x_dynamic,
 			_ => return None
 		})
 	}
