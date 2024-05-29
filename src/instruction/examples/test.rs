@@ -23,7 +23,7 @@ fn main() {
 		width:         absolute::Type::Byte,
 		destination:   Destination::Static, // Store value in r0
 		operands:      Operands::AllPresent(AllPresent {
-			x_static:  Static(Some(0)), // r0 target
+			x_static:  0, // r0 target
 			x_dynamic: Dynamic::Constant(Data::Byte(5))
 		})
 	};
