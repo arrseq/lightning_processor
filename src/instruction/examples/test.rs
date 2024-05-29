@@ -23,10 +23,26 @@ fn main() {
 		width:         absolute::Type::Byte,
 		destination:   Destination::Static, // Store value in r0
 		operands:      Operands::AllPresent(AllPresent {
-			x_static:  Static(Some(0)), // r0 target
+			x_static:  0, // r0 target
 			x_dynamic: Dynamic::Constant(Data::Byte(5))
 		})
 	};
 	
 	exec_instruction(operation);
+	
+	let x_dynamic = Dynamic::Constant(Data::Byte(5));
+	
+	let all = Operands::AllPresent(AllPresent {
+	    x_static: 10,
+	    x_dynamic: x_dynamic.clone()
+	});
+	
+	let static_only = Operands::Static(10);
+	let dynamic_only = Operands::Dynamic(x_dynamic.clone());
+	let none = Operands::None;
+	
+	assert_eq!(*all.try_x_dynamic().unwrap(), x_dynamic);
+	assert_eq!(*dynamic_only.try_x_dynamic().unwrap(), x_dynamic);
+	assert!(static_only.try_x_dynamic().is_none());
+	assert!(none.try_x_dynamic().is_none());
 }

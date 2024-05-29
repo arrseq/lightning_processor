@@ -5,12 +5,8 @@ use crate::{absolute};
 /// A register code. This is static because this only serves as a register code operand and can only be used to 
 /// dereference a register. Instruction executors never get access to this value directly, instead they get a 
 /// register target.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Static(pub Option<u8>);
+pub type Static = u8;
 
-/// There are no guarantees that this code is valid.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RawRegisterCode(pub u8);
 
 /// Either a register code or immediate value addressing mode. Being dynamic means this gives the programmer freedom to 
 /// pick either of the addressing modes.
@@ -47,4 +43,64 @@ pub enum Operands {
 	AllPresent(AllPresent),
 	Static(Static),
 	Dynamic(Dynamic)
+}
+
+impl Operands {
+	/// Try to get the static operand.
+	/// ```
+	/// use em_instruction::absolute::Data;
+	/// use em_instruction::operand::{AllPresent, Dynamic, Operands, Static};
+	/// 
+	/// let x_static = 5;
+	/// 
+	/// let all = Operands::AllPresent(AllPresent {
+	///     x_static,
+	///     x_dynamic: Dynamic::Constant(Data::Byte(5))
+	/// });
+	/// 
+	/// let static_only = Operands::Static(x_static);
+	/// let dynamic_only = Operands::Dynamic(Dynamic::Constant(Data::Byte(5)));
+	/// let none = Operands::None;
+	///
+	/// assert_eq!(all.try_x_static().unwrap(), x_static);
+	/// assert_eq!(static_only.try_x_static().unwrap(), x_static);
+	/// assert!(dynamic_only.try_x_static().is_none());
+	/// assert!(none.try_x_static().is_none());
+	/// ```
+	pub fn try_x_static(&self) -> Option<Static> {
+		Some(match self {
+			Self::Static(x_static) => *x_static,
+			Self::AllPresent(x_all) => x_all.x_static,
+			_ => return None
+		})
+	}
+	
+	/// Try to get the dynamic operand.
+	/// ```
+	/// use em_instruction::absolute::Data;
+	/// use em_instruction::operand::{AllPresent, Dynamic, Operands, Static};
+	///
+	/// let x_dynamic = Dynamic::Constant(Data::Byte(5));
+	///
+	/// let all = Operands::AllPresent(AllPresent {
+	///     x_static: 10,
+	///     x_dynamic: x_dynamic.clone()
+	/// });
+	///
+	/// let static_only = Operands::Static(10);
+	/// let dynamic_only = Operands::Dynamic(x_dynamic.clone());
+	/// let none = Operands::None;
+	///
+	/// assert_eq!(*all.try_x_dynamic().unwrap(), x_dynamic);
+	/// assert_eq!(*dynamic_only.try_x_dynamic().unwrap(), x_dynamic);
+	/// assert!(static_only.try_x_dynamic().is_none());
+	/// assert!(none.try_x_dynamic().is_none());
+	/// ```
+	pub fn try_x_dynamic(&self) -> Option<&Dynamic> {
+		Some(match self {
+			Self::Dynamic(x_dynamic) => x_dynamic,
+			Self::AllPresent(x_all) => &x_all.x_dynamic,
+			_ => return None
+		})
+	}
 }
