@@ -7,12 +7,10 @@ use crate::{absolute};
 /// register target.
 pub type Static = u8;
 
-
 /// Either a register code or immediate value addressing mode. Being dynamic means this gives the programmer freedom to 
 /// pick either of the addressing modes.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Dynamic {
-	None,
 	Register(u8),
 	Offset(absolute::Data),
 	Constant(absolute::Data),

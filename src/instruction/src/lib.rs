@@ -18,6 +18,10 @@ pub const DRIVER1_OPERATION_MASK  : u8 = 0b1111_00_00;
 pub const DRIVER1_ADDRESSING_MASK : u8 = 0b0000_11_00;
 pub const DRIVER1_ADDRESSING_PARAM: u8 = 0b0000_00_11;
 
+pub const REGISTER_WIDTH_MASK  : u8 = 0b11_000_000;
+pub const REGISTER_STATIC_MASK : u8 = 0b00_111_000;
+pub const REGISTER_DYNAMIC_MASK: u8 = 0b00_000_111;
+
 // Instruction implementation, decoder and utilities
 
 /// The operand to dereference store the operation result in.
@@ -97,15 +101,15 @@ impl Instruction {
     ///     Operand::Static(_) => true,
     ///     _                  => false
     /// });
-    /// 
+    ///
     /// instruction.destination = Destination::Dynamic;
-    /// 
+    ///
     /// assert!(match instruction.destination().unwrap() {
     ///     Operand::Static(_) => false,
     ///     _                  => true
     /// });
     /// ```
-    pub fn destination(&self) -> Result<Operand, DestinationError> { // "I Am NOT AGAINST YOU SIR" lmao
+    pub fn destination(&self) -> Result<Operand, DestinationError> { 
         Ok(match self.destination {
             Destination::Static => match self.operands.x_static() {
                 Some(x_static) => Operand::Static(x_static),
