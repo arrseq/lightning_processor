@@ -215,7 +215,7 @@ mod driver_test {
 
     #[test]
     fn set_extension() {
-        assert_eq!(Driver::set_extension(0b000000_0_1, 0b001010), 0b001010_0_1);
+        assert_eq!(Driver::set_extension(0b000000_0_1, 10), 0b001010_0_1);
         assert_eq!(Driver::set_extension(0b101100_0_0, 0b101100), 0b101100_0_0);
         assert_eq!(Driver::set_extension(0b101100_1_0, 0b101100), 0b101100_1_0);
 
@@ -310,11 +310,34 @@ mod driver_test {
     
     #[test]
     fn from_encoded() {
-        let driver0 = 0b001010_0_0;
-        let driver1 = 0b1111_00_00;
-        let driver = Driver::from_encoded([driver0, 0]);
+        let driver = Driver::from_encoded([0b001010_0_1, 0b1111_10_01]);
         
+        // Driver 0
         assert_eq!(driver.extension, 0b001010);
+        assert!(!driver.synchronise);
+        assert!(driver.dynamic_destination);
+        
+        // Driver 1
+        assert_eq!(driver.operation, 0b1111);
+        assert_eq!(driver.addressing, 0b10);
+        assert_eq!(driver.addressing_parameter, 0b1);
+    }
+    
+    #[test]
+    fn encode() {
+        let driver = Driver {
+            operation: 0b1110,
+            extension: 0b1010,
+            synchronise: true,
+            dynamic_destination: false,
+            addressing: 0b11,
+            addressing_parameter: 0b10
+        };
+        
+        let encoded = driver.encode();
+        
+        assert_eq!(encoded[0], 0b001010_1_0);
+        assert_eq!(encoded[1], 0b1110_11_10);
     }
 }
 
