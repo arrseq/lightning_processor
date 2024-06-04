@@ -1,19 +1,19 @@
 //! Binary instruction format is as follows.
-//! TODO: Explain each further
+//!
 //! Driver 0:
-//! - Extension
-//! - Synchronise
-//! - Destination Dynamic 
+//! - Extension: Operation's extension.
+//! - Synchronise: Ensure execution is synchronous in respect to other processors.
+//! - Destination Dynamic: Base the result location off the dynamic operand.
 //! 
 //! Driver 1
-//! - Operation
-//! - Addressing
-//! - Addressing Parameter
+//! - Operation: Operation to execute.
+//! - Addressing: Dynamic operand's addressing method.
+//! - Addressing Parameter: Addressing method's control parameter.
 //! 
 //! Data:
-//! - Width
-//! - Static Operand
-//! - Dynamic Operand
+//! - Width: Operating data size.
+//! - Static Operand: Static register operand.
+//! - Dynamic Operand: Dynamically addressable operand.
 //! 
 //! Immediate 0..8 quantized to 0, 2, 4 and 8.
 
