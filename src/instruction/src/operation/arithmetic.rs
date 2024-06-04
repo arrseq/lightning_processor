@@ -21,8 +21,8 @@ impl Operation for Arithmetic {
 		}
 	}
 
-	fn accepts_static(&mut self)  -> bool { true }
-	fn accepts_dynamic(&mut self) -> bool { true }
+	fn expects_static(&mut self) -> bool { true }
+	fn expects_dynamic(&mut self) -> bool { true }
 }
 
 impl Arithmetic {
