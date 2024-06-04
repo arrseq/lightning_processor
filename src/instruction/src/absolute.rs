@@ -68,3 +68,5 @@ impl From<Type> for Data {
 		}
 	}
 }
+
+// TODO: Implement unit tests

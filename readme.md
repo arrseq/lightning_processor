@@ -5,6 +5,7 @@ Execute instructions, manage memory, run programs. Provides hardware, compiler, 
 > 
 > Post Bootstrap:
 > - Move syntax parser vcs2://AtomLine/Syntax
+> - Move memory hardware and software to vcs2://AtomLine/VolatileMemory
 
 # Specifications
 - 64-bit data bus with the ability to downsize to 32 bits. 
