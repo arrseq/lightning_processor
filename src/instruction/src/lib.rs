@@ -126,7 +126,8 @@ impl Driver {
 
     /// Only the first 4 bits of the operation is used.
     pub fn set_operation(driver1: u8, operation: u8) -> u8 {
-        todo!();
+        let layer = (0b0000_1111 & operation) << 4;
+        (!DRIVER1_OPERATION_MASK & driver1) | layer
     }
     
     pub fn extract_addressing(driver1: u8) -> u8 {
@@ -135,11 +136,18 @@ impl Driver {
     
     /// Only the first 2 bits of the addressing is used.
     pub fn set_addressing(driver1: u8, addressing: u8) -> u8 {
-        todo!();
+        let layer = (0b_000000_11 & addressing) << 2;
+        (!DRIVER1_ADDRESSING_MASK & driver1) | layer 
     }
     
     pub fn extract_addressing_parameter(driver1: u8) -> u8 {
         DRIVER1_ADDRESSING_PARAMETER_MASK & driver1
+    }
+
+    /// Only the first 2 bits of the addressing is used.
+    pub fn set_addressing_parameter(driver1: u8, addressing_parameter: u8) -> u8 {
+        let layer = 0b000000_11 & addressing_parameter;
+        (!DRIVER1_ADDRESSING_PARAMETER_MASK & driver1) | layer
     }
     
     pub fn from_encoded(bytes: [u8; 2]) -> Self {
@@ -252,6 +260,13 @@ mod driver_test {
     }
     
     #[test]
+    fn set_operation() {
+        assert_eq!(Driver::set_operation(0b0001_00_11, 0b0000_1111), 0b1111_00_11);
+        assert_eq!(Driver::set_operation(0b1111_00_10, 0b0000_1001), 0b1001_00_10);
+        assert_eq!(Driver::set_operation(0b1010_00_10, 0b0000_1010), 0b1010_00_10);
+    }
+    
+    #[test]
     fn extract_addressing() {
         assert_eq!(Driver::extract_addressing(0b0011_10_00), 0b000000_10);
         assert_eq!(Driver::extract_addressing(0b1011_11_00), 0b000000_11);
@@ -259,9 +274,23 @@ mod driver_test {
     }
     
     #[test]
+    fn set_addressing() {
+        assert_eq!(Driver::set_addressing(0b0000_11_00, 0b000000_00), 0b0000_00_00);
+        assert_eq!(Driver::set_addressing(0b0011_00_00, 0b000000_01), 0b0011_01_00);
+        assert_eq!(Driver::set_addressing(0b1011_00_00, 0b000000_00), 0b1011_00_00);
+    }
+    
+    #[test]
     fn extract_addressing_parameter() {
         assert_eq!(Driver::extract_addressing_parameter(0b0000_00_11), 0b000000_11);
         assert_eq!(Driver::extract_addressing_parameter(0b1010_11_01), 0b000000_01);
+    }
+    
+    #[test]
+    fn set_addressing_parameter() {
+        assert_eq!(Driver::set_addressing_parameter(0b0011_00_00, 0b000000_11), 0b0011_00_11);
+        assert_eq!(Driver::set_addressing_parameter(0b0000_11_00, 0b000000_10), 0b0000_11_10);
+        assert_eq!(Driver::set_addressing_parameter(0b1011_01_00, 0b000000_00), 0b1011_01_00);
     }
     
     #[test]
