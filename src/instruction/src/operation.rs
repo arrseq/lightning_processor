@@ -44,15 +44,6 @@ pub enum Extension {
 
 impl Extension {
 	/// Create an extension containing and operation with the extension and operation codes.
-	/// ```
-	/// use em_instruction::operation::{ARITHMETIC_CODE, Extension, Operation};
-	/// use em_instruction::operation::arithmetic::{Arithmetic, SUBTRACT_CODE};
- 	///
-	/// let subtract = Extension::from_codes(ARITHMETIC_CODE, SUBTRACT_CODE).unwrap();
-	///
-	/// assert_eq!(subtract, Extension::Arithmetic(Arithmetic::Subtract));
-	/// assert_eq!(SUBTRACT_CODE, Arithmetic::Subtract.code());
-	/// ```
 	pub fn from_codes(extension: ExtensionCode, operation: OperationCode) -> Result<Self, ExtensionFromCodeInvalid> {
 		let invalid_operation = Err(ExtensionFromCodeInvalid::Operation);
 
@@ -66,19 +57,32 @@ impl Extension {
 	}
 	
 	/// Retrieve the underlying operation trait.
-	/// ```
-	/// use em_instruction::operation::{ARITHMETIC_CODE, Extension, Operation};
-	/// use em_instruction::operation::arithmetic::{ADD_CODE, Arithmetic};
-	///
-	/// let mut extension = Extension::from_codes(ARITHMETIC_CODE, ADD_CODE).unwrap();
-	/// let operation_generic = extension.operation();
-	///
-	/// assert_eq!(operation_generic.accepts_static(), Arithmetic::Add.accepts_static());
-	/// ```
 	pub fn operation(&mut self) -> &mut impl Operation {
 		match self {
 			Self::Arithmetic(arithmetic) => arithmetic,
 			_ => todo!()
 		}
+	}
+}
+
+#[cfg(test)]
+mod extension_test {
+	use crate::operation::{ARITHMETIC_CODE, Extension, Operation};
+	use crate::operation::arithmetic::{ADD_CODE, Arithmetic, SUBTRACT_CODE};
+
+	#[test]
+	fn from_codes() {
+		let subtract = Extension::from_codes(ARITHMETIC_CODE, SUBTRACT_CODE).unwrap();
+		
+		assert_eq!(subtract, Extension::Arithmetic(Arithmetic::Subtract));
+		assert_eq!(SUBTRACT_CODE, Arithmetic::Subtract.code());
+	}
+	
+	#[test]
+	fn operation() {
+		let mut extension = Extension::from_codes(ARITHMETIC_CODE, ADD_CODE).unwrap();
+		let operation_generic = extension.operation();
+		
+		assert_eq!(operation_generic.accepts_static(), Arithmetic::Add.accepts_static());
 	}
 }
