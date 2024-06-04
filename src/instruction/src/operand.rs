@@ -37,7 +37,6 @@ pub struct AllPresent {
 /// Multi configuration of operands for an instruction.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Operands {
-	None,
 	AllPresent(AllPresent),
 	Static(Static),
 	Dynamic(Dynamic)
@@ -79,12 +78,10 @@ mod operands_test {
 		
 		let static_only = Operands::Static(x_static);
 		let dynamic_only = Operands::Dynamic(Dynamic::Constant(absolute::Data::Byte(5)));
-		let none = Operands::None;
 		
 		assert_eq!(all.x_static().unwrap(), x_static);
 		assert_eq!(static_only.x_static().unwrap(), x_static);
 		assert!(dynamic_only.x_static().is_none());
-		assert!(none.x_static().is_none());
 	}
 	
 	#[test]
@@ -98,11 +95,9 @@ mod operands_test {
 		
 		let static_only = Operands::Static(10);
 		let dynamic_only = Operands::Dynamic(x_dynamic.clone());
-		let none = Operands::None;
 		
 		assert_eq!(*all.x_dynamic().unwrap(), x_dynamic);
 		assert_eq!(*dynamic_only.x_dynamic().unwrap(), x_dynamic);
 		assert!(static_only.x_dynamic().is_none());
-		assert!(none.x_dynamic().is_none());
 	}
 }
