@@ -13,9 +13,22 @@ pub trait Operation {
 	fn code(&mut self) -> u8;
 
 	/// Whether the operation requires the static operand.
-	fn accepts_static(&mut self) -> bool;
+	fn expects_static(&mut self) -> bool;
 	/// Whether the operation requires the dynamic operand.
-	fn accepts_dynamic(&mut self) -> bool;
+	fn expects_dynamic(&mut self) -> bool;
+
+	/// Whether an operand is expected.
+	fn expects_operand(&mut self) -> bool {
+		self.expects_static() || self.expects_dynamic()
+	}
+	
+	fn expects_all(&mut self) -> bool {
+		self.expects_static() && self.expects_dynamic()
+	}
+	
+	fn expects_nothing(&mut self) -> bool {
+		!self.expects_dynamic() && !self.expects_static()
+	}
 }
 
 // Extension
@@ -38,8 +51,6 @@ pub enum ExtensionFromCodeInvalid {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Extension {
 	Arithmetic(Arithmetic),
-	/// Allows movement of data, fetching and storing.
-	Data(/* TODO */)
 }
 
 impl Extension {
@@ -57,10 +68,9 @@ impl Extension {
 	}
 	
 	/// Retrieve the underlying operation trait.
-	pub fn operation(&mut self) -> &mut impl Operation {
+	pub fn operation(&mut self) -> &mut dyn Operation {
 		match self {
-			Self::Arithmetic(arithmetic) => arithmetic,
-			_ => todo!()
+			Self::Arithmetic(arithmetic) => arithmetic
 		}
 	}
 }
@@ -83,6 +93,6 @@ mod extension_test {
 		let mut extension = Extension::from_codes(ARITHMETIC_CODE, ADD_CODE).unwrap();
 		let operation_generic = extension.operation();
 		
-		assert_eq!(operation_generic.accepts_static(), Arithmetic::Add.accepts_static());
+		assert_eq!(operation_generic.expects_static(), Arithmetic::Add.expects_static());
 	}
 }

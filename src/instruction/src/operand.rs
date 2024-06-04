@@ -1,18 +1,24 @@
 use crate::{absolute};
 
-// Single
-
+// region: Single
 /// A register code. This is static because this only serves as a register code operand and can only be used to 
 /// dereference a register. Instruction executors never get access to this value directly, instead they get a 
 /// register target.
 pub type Static = u8;
+
+/// Allows dereferencing a memory address by reading the value from a register then adding an offset.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Offset {
+	register: u8,
+	offset: absolute::Data
+}
 
 /// Either a register code or immediate value addressing mode. Being dynamic means this gives the programmer freedom to 
 /// pick either of the addressing modes.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Dynamic {
 	Register(u8),
-	Offset(absolute::Data),
+	Offset(Offset),
 	Constant(absolute::Data),
 	Address(absolute::Data)
 }
@@ -24,9 +30,9 @@ pub enum Operand {
 	Static(Static),
 	Dynamic(Dynamic)
 }
+// endregion
 
-// Instruction ready operand parameter that contains addressing for a different modes of having operands.
-
+// region: Instruction ready operand parameter that contains addressing for a different modes of having operands.
 /// All operands.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AllPresent {
@@ -61,6 +67,7 @@ impl Operands {
 		})
 	}
 }
+// endregion
 
 #[cfg(test)]
 mod operands_test {
@@ -70,32 +77,32 @@ mod operands_test {
 	#[test]
 	fn x_static() {
 		let x_static = 5;
-		
+
 		let all = Operands::AllPresent(AllPresent {
 		    x_static,
 		    x_dynamic: Dynamic::Constant(absolute::Data::Byte(5))
 		});
-		
+
 		let static_only = Operands::Static(x_static);
 		let dynamic_only = Operands::Dynamic(Dynamic::Constant(absolute::Data::Byte(5)));
-		
+
 		assert_eq!(all.x_static().unwrap(), x_static);
 		assert_eq!(static_only.x_static().unwrap(), x_static);
 		assert!(dynamic_only.x_static().is_none());
 	}
-	
+
 	#[test]
 	fn x_dynamic() {
 		let x_dynamic = Dynamic::Constant(absolute::Data::Byte(5));
-		
+
 		let all = Operands::AllPresent(AllPresent {
 		    x_static: 10,
 		    x_dynamic: x_dynamic.clone()
 		});
-		
+
 		let static_only = Operands::Static(10);
 		let dynamic_only = Operands::Dynamic(x_dynamic.clone());
-		
+
 		assert_eq!(*all.x_dynamic().unwrap(), x_dynamic);
 		assert_eq!(*dynamic_only.x_dynamic().unwrap(), x_dynamic);
 		assert!(static_only.x_dynamic().is_none());
