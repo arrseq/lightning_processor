@@ -247,14 +247,18 @@ pub enum DestinationError {
 
 impl Instruction {
 	/// Use the driver, registers, and immediate to encode into a dynamic number of bytes. Encoding is variable length.
-	pub fn encode_driver_registers_immediate(driver: &Driver, registers: &Registers, immediate: &absolute::Data) ->
+	pub fn encode_driver_registers_immediate(driver: &Driver, registers: &Registers, immediate: 
+	Option<&absolute::Data>) ->
 																											   Vec<u8> {
 		let mut encoded = Vec::new();
 
 		encoded.extend(driver.encode());
 		encoded.push(registers.encode());
-		encoded.extend(immediate.to_le_bytes());
-
+		
+		if let Some(immediate) = immediate {
+			encoded.extend(immediate.to_le_bytes());
+		}
+		
 		encoded
 	}
 
@@ -502,26 +506,31 @@ mod raw_data_test {
 mod instruction_test {
 	use std::io::Cursor;
 	use crate::{absolute, Data, DecodeError, Destination, Driver, Instruction, Registers};
-	use crate::operand::{AllPresent, Dynamic, IMMEDIATE_EXPONENT_BYTE, Operand, Operands, REGISTER_ADDRESSING};
-	use crate::operation::arithmetic::Arithmetic;
-	use crate::operation::Extension;
+	use crate::operand::{AllPresent, CONSTANT_ADDRESSING, Dynamic, IMMEDIATE_EXPONENT_BYTE, Operand, Operands, REGISTER_ADDRESSING};
+	use crate::operation::arithmetic::{ADD_CODE, Arithmetic};
+	use crate::operation::{ARITHMETIC_CODE, Extension};
 
 	#[test]
 	fn encode_driver_registers() {
-		let mut driver = Driver {
-			extension: 0,
-			operation: 0,
+		let driver = Driver {
+			extension: ARITHMETIC_CODE,
+			operation: ADD_CODE,
 			synchronise: true,
 			dynamic_destination: false,
-			addressing: 2,
-			immediate_exponent: 0
+			addressing: CONSTANT_ADDRESSING,
+			immediate_exponent: IMMEDIATE_EXPONENT_BYTE
 		};
 
-		let mut registers = Registers {
-			width: 0,
-			x_static: 10,
-			x_dynamic: 20
+		let registers = Registers {
+			width: IMMEDIATE_EXPONENT_BYTE,
+			x_static: 1,
+			x_dynamic: 0
 		};
+		
+		assert_eq!(
+			Instruction::encode_driver_registers_immediate(&driver, &registers, Some(&absolute::Data::Byte(10))),
+			[ 0b000000_1_0, 0b0000_10_00, 0b00_001_000, 0b00001010 ]
+		);
 	}
 
 	#[test]
@@ -536,16 +545,16 @@ mod instruction_test {
 			immediate_exponent: 0
 		};
 		
-		let mut registers = Registers {
+		let registers = Registers {
 			width: 0,
 			x_static: 10,
 			x_dynamic: 20
 		};
 
 		let mut cursor = Cursor::new(
-			Instruction::encode_driver_registers_immediate(&driver, &registers, &absolute::Data::Byte(10)));
+			Instruction::encode_driver_registers_immediate(&driver, &registers, Some(&absolute::Data::Byte(10))));
 
-		let mut instruction = Instruction::from_encoded(&mut cursor).unwrap();
+		let instruction = Instruction::from_encoded(&mut cursor).unwrap();
 
 		assert!(matches!(instruction.operation, Extension::Arithmetic(_)));
 		assert!(matches!(instruction.data.unwrap().operands.x_dynamic().unwrap(), Dynamic::Constant
@@ -554,7 +563,7 @@ mod instruction_test {
 		// Synchronous register addressing instruction should fail to decode.
 		driver.addressing = REGISTER_ADDRESSING;
 		cursor = Cursor::new(
-			Instruction::encode_driver_registers_immediate(&driver, &registers, &absolute::Data::Byte(10)));
+			Instruction::encode_driver_registers_immediate(&driver, &registers, Some(&absolute::Data::Byte(10))));
 		let error = Instruction::from_encoded(&mut cursor);
 
 		assert!(matches!(error, Err(DecodeError::SynchronousRegister)));
