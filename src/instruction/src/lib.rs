@@ -206,7 +206,7 @@ impl RawData {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Data {
 	pub width: absolute::Type,
-	pub dynamic_destination: Destination,
+	pub destination: Destination,
 	pub operands: Operands
 }
 
@@ -296,7 +296,7 @@ impl Instruction {
 			// Store data.
 			data = Some(Data {
 				width: absolute::Type::from_exponent(data_raw.width).unwrap(),
-				dynamic_destination: if driver.dynamic_destination { Destination::Dynamic } else {
+				destination: if driver.dynamic_destination { Destination::Dynamic } else {
 					Destination::Static },
 				operands
 			})
@@ -318,7 +318,7 @@ impl Instruction {
 			None => return Err(DestinationError::Data)
 		};
 
-		Ok(match data.dynamic_destination {
+		Ok(match data.destination {
 			Destination::Static => match data.operands.x_static() {
 				Some(x_static) => Operand::Static(x_static),
 				None => return Err(DestinationError::Static)
@@ -477,8 +477,8 @@ mod raw_data_test {
 #[cfg(test)]
 mod instruction_test {
 	use std::io::Cursor;
-	use crate::{absolute, Destination, Driver, Instruction};
-	use crate::operand::{AllPresent, Dynamic, Operand, Operands};
+	use crate::{absolute, Data, Destination, Driver, Instruction, RawData};
+	use crate::operand::{AllPresent, Dynamic, IMMEDIATE_EXPONENT_BYTE, Operand, Operands};
 	use crate::operation::arithmetic::Arithmetic;
 	use crate::operation::Extension;
 
@@ -492,29 +492,51 @@ mod instruction_test {
 			addressing: 0,
 			immediate_exponent: 0
 		}.encode();
+		
+		let data = RawData {
+			width: 0,
+			x_static: 10,
+			x_dynamic: 20
+		}.encode();
 
-		let mut cursor = Cursor::new([driver[0], driver[1]]);
+		let mut cursor = Cursor::new([driver[0], driver[1], data]);
 		let instruction = Instruction::from_encoded(&mut cursor).unwrap();
 
 		assert!(matches!(instruction.operation, Extension::Arithmetic(_)));
 	}
 
 	// TODO: FIX
-	// #[test]
-	// fn destination() {
-	//     let mut instruction = Instruction {
-	//         operation: Extension::Arithmetic(Arithmetic::Add),
-	//         width: absolute::Type::Byte,
-	//         destination: Destination::Static,
-	//         operands: Operands::AllPresent(AllPresent {
-	//             x_static: 10,
-	//             x_dynamic: Dynamic::Constant(absolute::Data::Byte(5))
-	//         })
-	//     };
-	//
-	//     assert!(matches!(instruction.destination().unwrap(), Operand::Static(_)));
-	//
-	//     instruction.destination = Destination::Dynamic;
-	//     assert!(!matches!(instruction.destination().unwrap(), Operand::Static(_)));
-	// }
+	#[test]
+	fn destination() {
+	    let x_static = Instruction {
+	        operation: Extension::Arithmetic(Arithmetic::Add),
+	        width: absolute::Type::Byte,
+			synchronise: false,
+			data: Some(Data {
+				width: absolute::Type::Byte,
+				destination: Destination::Static,
+				operands: Operands::AllPresent(AllPresent {
+					x_static: 0,
+					x_dynamic: Dynamic::Register(1)
+				})
+			})
+	    };
+
+		let mut x_dynamic = Instruction {
+			operation: Extension::Arithmetic(Arithmetic::Add),
+			width: absolute::Type::Byte,
+			synchronise: false,
+			data: Some(Data {
+				width: absolute::Type::Byte,
+				destination: Destination::Dynamic,
+				operands: Operands::AllPresent(AllPresent {
+					x_static: 0,
+					x_dynamic: Dynamic::Register(1)
+				})
+			})
+		};
+	
+	    assert!(matches!(x_static.destination().unwrap(), Operand::Static(_)));
+	    assert!(!matches!(x_dynamic.destination().unwrap(), Operand::Static(_)));
+	}
 }
