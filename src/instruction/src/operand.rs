@@ -82,7 +82,7 @@ impl Dynamic {
 					Err(_) => return Err(ReadImmediateError::Read)
 				};
 
-				absolute::Data::Byte(buffer[0])
+				absolute::Data::Word(u16::from_le_bytes(buffer))
 			},
 			IMMEDIATE_EXPONENT_DUAL => {
 				let mut buffer = [0u8; DUAL_SIZE as usize];
@@ -91,7 +91,7 @@ impl Dynamic {
 					Err(_) => return Err(ReadImmediateError::Read)
 				};
 
-				absolute::Data::Byte(buffer[0])
+				absolute::Data::Dual(u32::from_le_bytes(buffer))
 			},
 			IMMEDIATE_EXPONENT_QUAD => {
 				let mut buffer = [0u8; QUAD_SIZE as usize];
@@ -100,7 +100,7 @@ impl Dynamic {
 					Err(_) => return Err(ReadImmediateError::Read)
 				};
 
-				absolute::Data::Byte(buffer[0])
+				absolute::Data::Quad(u64::from_le_bytes(buffer))
 			},
 			_ => return Err(ReadImmediateError::Exponent)
 		})
@@ -113,8 +113,8 @@ impl Dynamic {
 	/// used to calculate how many immediate bytes should be read. These bytes will only be read if not in Register
 	/// addressing mode.
 	/// - The register is only used by the Register and Offset addressing modes.
-	pub fn from_codes(register: u8, addressing: u8, immediate_exponent: u8, immediate_stream: &mut impl Read) ->
-																											 Result<Self, FromCodesError> {
+	pub fn from_codes(register: u8, addressing: u8, immediate_exponent: u8, immediate_stream: &mut impl Read) -> 
+																											  Result<Self, FromCodesError> {
 		if addressing == REGISTER_ADDRESSING { return Ok(Self::Register(register)) }
 
 		let immediate = match Self::read_immediate(immediate_exponent, immediate_stream) {
@@ -184,12 +184,25 @@ impl Operands {
 mod dynamic_test {
 	use std::io::Cursor;
 	use crate::absolute;
-	use crate::operand::{CONSTANT_ADDRESSING, Dynamic, MEMORY_ADDRESSING, Offset, OFFSET_ADDRESSING, REGISTER_ADDRESSING};
+	use crate::operand::{CONSTANT_ADDRESSING, Dynamic, IMMEDIATE_EXPONENT_BYTE, IMMEDIATE_EXPONENT_DUAL, 
+						 IMMEDIATE_EXPONENT_QUAD, IMMEDIATE_EXPONENT_WORD, MEMORY_ADDRESSING, Offset, 
+						 OFFSET_ADDRESSING, REGISTER_ADDRESSING};
+	
+	#[test]
+	fn read_immediate() {
+		assert!(matches!(Dynamic::read_immediate(IMMEDIATE_EXPONENT_BYTE, &mut Cursor::new([10])).unwrap(), 
+				absolute::Data::Byte(10)));
+		assert!(matches!(Dynamic::read_immediate(IMMEDIATE_EXPONENT_WORD, &mut Cursor::new([0b11111111, 0b11110000]))
+			.unwrap(), absolute::Data::Word(0b11110000_11111111)));
+		assert!(matches!(Dynamic::read_immediate(IMMEDIATE_EXPONENT_DUAL, &mut Cursor::new([0b11001100, 0b11110000, 
+			0b11111111, 0b00001111])).unwrap(), absolute::Data::Dual(0b00001111_11111111_11110000_11001100)));
+		assert!(matches!(Dynamic::read_immediate(IMMEDIATE_EXPONENT_QUAD, &mut Cursor::new([0b11001100, 0b11110000, 
+			0b11111111, 0b00001111, 0b11001100, 0b11110000, 0b11111111, 0b00001111])).unwrap(), absolute::Data::Quad
+			(0b00001111_11111111_11110000_11001100_00001111_11111111_11110000_11001100)));
+	}
 
 	#[test]
 	fn from_codes() {
-		// Exhaustive testing.
-
 		// Immediate is not used here.
 		let register = Dynamic::from_codes(5, REGISTER_ADDRESSING, 0, &mut Cursor::new([])).unwrap();
 		// Word sized immediate.
@@ -197,16 +210,19 @@ mod dynamic_test {
 		// Byte sized immediate.
 		let constant = Dynamic::from_codes(0, CONSTANT_ADDRESSING, 0, &mut Cursor::new([0])).unwrap();
 		// Quad sized immediate.
-		let memory = Dynamic::from_codes(0, MEMORY_ADDRESSING, 3, &mut Cursor::new([0b00001111, 0b00111111, 0b00001111, 0b00111111]))
+		let memory = Dynamic::from_codes(0, MEMORY_ADDRESSING, 2, &mut Cursor::new([0b00001111, 0b00111111,
+			0b00001111, 0b00111111]))
 			.unwrap();
+
+		dbg!(memory.clone());
 
 		assert!(matches!(register, Dynamic::Register(5)));
 		assert!(matches!(offset, Dynamic::Offset(Offset {
-			offset: absolute::Data::Word(0b00001111_00111111),
+			offset: absolute::Data::Word(0b00111111_00001111),
 			register: 7
 		})));
 		assert!(matches!(constant, Dynamic::Constant(absolute::Data::Byte(0))));
-		assert!(matches!(memory, Dynamic::Memory(absolute::Data::Quad(0b00001111_00111111_00001111_00111111))));
+		assert!(matches!(memory, Dynamic::Memory(absolute::Data::Dual(0b00111111_00001111_00111111_00001111))));
 	}
 }
 
