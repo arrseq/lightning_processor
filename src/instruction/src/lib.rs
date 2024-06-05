@@ -287,10 +287,14 @@ impl Instruction {
 					x_dynamic
 				})
 			} else if operation.expects_static() {
-				Operands::Static(todo!())
+				Operands::Static(data_raw.x_static)
 			} else {
 				// Runs if there is a dynamic operand
-				Operands::Dynamic(todo!())
+				Operands::Dynamic(match Dynamic::from_codes(data_raw.x_dynamic, driver.addressing, driver
+					.immediate_exponent, stream) {
+					Ok(operand) => operand,
+					Err(error) => return Err(DecodeError::Dynamic(error))
+				})
 			};
 
 			// Store data.
