@@ -29,6 +29,14 @@ pub trait Operation {
 	fn expects_nothing(&mut self) -> bool {
 		!self.expects_dynamic() && !self.expects_static()
 	}
+	
+	fn expects_only_static(&mut self) -> bool {
+		self.expects_static() && !self.expects_dynamic()
+	}
+	
+	fn expects_only_dynamic(&mut self) -> bool {
+		self.expects_dynamic() && !self.expects_nothing()
+	}
 }
 
 // Extension

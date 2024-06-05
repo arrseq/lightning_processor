@@ -64,6 +64,21 @@ pub enum Data {
 	Quad(u64)
 }
 
+impl Data {
+	pub fn to_le_bytes(&self) -> Vec<u8> {
+		let mut bytes = Vec::new();
+		
+		match self {
+			Self::Byte(number) => bytes.extend(number.to_le_bytes()),
+			Self::Word(number) => bytes.extend(number.to_le_bytes()),
+			Self::Dual(number) => bytes.extend(number.to_le_bytes()),
+			Self::Quad(number) => bytes.extend(number.to_le_bytes()),
+		}
+		
+		bytes
+	}
+}
+
 impl From<Type> for Data {
 	fn from(value: Type) -> Self {
 		match value {
