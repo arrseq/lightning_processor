@@ -1,3 +1,4 @@
+#![feature(let_chains)]
 //! Binary instruction format is as follows.
 //!
 //! Driver 0:
@@ -228,7 +229,9 @@ pub enum DecodeError {
 	/// The extension and or operation are invalid.
 	InvalidCode(ExtensionFromCodeInvalid),
 	/// Error caused from interpreting the dynamic operand
-	Dynamic(FromCodesError)
+	Dynamic(FromCodesError),
+	/// Both the synchronous state and register addressing mode were used which is not allowed.
+	SynchronousRegister
 }
 
 /// Caused by using a destination which corresponds to an operand that is not provided.
@@ -243,6 +246,18 @@ pub enum DestinationError {
 }
 
 impl Instruction {
+	/// Use the driver, registers, and immediate to encode into a dynamic number of bytes. Encoding is variable length.
+	pub fn encode_driver_registers_immediate(driver: &Driver, registers: &Registers, immediate: &absolute::Data) ->
+																											   Vec<u8> {
+		let mut encoded = Vec::new();
+
+		encoded.extend(driver.encode());
+		encoded.push(registers.encode());
+		encoded.extend(immediate.to_le_bytes());
+
+		encoded
+	}
+
 	// Decode an encoded binary stream into an instruction.
 	pub fn from_encoded(stream: &mut impl Read) -> Result<Self, DecodeError> {
 		// Decode driver bytes.
@@ -265,41 +280,46 @@ impl Instruction {
 		let operation = extension.operation();
 
 		if operation.expects_operand() {
-			// Decode data byte.
+			// Decode registers byte.
 			let mut data_encoded = [0u8; 1];
 			match stream.read(&mut data_encoded) {
 				Ok(length) => if length != data_encoded.len() { return Err(DecodeError::Length); },
 				Err(error) => return Err(DecodeError::StreamRead(error))
 			};
 
-			let data_raw = Registers::from_encoded(data_encoded[0]);
+			let registers = Registers::from_encoded(data_encoded[0]);
+
+			let x_dynamic = if operation.expects_dynamic() {
+				Some(match Dynamic::from_codes(registers.x_dynamic, driver.addressing, driver
+					.immediate_exponent, stream) {
+					Ok(operand) => operand,
+					Err(error) => return Err(DecodeError::Dynamic(error))
+				})
+			} else { None };
+
+			// Do not allow the instruction to be synchronous and use the register addressing mode in the same
+			// instruction. This is incompatible as the registers are localized to each processor and synchronous
+			// instructions are meant to allow memory actions to be predictable between multiple processors.
+			if let Some(value) = &x_dynamic && let Dynamic::Register(_) = value && driver.synchronise { return Err
+				(DecodeError::SynchronousRegister) }
 
 			// Construct operand field.
 			let operands = if operation.expects_all() {
-				let x_dynamic = match Dynamic::from_codes(data_raw.x_dynamic, driver.addressing, driver
-					.immediate_exponent, stream) {
-					Ok(operand) => operand,
-					Err(error) => return Err(DecodeError::Dynamic(error))
-				};
-
 				Operands::AllPresent(AllPresent {
-					x_static: data_raw.x_static,
-					x_dynamic
+					x_static: registers.x_static,
+					x_dynamic: x_dynamic.unwrap()
 				})
-			} else if operation.expects_static() {
-				Operands::Static(data_raw.x_static)
+			} else if operation.expects_only_static() {
+				Operands::Static(registers.x_static)
+			} else if operation.expects_only_dynamic() {
+				Operands::Dynamic(x_dynamic.unwrap())
 			} else {
-				// Runs if there is a dynamic operand
-				Operands::Dynamic(match Dynamic::from_codes(data_raw.x_dynamic, driver.addressing, driver
-					.immediate_exponent, stream) {
-					Ok(operand) => operand,
-					Err(error) => return Err(DecodeError::Dynamic(error))
-				})
+				unreachable!()
 			};
 
-			// Store data.
+			// Construct data.
 			data = Some(Data {
-				width: absolute::Type::from_exponent(data_raw.width).unwrap(),
+				width: absolute::Type::from_exponent(registers.width).unwrap(),
 				destination: if driver.dynamic_destination { Destination::Dynamic } else {
 					Destination::Static },
 				synchronise: driver.synchronise,
@@ -307,7 +327,7 @@ impl Instruction {
 			})
 		}
 
-		// Assemble
+		// Construction
 		Ok(Self {
 			operation: extension,
 			width: absolute::Type::Byte,
@@ -481,35 +501,65 @@ mod raw_data_test {
 #[cfg(test)]
 mod instruction_test {
 	use std::io::Cursor;
-	use crate::{absolute, Data, Destination, Driver, Instruction, Registers};
-	use crate::operand::{AllPresent, Dynamic, IMMEDIATE_EXPONENT_BYTE, Operand, Operands};
+	use crate::{absolute, Data, DecodeError, Destination, Driver, Instruction, Registers};
+	use crate::operand::{AllPresent, Dynamic, IMMEDIATE_EXPONENT_BYTE, Operand, Operands, REGISTER_ADDRESSING};
 	use crate::operation::arithmetic::Arithmetic;
 	use crate::operation::Extension;
 
 	#[test]
-	fn decode() {
-		let driver = Driver {
+	fn encode_driver_registers() {
+		let mut driver = Driver {
 			extension: 0,
 			operation: 0,
 			synchronise: true,
 			dynamic_destination: false,
-			addressing: 0,
+			addressing: 2,
 			immediate_exponent: 0
-		}.encode();
-		
-		let data = Registers {
+		};
+
+		let mut registers = Registers {
 			width: 0,
 			x_static: 10,
 			x_dynamic: 20
-		}.encode();
-
-		let mut cursor = Cursor::new([driver[0], driver[1], data]);
-		let instruction = Instruction::from_encoded(&mut cursor).unwrap();
-
-		assert!(matches!(instruction.operation, Extension::Arithmetic(_)));
+		};
 	}
 
-	// TODO: FIX
+	#[test]
+	fn decode() {
+		// Decode a valid instruction.
+		let mut driver = Driver {
+			extension: 0,
+			operation: 0,
+			synchronise: true,
+			dynamic_destination: false,
+			addressing: 2,
+			immediate_exponent: 0
+		};
+		
+		let mut registers = Registers {
+			width: 0,
+			x_static: 10,
+			x_dynamic: 20
+		};
+
+		let mut cursor = Cursor::new(
+			Instruction::encode_driver_registers_immediate(&driver, &registers, &absolute::Data::Byte(10)));
+
+		let mut instruction = Instruction::from_encoded(&mut cursor).unwrap();
+
+		assert!(matches!(instruction.operation, Extension::Arithmetic(_)));
+		assert!(matches!(instruction.data.unwrap().operands.x_dynamic().unwrap(), Dynamic::Constant
+			(absolute::Data::Byte(10))));
+
+		// Synchronous register addressing instruction should fail to decode.
+		driver.addressing = REGISTER_ADDRESSING;
+		cursor = Cursor::new(
+			Instruction::encode_driver_registers_immediate(&driver, &registers, &absolute::Data::Byte(10)));
+		let error = Instruction::from_encoded(&mut cursor);
+
+		assert!(matches!(error, Err(DecodeError::SynchronousRegister)));
+	}
+
 	#[test]
 	fn destination() {
 	    let x_static = Instruction {
