@@ -1,5 +1,12 @@
 use crate::{absolute};
 
+// region: Constants
+pub const REGISTER_ADDRESSING: u8 = 0;
+pub const OFFSET_ADDRESSING  : u8 = 1;
+pub const CONSTANT_ADDRESSING: u8 = 2;
+pub const MEMORY_ADDRESSING  : u8 = 3;
+// endregion
+
 // region: Single
 /// A register code. This is static because this only serves as a register code operand and can only be used to 
 /// dereference a register. Instruction executors never get access to this value directly, instead they get a 
@@ -17,10 +24,39 @@ pub struct Offset {
 /// pick either of the addressing modes.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Dynamic {
+	/// Read value from register.
 	Register(u8),
+	/// Read value from register, add an offset to it, then use the sum to dereference memory.
 	Offset(Offset),
+	/// Read value from immediate as data.
 	Constant(absolute::Data),
-	Address(absolute::Data)
+	/// Read value from memory address by addressing it with the immediate.
+	Memory(absolute::Data)
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FromCodesError {
+	/// The addressing code is invalid.
+	InvalidAddressing
+}
+
+impl Dynamic {
+	/// Create a new dynamic operand from codes. Not all the codes may be used. 
+	/// - The immediate is only used by the Offset, Constant, and Memory addressing modes.
+	/// - The register is only used by the Register and Offset addressing modes.
+	pub fn from_codes(register: u8, addressing: u8, immediate: absolute::Data) -> Result<Self,
+		FromCodesError> {
+		Ok(match addressing {
+			REGISTER_ADDRESSING => Self::Register(register),
+			OFFSET_ADDRESSING => Self::Offset(Offset {
+				register,
+				offset: immediate,
+			}),
+			CONSTANT_ADDRESSING => Self::Constant(immediate),
+			MEMORY_ADDRESSING => Self::Memory(immediate),
+			_ => return Err(FromCodesError::InvalidAddressing)
+		})
+	}
 }
 
 /// Operands provide the operation the arguments necessary for computing, There are 2 types of operands, static and 
@@ -68,6 +104,29 @@ impl Operands {
 	}
 }
 // endregion
+
+#[cfg(test)]
+mod dynamic_test {
+	use crate::absolute;
+	use crate::operand::{CONSTANT_ADDRESSING, Dynamic, MEMORY_ADDRESSING, Offset, OFFSET_ADDRESSING, REGISTER_ADDRESSING};
+
+	#[test]
+	fn from_codes() {
+		// Exhaustive testing.
+		let register = Dynamic::from_codes(5, REGISTER_ADDRESSING, absolute::Data::Byte(0)).unwrap();
+		let offset = Dynamic::from_codes(7, OFFSET_ADDRESSING, absolute::Data::Byte(10)).unwrap();
+		let constant = Dynamic::from_codes(0, CONSTANT_ADDRESSING, absolute::Data::Quad(u64::MAX)).unwrap();
+		let memory = Dynamic::from_codes(0, MEMORY_ADDRESSING, absolute::Data::Quad(1)).unwrap();
+
+		assert!(matches!(register, Dynamic::Register(5)));
+		assert!(matches!(offset, Dynamic::Offset(Offset {
+			offset: absolute::Data::Byte(10),
+			register: 7
+		})));
+		assert!(matches!(constant, Dynamic::Constant(absolute::Data::Quad(u64::MAX))));
+		assert!(matches!(memory, Dynamic::Memory(absolute::Data::Quad(1))));
+	}
+}
 
 #[cfg(test)]
 mod operands_test {
