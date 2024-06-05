@@ -190,15 +190,18 @@ mod dynamic_test {
 	
 	#[test]
 	fn read_immediate() {
+		let word = 0b11110000_11111111u16;
+		let dual = 0b00001111_11111111_11110000_11001100u32;
+		let quad = 0b00001111_11111111_11110000_11001100_00001111_11111111_11110000_11001100u64;
+		
 		assert!(matches!(Dynamic::read_immediate(IMMEDIATE_EXPONENT_BYTE, &mut Cursor::new([10])).unwrap(), 
 				absolute::Data::Byte(10)));
-		assert!(matches!(Dynamic::read_immediate(IMMEDIATE_EXPONENT_WORD, &mut Cursor::new([0b11111111, 0b11110000]))
-			.unwrap(), absolute::Data::Word(0b11110000_11111111)));
-		assert!(matches!(Dynamic::read_immediate(IMMEDIATE_EXPONENT_DUAL, &mut Cursor::new([0b11001100, 0b11110000, 
-			0b11111111, 0b00001111])).unwrap(), absolute::Data::Dual(0b00001111_11111111_11110000_11001100)));
-		assert!(matches!(Dynamic::read_immediate(IMMEDIATE_EXPONENT_QUAD, &mut Cursor::new([0b11001100, 0b11110000, 
-			0b11111111, 0b00001111, 0b11001100, 0b11110000, 0b11111111, 0b00001111])).unwrap(), absolute::Data::Quad
-			(0b00001111_11111111_11110000_11001100_00001111_11111111_11110000_11001100)));
+		assert!(matches!(Dynamic::read_immediate(IMMEDIATE_EXPONENT_WORD, &mut Cursor::new(word.to_le_bytes()))
+			.unwrap(), absolute::Data::Word(word)));
+		assert!(matches!(Dynamic::read_immediate(IMMEDIATE_EXPONENT_DUAL, &mut Cursor::new(dual.to_le_bytes())).unwrap(), 
+			absolute::Data::Dual(dual)));
+		assert!(matches!(Dynamic::read_immediate(IMMEDIATE_EXPONENT_QUAD, &mut Cursor::new(quad.to_le_bytes())).unwrap(), 
+			absolute::Data::Quad(quad)));
 	}
 
 	#[test]
