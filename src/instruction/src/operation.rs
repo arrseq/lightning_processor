@@ -68,7 +68,7 @@ impl Extension {
 	}
 	
 	/// Retrieve the underlying operation trait.
-	pub fn operation(&mut self) -> &mut dyn Operation {
+	pub fn operation(&mut self) -> &mut impl Operation {
 		match self {
 			Self::Arithmetic(arithmetic) => arithmetic
 		}
