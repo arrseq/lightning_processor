@@ -36,14 +36,20 @@ impl From<Data> for Type {
 }
 
 impl Type {
-	pub fn from_bytes(value: u8) -> Option<Self> {
-		Some(match value {
+	/// Create from the number of bytes.
+	pub fn from_bytes(bytes: u8) -> Option<Self> {
+		Some(match bytes {
 			BYTE_SIZE => Type::Byte,
 			WORD_SIZE => Type::Word,
 			DUAL_SIZE => Type::Dual,
 			QUAD_SIZE => Type::Quad,
 			_ => return None
 		})
+	}
+	
+	/// Create from an exponent of 2. The maximum supported exponent is 3.
+	pub fn from_exponent(exponent: u8) -> Option<Self> {
+		Self::from_bytes(2 ^ exponent)
 	}
 }
 

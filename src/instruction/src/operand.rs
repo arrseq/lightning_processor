@@ -1,10 +1,17 @@
+use std::io;
+use std::io::Read;
 use crate::{absolute};
+use crate::absolute::{BYTE_SIZE, DUAL_SIZE, QUAD_SIZE, WORD_SIZE};
 
 // region: Constants
-pub const REGISTER_ADDRESSING: u8 = 0;
-pub const OFFSET_ADDRESSING  : u8 = 1;
-pub const CONSTANT_ADDRESSING: u8 = 2;
-pub const MEMORY_ADDRESSING  : u8 = 3;
+pub const REGISTER_ADDRESSING    : u8 = 0;
+pub const OFFSET_ADDRESSING      : u8 = 1;
+pub const CONSTANT_ADDRESSING    : u8 = 2;
+pub const MEMORY_ADDRESSING      : u8 = 3;
+pub const IMMEDIATE_EXPONENT_BYTE: u8 = 0;
+pub const IMMEDIATE_EXPONENT_WORD: u8 = 1;
+pub const IMMEDIATE_EXPONENT_DUAL: u8 = 2;
+pub const IMMEDIATE_EXPONENT_QUAD: u8 = 3;
 // endregion
 
 // region: Single
@@ -35,26 +42,94 @@ pub enum Dynamic {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ReadImmediateError {
+	/// Caused by reading from the stream.
+	Read,
+	/// The stream does not contain enough bytes.
+	Length,
+	/// The exponent is larger than 3.
+	Exponent
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FromCodesError {
-	/// The addressing code is invalid.
-	InvalidAddressing
+	/// The immediate exponent is out of bounds. 3 is the largest exponent for immediate.
+	Immediate(ReadImmediateError),
+	/// The addressing mode does not exist.
+	Addressing
 }
 
 impl Dynamic {
-	/// Create a new dynamic operand from codes. Not all the codes may be used. 
-	/// - The immediate is only used by the Offset, Constant, and Memory addressing modes.
+	// fn read_stream<const buffer>()
+
+	/// Read the immediate based on the exponent. The number of bytes read from the stream is based on using the
+	/// immediate exponent as a power of 2.
+	pub fn read_immediate(exponent: u8, stream: &mut impl Read) -> Result<absolute::Data, ReadImmediateError> {
+		Ok(match exponent {
+			IMMEDIATE_EXPONENT_BYTE => {
+				let mut buffer = [0u8; BYTE_SIZE as usize];
+				match stream.read(&mut buffer) {
+					Ok(length) => if length != buffer.len() { return Err(ReadImmediateError::Length) },
+					Err(_) => return Err(ReadImmediateError::Read)
+				};
+
+				absolute::Data::Byte(buffer[0])
+			},
+			IMMEDIATE_EXPONENT_WORD => {
+				let mut buffer = [0u8; WORD_SIZE as usize];
+				match stream.read(&mut buffer) {
+					Ok(length) => if length != buffer.len() { return Err(ReadImmediateError::Length) },
+					Err(_) => return Err(ReadImmediateError::Read)
+				};
+
+				absolute::Data::Byte(buffer[0])
+			},
+			IMMEDIATE_EXPONENT_DUAL => {
+				let mut buffer = [0u8; DUAL_SIZE as usize];
+				match stream.read(&mut buffer) {
+					Ok(length) => if length != buffer.len() { return Err(ReadImmediateError::Length) },
+					Err(_) => return Err(ReadImmediateError::Read)
+				};
+
+				absolute::Data::Byte(buffer[0])
+			},
+			IMMEDIATE_EXPONENT_QUAD => {
+				let mut buffer = [0u8; QUAD_SIZE as usize];
+				match stream.read(&mut buffer) {
+					Ok(length) => if length != buffer.len() { return Err(ReadImmediateError::Length) },
+					Err(_) => return Err(ReadImmediateError::Read)
+				};
+
+				absolute::Data::Byte(buffer[0])
+			},
+			_ => return Err(ReadImmediateError::Exponent)
+		})
+	}
+
+	/// Create a new dynamic operand from codes. Not all the codes may be used. Returns [None] if the addressing code
+	/// is invalid.
+	///
+	/// The immediate is expected to start where the immediate bytes would be. The immediate exponent is
+	/// used to calculate how many immediate bytes should be read. These bytes will only be read if not in Register
+	/// addressing mode.
 	/// - The register is only used by the Register and Offset addressing modes.
-	pub fn from_codes(register: u8, addressing: u8, immediate: absolute::Data) -> Result<Self,
-		FromCodesError> {
+	pub fn from_codes(register: u8, addressing: u8, immediate_exponent: u8, immediate_stream: &mut impl Read) ->
+																											 Result<Self, FromCodesError> {
+		if addressing == REGISTER_ADDRESSING { return Ok(Self::Register(register)) }
+
+		let immediate = match Self::read_immediate(immediate_exponent, immediate_stream) {
+			Ok(immediate) => immediate,
+			Err(error) => return Err(FromCodesError::Immediate(error))
+		};
+
 		Ok(match addressing {
-			REGISTER_ADDRESSING => Self::Register(register),
 			OFFSET_ADDRESSING => Self::Offset(Offset {
 				register,
 				offset: immediate,
 			}),
 			CONSTANT_ADDRESSING => Self::Constant(immediate),
 			MEMORY_ADDRESSING => Self::Memory(immediate),
-			_ => return Err(FromCodesError::InvalidAddressing)
+			_ => return Err(FromCodesError::Addressing)
 		})
 	}
 }
@@ -107,24 +182,31 @@ impl Operands {
 
 #[cfg(test)]
 mod dynamic_test {
+	use std::io::Cursor;
 	use crate::absolute;
 	use crate::operand::{CONSTANT_ADDRESSING, Dynamic, MEMORY_ADDRESSING, Offset, OFFSET_ADDRESSING, REGISTER_ADDRESSING};
 
 	#[test]
 	fn from_codes() {
 		// Exhaustive testing.
-		let register = Dynamic::from_codes(5, REGISTER_ADDRESSING, absolute::Data::Byte(0)).unwrap();
-		let offset = Dynamic::from_codes(7, OFFSET_ADDRESSING, absolute::Data::Byte(10)).unwrap();
-		let constant = Dynamic::from_codes(0, CONSTANT_ADDRESSING, absolute::Data::Quad(u64::MAX)).unwrap();
-		let memory = Dynamic::from_codes(0, MEMORY_ADDRESSING, absolute::Data::Quad(1)).unwrap();
+
+		// Immediate is not used here.
+		let register = Dynamic::from_codes(5, REGISTER_ADDRESSING, 0, &mut Cursor::new([])).unwrap();
+		// Word sized immediate.
+		let offset = Dynamic::from_codes(7, OFFSET_ADDRESSING, 1, &mut Cursor::new([0b00001111, 0b00111111])).unwrap();
+		// Byte sized immediate.
+		let constant = Dynamic::from_codes(0, CONSTANT_ADDRESSING, 0, &mut Cursor::new([0])).unwrap();
+		// Quad sized immediate.
+		let memory = Dynamic::from_codes(0, MEMORY_ADDRESSING, 3, &mut Cursor::new([0b00001111, 0b00111111, 0b00001111, 0b00111111]))
+			.unwrap();
 
 		assert!(matches!(register, Dynamic::Register(5)));
 		assert!(matches!(offset, Dynamic::Offset(Offset {
-			offset: absolute::Data::Byte(10),
+			offset: absolute::Data::Word(0b00001111_00111111),
 			register: 7
 		})));
-		assert!(matches!(constant, Dynamic::Constant(absolute::Data::Quad(u64::MAX))));
-		assert!(matches!(memory, Dynamic::Memory(absolute::Data::Quad(1))));
+		assert!(matches!(constant, Dynamic::Constant(absolute::Data::Byte(0))));
+		assert!(matches!(memory, Dynamic::Memory(absolute::Data::Quad(0b00001111_00111111_00001111_00111111))));
 	}
 }
 
