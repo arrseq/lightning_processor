@@ -132,6 +132,34 @@ impl Dynamic {
 			_ => return Err(FromCodesError::Addressing)
 		})
 	}
+	
+	pub fn addressing(&self) -> u8 {
+		match self {
+			Self::Register(_) => REGISTER_ADDRESSING,
+			Self::Offset(_) => OFFSET_ADDRESSING,
+			Self::Constant(_) => CONSTANT_ADDRESSING,
+			Self::Memory(_) => MEMORY_ADDRESSING
+		}
+	}
+	
+	pub fn immediate(&self) -> Option<&absolute::Data> {
+		Some(match self {
+			Self::Register(_) => return None,
+			Self::Offset(offset) => &offset.offset,
+			Self::Constant(constant) => constant,
+			Self::Memory(memory) => memory
+		})
+	}
+	
+	/// Get the register code if the addressing includes one. Addressing modes [Register] and [Offset] support this 
+	/// function and will return an instance of [Some] otherwise [None] will be returned.
+	pub fn register(&self) -> Option<u8> {
+		Some(match self {
+			Self::Register(register) => *register,
+			Self::Offset(offset) => offset.register,
+			_ => return None
+		})
+	}
 }
 
 /// Operands provide the operation the arguments necessary for computing, There are 2 types of operands, static and 

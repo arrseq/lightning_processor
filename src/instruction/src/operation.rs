@@ -81,6 +81,13 @@ impl Extension {
 			Self::Arithmetic(arithmetic) => arithmetic
 		}
 	}
+	
+	/// Get the encodable extension code.
+	pub fn code(&self) -> u8 {
+		match self {
+			Self::Arithmetic(_) => ARITHMETIC_CODE
+		}
+	}
 }
 
 #[cfg(test)]
