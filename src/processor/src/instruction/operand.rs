@@ -1,7 +1,6 @@
-use std::io;
 use std::io::Read;
-use crate::{absolute};
-use crate::absolute::{BYTE_SIZE, DUAL_SIZE, QUAD_SIZE, WORD_SIZE};
+use crate::{number};
+use crate::number::{BYTE_SIZE, DUAL_SIZE, QUAD_SIZE, WORD_SIZE};
 
 // region: Constants
 pub const REGISTER_ADDRESSING    : u8 = 0;
@@ -24,7 +23,7 @@ pub type Static = u8;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Offset {
 	register: u8,
-	offset: absolute::Data
+	offset: number::Data
 }
 
 /// Either a register code or immediate value addressing mode. Being dynamic means this gives the programmer freedom to 
@@ -36,9 +35,9 @@ pub enum Dynamic {
 	/// Read value from register, add an offset to it, then use the sum to dereference memory.
 	Offset(Offset),
 	/// Read value from immediate as data.
-	Constant(absolute::Data),
+	Constant(number::Data),
 	/// Read value from memory address by addressing it with the immediate.
-	Memory(absolute::Data)
+	Memory(number::Data)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -64,7 +63,7 @@ impl Dynamic {
 
 	/// Read the immediate based on the exponent. The number of bytes read from the stream is based on using the
 	/// immediate exponent as a power of 2.
-	pub fn read_immediate(exponent: u8, stream: &mut impl Read) -> Result<absolute::Data, ReadImmediateError> {
+	pub fn read_immediate(exponent: u8, stream: &mut impl Read) -> Result<number::Data, ReadImmediateError> {
 		Ok(match exponent {
 			IMMEDIATE_EXPONENT_BYTE => {
 				let mut buffer = [0u8; BYTE_SIZE as usize];
@@ -73,7 +72,7 @@ impl Dynamic {
 					Err(_) => return Err(ReadImmediateError::Read)
 				};
 
-				absolute::Data::Byte(buffer[0])
+				number::Data::Byte(buffer[0])
 			},
 			IMMEDIATE_EXPONENT_WORD => {
 				let mut buffer = [0u8; WORD_SIZE as usize];
@@ -82,7 +81,7 @@ impl Dynamic {
 					Err(_) => return Err(ReadImmediateError::Read)
 				};
 
-				absolute::Data::Word(u16::from_le_bytes(buffer))
+				number::Data::Word(u16::from_le_bytes(buffer))
 			},
 			IMMEDIATE_EXPONENT_DUAL => {
 				let mut buffer = [0u8; DUAL_SIZE as usize];
@@ -91,7 +90,7 @@ impl Dynamic {
 					Err(_) => return Err(ReadImmediateError::Read)
 				};
 
-				absolute::Data::Dual(u32::from_le_bytes(buffer))
+				number::Data::Dual(u32::from_le_bytes(buffer))
 			},
 			IMMEDIATE_EXPONENT_QUAD => {
 				let mut buffer = [0u8; QUAD_SIZE as usize];
@@ -100,7 +99,7 @@ impl Dynamic {
 					Err(_) => return Err(ReadImmediateError::Read)
 				};
 
-				absolute::Data::Quad(u64::from_le_bytes(buffer))
+				number::Data::Quad(u64::from_le_bytes(buffer))
 			},
 			_ => return Err(ReadImmediateError::Exponent)
 		})
@@ -142,7 +141,7 @@ impl Dynamic {
 		}
 	}
 	
-	pub fn immediate(&self) -> Option<&absolute::Data> {
+	pub fn immediate(&self) -> Option<&number::Data> {
 		Some(match self {
 			Self::Register(_) => return None,
 			Self::Offset(offset) => &offset.offset,
@@ -179,7 +178,7 @@ pub struct AllPresent {
 	pub x_dynamic: Dynamic
 }
 
-/// Multi configuration of operands for an instruction.
+/// Multi configuration of operands for an processor.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Operands {
 	AllPresent(AllPresent),
@@ -211,8 +210,8 @@ impl Operands {
 #[cfg(test)]
 mod dynamic_test {
 	use std::io::Cursor;
-	use crate::absolute;
-	use crate::operand::{CONSTANT_ADDRESSING, Dynamic, IMMEDIATE_EXPONENT_BYTE, IMMEDIATE_EXPONENT_DUAL, 
+	use crate::number;
+	use crate::instruction::operand::{CONSTANT_ADDRESSING, Dynamic, IMMEDIATE_EXPONENT_BYTE, IMMEDIATE_EXPONENT_DUAL, 
 						 IMMEDIATE_EXPONENT_QUAD, IMMEDIATE_EXPONENT_WORD, MEMORY_ADDRESSING, Offset, 
 						 OFFSET_ADDRESSING, REGISTER_ADDRESSING};
 	
@@ -223,13 +222,13 @@ mod dynamic_test {
 		let quad = 0b00001111_11111111_11110000_11001100_00001111_11111111_11110000_11001100u64;
 		
 		assert!(matches!(Dynamic::read_immediate(IMMEDIATE_EXPONENT_BYTE, &mut Cursor::new([10])).unwrap(), 
-				absolute::Data::Byte(10)));
+				number::Data::Byte(10)));
 		assert!(matches!(Dynamic::read_immediate(IMMEDIATE_EXPONENT_WORD, &mut Cursor::new(word.to_le_bytes()))
-			.unwrap(), absolute::Data::Word(word)));
+			.unwrap(), number::Data::Word(_word)));
 		assert!(matches!(Dynamic::read_immediate(IMMEDIATE_EXPONENT_DUAL, &mut Cursor::new(dual.to_le_bytes())).unwrap(), 
-			absolute::Data::Dual(dual)));
+			number::Data::Dual(_dual)));
 		assert!(matches!(Dynamic::read_immediate(IMMEDIATE_EXPONENT_QUAD, &mut Cursor::new(quad.to_le_bytes())).unwrap(), 
-			absolute::Data::Quad(quad)));
+			number::Data::Quad(_quad)));
 	}
 
 	#[test]
@@ -249,18 +248,18 @@ mod dynamic_test {
 
 		assert!(matches!(register, Dynamic::Register(5)));
 		assert!(matches!(offset, Dynamic::Offset(Offset {
-			offset: absolute::Data::Word(0b00111111_00001111),
+			offset: number::Data::Word(0b00111111_00001111),
 			register: 7
 		})));
-		assert!(matches!(constant, Dynamic::Constant(absolute::Data::Byte(0))));
-		assert!(matches!(memory, Dynamic::Memory(absolute::Data::Dual(0b00111111_00001111_00111111_00001111))));
+		assert!(matches!(constant, Dynamic::Constant(number::Data::Byte(0))));
+		assert!(matches!(memory, Dynamic::Memory(number::Data::Dual(0b00111111_00001111_00111111_00001111))));
 	}
 }
 
 #[cfg(test)]
 mod operands_test {
-	use crate::absolute;
-	use crate::operand::{AllPresent, Dynamic, Operands};
+	use crate::number;
+	use crate::instruction::operand::{AllPresent, Dynamic, Operands};
 
 	#[test]
 	fn x_static() {
@@ -268,11 +267,11 @@ mod operands_test {
 
 		let all = Operands::AllPresent(AllPresent {
 		    x_static,
-		    x_dynamic: Dynamic::Constant(absolute::Data::Byte(5))
+		    x_dynamic: Dynamic::Constant(number::Data::Byte(5))
 		});
 
 		let static_only = Operands::Static(x_static);
-		let dynamic_only = Operands::Dynamic(Dynamic::Constant(absolute::Data::Byte(5)));
+		let dynamic_only = Operands::Dynamic(Dynamic::Constant(number::Data::Byte(5)));
 
 		assert_eq!(all.x_static().unwrap(), x_static);
 		assert_eq!(static_only.x_static().unwrap(), x_static);
@@ -281,7 +280,7 @@ mod operands_test {
 
 	#[test]
 	fn x_dynamic() {
-		let x_dynamic = Dynamic::Constant(absolute::Data::Byte(5));
+		let x_dynamic = Dynamic::Constant(number::Data::Byte(5));
 
 		let all = Operands::AllPresent(AllPresent {
 		    x_static: 10,

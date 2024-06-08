@@ -1,6 +1,11 @@
+use crate::{ExecutionContext, instruction};
+use crate::instruction::operation::arithmetic::Arithmetic;
+
 pub mod arithmetic;
 
-use crate::operation::arithmetic::Arithmetic;
+pub trait Coded<Type> {
+	fn code(&mut self) -> Type;
+}
 
 // Extension identifier codes
 
@@ -9,13 +14,26 @@ pub const DATA_CODE      : u8 = 1;
 
 // Operation
 
-pub trait Operation {
-	fn code(&mut self) -> u8;
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum OperationExecuteError {
+	/// Not all operands were provided.
+	ExpectedAll,
+	/// Static operand was not provided.
+	ExpectedStatic,
+	/// Dynamic operand was not provided.
+	ExpectedDynamic,
+	/// No operands should have been provided.
+	ExpectedNone
+}
 
+pub trait Operation: Coded<u8> {
 	/// Whether the operation requires the static operand.
 	fn expects_static(&mut self) -> bool;
 	/// Whether the operation requires the dynamic operand.
 	fn expects_dynamic(&mut self) -> bool;
+	
+	fn execute(&mut self, code: u8, data: Option<&instruction::Data>, context: &mut ExecutionContext) -> Result<(),
+		OperationExecuteError>;
 
 	/// Whether an operand is expected.
 	fn expects_operand(&mut self) -> bool {
@@ -40,7 +58,7 @@ pub trait Operation {
 }
 
 // Extension
-// Used to group operations into categories. Also allows the instruction set to be expanded without breaking
+// Used to group operations into categories. Also allows the processor set to be expanded without breaking
 // pre-existing code.
 
 pub type ExtensionCode = u8;
@@ -81,9 +99,10 @@ impl Extension {
 			Self::Arithmetic(arithmetic) => arithmetic
 		}
 	}
-	
-	/// Get the encodable extension code.
-	pub fn code(&self) -> u8 {
+}
+
+impl Coded<u8> for Extension {
+	fn code(&mut self) -> u8 {
 		match self {
 			Self::Arithmetic(_) => ARITHMETIC_CODE
 		}
@@ -92,22 +111,22 @@ impl Extension {
 
 #[cfg(test)]
 mod extension_test {
-	use crate::operation::{ARITHMETIC_CODE, Extension, Operation};
-	use crate::operation::arithmetic::{ADD_CODE, Arithmetic, SUBTRACT_CODE};
+	use crate::instruction::operation::{ARITHMETIC_CODE, Coded, Extension, Operation};
+	use crate::instruction::operation::arithmetic::{ADD_CODE, Arithmetic, SUBTRACT_CODE};
 
 	#[test]
 	fn from_codes() {
 		let subtract = Extension::from_codes(ARITHMETIC_CODE, SUBTRACT_CODE).unwrap();
-		
+
 		assert_eq!(subtract, Extension::Arithmetic(Arithmetic::Subtract));
 		assert_eq!(SUBTRACT_CODE, Arithmetic::Subtract.code());
 	}
-	
+
 	#[test]
 	fn operation() {
 		let mut extension = Extension::from_codes(ARITHMETIC_CODE, ADD_CODE).unwrap();
 		let operation_generic = extension.operation();
-		
+
 		assert_eq!(operation_generic.expects_static(), Arithmetic::Add.expects_static());
 	}
 }

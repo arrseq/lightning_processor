@@ -1,5 +1,4 @@
-#![feature(let_chains)]
-//! Binary instruction format is as follows.
+//! Binary processor format is as follows.
 //!
 //! Driver 0:
 //! - Extension: Operation's extension.
@@ -20,16 +19,16 @@
 
 #![allow(clippy::unusual_byte_groupings)]
 
-pub mod absolute;
 pub mod operand;
 pub mod operation;
 
 use std::io;
 use std::io::Read;
-use crate::operand::{AllPresent, Dynamic, FromCodesError, Operand, Operands};
-use crate::operation::{Extension, ExtensionFromCodeInvalid, Operation};
+use crate::number;
+use crate::instruction::operand::{AllPresent, Dynamic, FromCodesError, Operand, Operands};
+use crate::instruction::operation::{Coded, Extension, ExtensionFromCodeInvalid, Operation};
 
-// region: Binary instruction bit masks
+// region: Binary processor bit masks
 pub const DRIVER0_EXTENSION_MASK           : u8 = 0b111111_0_0;
 pub const DRIVER0_SYNCHRONISE_MASK         : u8 = 0b000000_1_0;
 pub const DRIVER0_DYNAMIC_DESTINATION      : u8 = 0b000000_0_1;
@@ -207,7 +206,7 @@ impl Registers {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Data {
 	/// Width of operands when dereferenced and for storing result.
-	pub width: absolute::Type,
+	pub width: number::Type,
 	pub destination: Destination,
 	pub synchronise: bool,
 	pub operands: Operands
@@ -249,7 +248,7 @@ impl Instruction {
 	/// length. The data is not validated here. To use an immediate, registers must be of the [Some] variant. If an 
 	/// immediate is [Some] and registers is [None] then [None] will also be returned.
 	pub fn encode_driver_registers_immediate(driver: &Driver, registers: Option<&Registers>, immediate: 
-	Option<&absolute::Data>) ->
+	Option<&number::Data>) ->
 																											   Option<Vec<u8>> {
 		let mut encoded = Vec::new();
 
@@ -262,7 +261,7 @@ impl Instruction {
 		Some(encoded)
 	}
 
-	// Decode an encoded binary stream into an instruction.
+	// Decode an encoded binary stream into a processor instruction.
 	pub fn from_encoded(stream: &mut impl Read) -> Result<Self, DecodeError> {
 		// Decode driver bytes.
 		let mut encoded_driver = [0u8; 2];
@@ -301,8 +300,8 @@ impl Instruction {
 				})
 			} else { None };
 
-			// Do not allow the instruction to be synchronous and use the register addressing mode in the same
-			// instruction. This is incompatible as the registers are localized to each processor and synchronous
+			// Do not allow the processor to be synchronous and use the register or constant addressing mode in the same
+			// core. This is incompatible as the registers are localized to each processor and synchronous 
 			// instructions are meant to allow memory actions to be predictable between multiple processors.
 			if let Some(value) = &x_dynamic && let Dynamic::Register(_) = value && driver.synchronise { return Err
 				(DecodeError::SynchronousRegister) }
@@ -323,7 +322,7 @@ impl Instruction {
 
 			// Construct data.
 			data = Some(Data {
-				width: absolute::Type::from_exponent(registers.width).unwrap(),
+				width: number::Type::from_exponent(registers.width).unwrap(),
 				destination: if driver.dynamic_destination { Destination::Dynamic } else {
 					Destination::Static },
 				synchronise: driver.synchronise,
@@ -344,7 +343,7 @@ impl Instruction {
 		let mut addressing = 0;
 		let mut immediate_exponent = 0;
 		let mut registers: Option<Registers> = None;
-		let mut immediate: Option<absolute::Data> = None;
+		let mut immediate: Option<number::Data> = None;
 		
 		if let Some(data) = &self.data { 
 			synchronise = data.synchronise;
@@ -381,7 +380,7 @@ impl Instruction {
 			immediate_exponent
 		};
 		
-		// Unwrapping should not fail because the instruction is a controlled environment.
+		// Unwrapping should not fail because the processor is a controlled environment.
 		if let Some(registers) = registers {
 			if let Some(immediate) = immediate { Instruction::encode_driver_registers_immediate(&driver, Some
 				(&registers), Some(&immediate)).unwrap() } 
@@ -411,7 +410,7 @@ impl Instruction {
 
 #[cfg(test)]
 mod driver_test {
-	use crate::Driver;
+	use crate::instruction::Driver;
 
 	#[test]
 	fn extract_extension() {
@@ -549,7 +548,7 @@ mod driver_test {
 
 #[cfg(test)]
 mod registers_test {
-	use crate::Registers;
+	use crate::instruction::Registers;
 
 	#[test]
 	fn extract_width() {
@@ -568,10 +567,13 @@ mod registers_test {
 #[cfg(test)]
 mod instruction_test {
 	use std::io::Cursor;
-	use crate::{absolute, Data, DecodeError, Destination, Driver, Instruction, Registers};
-	use crate::operand::{AllPresent, CONSTANT_ADDRESSING, Dynamic, IMMEDIATE_EXPONENT_BYTE, Operand, Operands, REGISTER_ADDRESSING};
-	use crate::operation::arithmetic::{ADD_CODE, Arithmetic};
-	use crate::operation::{ARITHMETIC_CODE, Extension};
+	use crate::number;
+	use crate::instruction::{Data, DecodeError, Destination, Driver, Instruction, Registers};
+	use crate::instruction::operand::{AllPresent, CONSTANT_ADDRESSING, Dynamic, IMMEDIATE_EXPONENT_BYTE, Operand, 
+								   Operands, 
+						  REGISTER_ADDRESSING};
+	use crate::instruction::operation::arithmetic::{ADD_CODE, Arithmetic};
+	use crate::instruction::operation::{ARITHMETIC_CODE, Extension};
 
 	#[test]
 	fn encode_instruction() {
@@ -593,7 +595,7 @@ mod instruction_test {
 		let target = [ 0b000000_1_0, 0b0000_10_00, 0b00_001_000, 0b00001010 ];
 		
 		assert_eq!(
-			Instruction::encode_driver_registers_immediate(&driver, Some(&registers), Some(&absolute::Data::Byte(10))
+			Instruction::encode_driver_registers_immediate(&driver, Some(&registers), Some(&number::Data::Byte(10))
 			).unwrap(),
 			target
 		);
@@ -601,7 +603,7 @@ mod instruction_test {
 
 	#[test]
 	fn decode() {
-		// Decode a valid instruction.
+		// Decode a valid processor.
 		let mut driver = Driver {
 			extension: 0,
 			operation: 0,
@@ -618,19 +620,19 @@ mod instruction_test {
 		};
 
 		let mut cursor = Cursor::new(
-			Instruction::encode_driver_registers_immediate(&driver, Some(&registers), Some(&absolute::Data::Byte(10))
+			Instruction::encode_driver_registers_immediate(&driver, Some(&registers), Some(&number::Data::Byte(10))
 			).unwrap());
 
 		let instruction = Instruction::from_encoded(&mut cursor).unwrap();
 
 		assert!(matches!(instruction.extension, Extension::Arithmetic(_)));
 		assert!(matches!(instruction.data.unwrap().operands.x_dynamic().unwrap(), Dynamic::Constant
-			(absolute::Data::Byte(10))));
+			(number::Data::Byte(10))));
 
-		// Synchronous register addressing instruction should fail to decode.
+		// Synchronous register addressing processor should fail to decode.
 		driver.addressing = REGISTER_ADDRESSING;
 		cursor = Cursor::new(
-			Instruction::encode_driver_registers_immediate(&driver, Some(&registers), Some(&absolute::Data::Byte(10))
+			Instruction::encode_driver_registers_immediate(&driver, Some(&registers), Some(&number::Data::Byte(10))
 			).unwrap());
 		let error = Instruction::from_encoded(&mut cursor);
 
@@ -642,7 +644,7 @@ mod instruction_test {
 	    let x_static = Instruction {
 	        extension: Extension::Arithmetic(Arithmetic::Add),
 			data: Some(Data {
-				width: absolute::Type::Byte,
+				width: number::Type::Byte,
 				destination: Destination::Static,
 				synchronise: false,
 				operands: Operands::AllPresent(AllPresent {
@@ -652,10 +654,10 @@ mod instruction_test {
 			})
 	    };
 
-		let mut x_dynamic = Instruction {
+		let x_dynamic = Instruction {
 			extension: Extension::Arithmetic(Arithmetic::Add),
 			data: Some(Data {
-				width: absolute::Type::Byte,
+				width: number::Type::Byte,
 				destination: Destination::Dynamic,
 				synchronise: false,
 				operands: Operands::AllPresent(AllPresent {

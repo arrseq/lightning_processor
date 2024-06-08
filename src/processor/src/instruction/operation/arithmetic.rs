@@ -1,4 +1,6 @@
-use crate::operation::{Operation};
+use crate::ExecutionContext;
+use crate::instruction::Data;
+use crate::instruction::operation::{Coded, Operation, OperationExecuteError};
 
 // Operation codes
 
@@ -14,15 +16,23 @@ pub enum Arithmetic {
 // Implementation
 
 impl Operation for Arithmetic {
+	fn expects_static(&mut self) -> bool { true }
+	fn expects_dynamic(&mut self) -> bool { true }
+
+	fn execute(&mut self, _code: u8, _data: Option<&Data>, context: &mut ExecutionContext) -> Result<(), 
+		OperationExecuteError> {
+		context.accumulator = 100;
+		Ok(())
+	}
+}
+
+impl Coded<u8> for Arithmetic {
 	fn code(&mut self) -> u8 {
 		match self {
 			Self::Add      => ADD_CODE,
 			Self::Subtract => SUBTRACT_CODE
 		}
 	}
-
-	fn expects_static(&mut self) -> bool { true }
-	fn expects_dynamic(&mut self) -> bool { true }
 }
 
 impl Arithmetic {
