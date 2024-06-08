@@ -56,92 +56,130 @@ pub struct Driver {
 }
 
 impl Driver {
-	pub fn extract_extension(driver0: u8) -> u8 {
-		(DRIVER0_EXTENSION_MASK & driver0) >> 2
-	}
-
-	/// Only the first 6 bits of the extension is used.
-	pub fn set_extension(driver0: u8, extension: u8) -> u8 {
-		let layer = (0b00_111111 & extension) << 2;
-		(!DRIVER0_EXTENSION_MASK & driver0) | layer
-	}
-
-	pub fn extract_synchronise(driver0: u8) -> bool {
-		// Value will always be 1 bit.
-		let bit = (DRIVER0_SYNCHRONISE_MASK & driver0) >> 1;
-		bit == 1
-	}
-
-	pub fn set_synchronise(driver0: u8, lock: bool) -> u8 {
-		let layer = (lock as u8) << 1;
-		(!DRIVER0_SYNCHRONISE_MASK & driver0) | layer
-	}
-
-	pub fn extract_dynamic_destination(driver0: u8) -> bool {
-		// Value will always be 1 bit.
-		(DRIVER0_DYNAMIC_DESTINATION & driver0) == 1
-	}
-
-	pub fn set_dynamic_destination(driver0: u8, dynamic_destination: bool) -> u8 {
-		(!DRIVER0_DYNAMIC_DESTINATION & driver0) | dynamic_destination as u8
-	}
-
-	pub fn extract_operation(driver1: u8) -> u8 {
-		(DRIVER1_OPERATION_MASK & driver1) >> 4
-	}
-
-	/// Only the first 4 bits of the operation is used.
-	pub fn set_operation(driver1: u8, operation: u8) -> u8 {
-		let layer = (0b0000_1111 & operation) << 4;
-		(!DRIVER1_OPERATION_MASK & driver1) | layer
-	}
-
-	pub fn extract_addressing(driver1: u8) -> u8 {
-		(DRIVER1_ADDRESSING_MASK & driver1) >> 2
-	}
-
-	/// Only the first 2 bits of the addressing is used.
-	pub fn set_addressing(driver1: u8, addressing: u8) -> u8 {
-		let layer = (0b_000000_11 & addressing) << 2;
-		(!DRIVER1_ADDRESSING_MASK & driver1) | layer
-	}
-
-	pub fn extract_immediate_exponent(driver1: u8) -> u8 {
-		DRIVER1_ADDRESSING_PARAMETER_MASK & driver1
-	}
-
-	/// Only the first 2 bits of the addressing is used.
-	pub fn set_immediate_exponent(driver1: u8, immediate_exponent: u8) -> u8 {
-		let layer = 0b000000_11 & immediate_exponent;
-		(!DRIVER1_ADDRESSING_PARAMETER_MASK & driver1) | layer
-	}
-
 	pub fn from_encoded(bytes: [u8; 2]) -> Self {
 		let driver0 = bytes[0];
 		let driver1 = bytes[1];
 
 		Driver {
-			extension: Driver::extract_extension(driver0),
-			operation: Driver::extract_operation(driver1),
-			synchronise: Driver::extract_synchronise(driver0),
-			dynamic_destination: Driver::extract_dynamic_destination(driver0),
-			addressing: Driver::extract_addressing(driver1),
-			immediate_exponent: Driver::extract_immediate_exponent(driver1),
+			extension: driver0.extract_extension(),
+			operation: driver1.extract_operation(),
+			synchronise: driver0.extract_synchronise(),
+			dynamic_destination: driver0.extract_dynamic_destination(),
+			addressing: driver1.extract_addressing(),
+			immediate_exponent: driver1.extract_immediate_exponent(),
 		}
 	}
 
 	pub fn encode(&self) -> [u8; 2] {
-		let mut driver0 = Driver::set_extension(0, self.extension);
-		driver0 = Driver::set_synchronise(driver0, self.synchronise);
-		driver0 = Driver::set_dynamic_destination(driver0, self.dynamic_destination);
+		let mut driver0 = 0.set_extension(self.extension);
+		driver0 = driver0.set_synchronise(self.synchronise);
+		driver0 = driver0.set_dynamic_destination(self.dynamic_destination);
 
-		let mut driver1 = Driver::set_operation(0, self.operation);
-		driver1 = Driver::set_addressing(driver1, self.addressing);
-		driver1 = Driver::set_immediate_exponent(driver1, self.immediate_exponent);
+		let mut driver1 = 0.set_operation(self.operation);
+		driver1 = driver1.set_addressing(self.addressing);
+		driver1 = driver1.set_immediate_exponent(self.immediate_exponent);
 
 		[driver0, driver1]
 	}
 }
+
+// region: Uint driver traits
+pub trait Driver0Encoding {
+	fn extract_extension(self) -> u8;
+
+	/// Only the first 6 bits of the extension is used.
+	fn set_extension(self, extension: u8) -> u8;
+
+	fn extract_synchronise(self) -> bool;
+
+	fn set_synchronise(self, lock: bool) -> u8;
+
+	fn extract_dynamic_destination(self) -> bool;
+
+	fn set_dynamic_destination(self, dynamic_destination: bool) -> u8;
+}
+
+impl Driver0Encoding for u8 {
+	fn extract_extension(self) -> u8 {
+		(DRIVER0_EXTENSION_MASK & self) >> 2
+	}
+
+	/// Only the first 6 bits of the extension is used.
+	fn set_extension(self, extension: u8) -> u8 {
+		let layer = (0b00_111111 & extension) << 2;
+		(!DRIVER0_EXTENSION_MASK & self) | layer
+	}
+
+	fn extract_synchronise(self) -> bool {
+		// Value will always be 1 bit.
+		let bit = (DRIVER0_SYNCHRONISE_MASK & self) >> 1;
+		bit == 1
+	}
+
+	fn set_synchronise(self, lock: bool) -> u8 {
+		let layer = (lock as u8) << 1;
+		(!DRIVER0_SYNCHRONISE_MASK & self) | layer
+	}
+
+	fn extract_dynamic_destination(self) -> bool {
+		// Value will always be 1 bit.
+		(DRIVER0_DYNAMIC_DESTINATION & self) == 1
+	}
+
+	fn set_dynamic_destination(self, dynamic_destination: bool) -> u8 {
+		(!DRIVER0_DYNAMIC_DESTINATION & self) | dynamic_destination as u8
+	}
+}
+
+pub trait Driver1Encoding {
+	fn extract_operation(self) -> u8;
+
+	/// Only the first 4 bits of the operation is used.
+	fn set_operation(self, operation: u8) -> u8;
+
+	fn extract_addressing(self) -> u8;
+
+	/// Only the first 2 bits of the addressing is used.
+	fn set_addressing(self, addressing: u8) -> u8;
+
+	fn extract_immediate_exponent(self) -> u8;
+
+	/// Only the first 2 bits of the addressing is used.
+	fn set_immediate_exponent(self, immediate_exponent: u8) -> u8;
+}
+
+impl Driver1Encoding for u8 {
+	fn extract_operation(self) -> u8 {
+		(DRIVER1_OPERATION_MASK & self) >> 4
+	}
+
+	/// Only the first 4 bits of the operation is used.
+	fn set_operation(self, operation: u8) -> u8 {
+		let layer = (0b0000_1111 & operation) << 4;
+		(!DRIVER1_OPERATION_MASK & self) | layer
+	}
+
+	fn extract_addressing(self) -> u8 {
+		(DRIVER1_ADDRESSING_MASK & self) >> 2
+	}
+
+	/// Only the first 2 bits of the addressing is used.
+	fn set_addressing(self, addressing: u8) -> u8 {
+		let layer = (0b_000000_11 & addressing) << 2;
+		(!DRIVER1_ADDRESSING_MASK & self) | layer
+	}
+
+	fn extract_immediate_exponent(self) -> u8 {
+		DRIVER1_ADDRESSING_PARAMETER_MASK & self
+	}
+
+	/// Only the first 2 bits of the addressing is used.
+	fn set_immediate_exponent(self, immediate_exponent: u8) -> u8 {
+		let layer = 0b000000_11 & immediate_exponent;
+		(!DRIVER1_ADDRESSING_PARAMETER_MASK & self) | layer
+	}
+}
+// endregion
 
 /// The operand to dereference store the operation result in.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -158,50 +196,71 @@ pub struct Registers {
 }
 
 impl Registers {
-	pub fn extract_width(data: u8) -> u8 {
-		(REGISTERS_WIDTH_MASK & data) >> 6
-	}
-
-	/// Only first 2 bits are used.
-	pub fn set_width(data: u8, width: u8) -> u8 {
-		let layer = (0b000000_11 & width) << 6;
-		(!REGISTERS_WIDTH_MASK & data) | layer
-	}
-
-	pub fn extract_static(data: u8) -> u8 {
-		(REGISTERS_STATIC_OPERAND_MASK & data) >> 3
-	}
-
-	/// Only first 3 bits are used.
-	pub fn set_static(data: u8, x_static: u8) -> u8 {
-		let layer = (0b00000_111 & x_static) << 3;
-		(!REGISTERS_STATIC_OPERAND_MASK & data) | layer
-	}
-
-	pub fn extract_dynamic(data: u8) -> u8 {
-		REGISTERS_DYNAMIC_OPERAND_MASK & data
-	}
-
-	/// Only first 3 bits are used.
-	pub fn set_dynamic(data: u8, dynamic: u8) -> u8 {
-		let layer = 0b00000_111 & dynamic;
-		(!REGISTERS_DYNAMIC_OPERAND_MASK & data) | layer
-	}
-
 	pub fn from_encoded(encoded: u8) -> Self {
 		Self {
-			width: Registers::extract_width(encoded),
-			x_static: Registers::extract_static(encoded),
-			x_dynamic: Registers::extract_static(encoded)
+			width: encoded.extract_width(),
+			x_static: encoded.extract_static(),
+			x_dynamic: encoded.extract_static()
 		}
 	}
 
 	pub fn encode(&self) -> u8 {
-		let mut encoded = Registers::set_width(0, self.width);
-		encoded = Registers::set_static(encoded, self.x_static);
-		Registers::set_dynamic(encoded, self.x_dynamic)
+		let mut encoded = 0.set_width(self.width);
+		encoded = encoded.set_static(self.x_static);
+		encoded.set_dynamic(self.x_dynamic)
 	}
 }
+
+// region: Uint traits
+pub trait RegistersEncoding {
+	fn extract_width(self) -> u8;
+
+	/// Only first 2 bits are used.
+	fn set_width(self, width: u8) -> u8;
+
+	fn extract_static(self) -> u8;
+
+	/// Only first 3 bits are used.
+	fn set_static(self, x_static: u8) -> u8;
+
+	fn extract_dynamic(self) -> u8;
+
+	/// Only first 3 bits are used.
+	fn set_dynamic(self, dynamic: u8) -> u8;
+}
+
+impl RegistersEncoding for u8 {
+	fn extract_width(self) -> u8 {
+		(REGISTERS_WIDTH_MASK & self) >> 6
+	}
+
+	/// Only first 2 bits are used.
+	fn set_width(self, width: u8) -> u8 {
+		let layer = (0b000000_11 & width) << 6;
+		(!REGISTERS_WIDTH_MASK & self) | layer
+	}
+
+	fn extract_static(self) -> u8 {
+		(REGISTERS_STATIC_OPERAND_MASK & self) >> 3
+	}
+
+	/// Only first 3 bits are used.
+	fn set_static(self, x_static: u8) -> u8 {
+		let layer = (0b00000_111 & x_static) << 3;
+		(!REGISTERS_STATIC_OPERAND_MASK & self) | layer
+	}
+
+	fn extract_dynamic(self) -> u8 {
+		REGISTERS_DYNAMIC_OPERAND_MASK & self
+	}
+
+	/// Only first 3 bits are used.
+	fn set_dynamic(self, dynamic: u8) -> u8 {
+		let layer = 0b00000_111 & dynamic;
+		(!REGISTERS_DYNAMIC_OPERAND_MASK & self) | layer
+	}
+}
+// endregion
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Data {
@@ -409,109 +468,114 @@ impl Instruction {
 }
 
 #[cfg(test)]
-mod driver_test {
-	use crate::instruction::Driver;
+mod driver_encoding_test {
+	use crate::instruction::{Driver, Driver0Encoding, Driver1Encoding};
 
 	#[test]
 	fn extract_extension() {
-		assert_eq!(Driver::extract_extension(0b001101_0_0), 0b00_001101);
-		assert_eq!(Driver::extract_extension(0b101010_0_1), 0b00_101010);
+		assert_eq!(0b001101_0_0_u8.extract_extension(), 0b00_001101);
+		assert_eq!(0b101010_0_1_u8.extract_extension(), 0b00_101010);
 	}
 
 	#[test]
 	fn set_extension() {
-		assert_eq!(Driver::set_extension(0b000000_0_1, 10), 0b001010_0_1);
-		assert_eq!(Driver::set_extension(0b101100_0_0, 0b101100), 0b101100_0_0);
-		assert_eq!(Driver::set_extension(0b101100_1_0, 0b101100), 0b101100_1_0);
+		assert_eq!(0b000000_0_1_u8.set_extension(10), 0b001010_0_1);
+		assert_eq!(0b101100_0_0_u8.set_extension(0b101100), 0b101100_0_0);
+		assert_eq!(0b101100_1_0_u8.set_extension(0b101100), 0b101100_1_0);
 
 		// Truncating extension
-		assert_eq!(Driver::set_extension(0b00000000_0_0, 0b11_111111), 0b111111_0_0);
-		assert_eq!(Driver::set_extension(0b00000000_0_1, 0b11_111110), 0b111110_0_1);
+		assert_eq!(0b00000000_0_0_u8.set_extension(0b11_111111), 0b111111_0_0);
+		assert_eq!(0b00000000_0_1_u8.set_extension(0b11_111110), 0b111110_0_1);
 	}
 
 	#[test]
 	fn extract_synchronise() {
-		assert!(Driver::extract_synchronise(0b000000_1_0));
-		assert!(!Driver::extract_synchronise(0b000000_0_0));
-		assert!(Driver::extract_synchronise(0b001010_1_1));
-		assert!(!Driver::extract_synchronise(0b001010_0_1));
+		assert!(0b000000_1_0_u8.extract_synchronise());
+		assert!(!0b000000_0_0_u8.extract_synchronise());
+		assert!(0b001010_1_1_u8.extract_synchronise());
+		assert!(!0b001010_0_1_u8.extract_synchronise());
 	}
 
 	#[test]
 	fn set_synchronise() {
-		assert_eq!(Driver::set_synchronise(0b000000_0_0, true), 0b000000_1_0);
-		assert_eq!(Driver::set_synchronise(0b000000_1_0, false), 0b000000_0_0);
-		assert_eq!(Driver::set_synchronise(0b000000_0_1, true), 0b000000_1_1);
-		assert_eq!(Driver::set_synchronise(0b111111_0_0, false), 0b111111_0_0);
+		assert_eq!(0b000000_0_0_u8.set_synchronise(true), 0b000000_1_0);
+		assert_eq!(0b000000_1_0_u8.set_synchronise(false), 0b000000_0_0);
+		assert_eq!(0b000000_0_1_u8.set_synchronise(true), 0b000000_1_1);
+		assert_eq!(0b111111_0_0_u8.set_synchronise(false), 0b111111_0_0);
 	}
 
 	#[test]
 	fn extract_dynamic_destination() {
-		assert!(Driver::extract_dynamic_destination(0b000000_0_1));
-		assert!(!Driver::extract_dynamic_destination(0b000000_0_0));
-		assert!(Driver::extract_dynamic_destination(0b000000_1_1));
-		assert!(!Driver::extract_dynamic_destination(0b000000_1_0));
+		assert!(0b000000_0_1_u8.extract_dynamic_destination());
+		assert!(!0b000000_0_0_u8.extract_dynamic_destination());
+		assert!(0b000000_1_1_u8.extract_dynamic_destination());
+		assert!(!0b000000_1_0_u8.extract_dynamic_destination());
 	}
 
 	#[test]
 	fn set_dynamic_destination() {
-		assert_eq!(Driver::set_dynamic_destination(0b000000_0_0, true), 0b000000_0_1);
-		assert_eq!(Driver::set_dynamic_destination(0b000000_1_0, true), 0b000000_1_1);
-		assert_eq!(Driver::set_dynamic_destination(0b000000_0_1, false), 0b000000_0_0);
-		assert_eq!(Driver::set_dynamic_destination(0b000000_1_1, false), 0b000000_1_0);
+		assert_eq!(0b000000_0_0_u8.set_dynamic_destination(true), 0b000000_0_1);
+		assert_eq!(0b000000_1_0_u8.set_dynamic_destination(true), 0b000000_1_1);
+		assert_eq!(0b000000_0_1_u8.set_dynamic_destination(false), 0b000000_0_0);
+		assert_eq!(0b000000_1_1_u8.set_dynamic_destination(false), 0b000000_1_0);
 	}
 
 	#[test]
 	fn extract_operation() {
-		assert_eq!(Driver::extract_operation(0b1101_00_00), 0b0000_1101);
-		assert_eq!(Driver::extract_operation(0b1010_01_10), 0b0000_1010);
+		assert_eq!(0b1101_00_00_u8.extract_operation(), 0b0000_1101);
+		assert_eq!(0b1010_01_10_u8.extract_operation(), 0b0000_1010);
 	}
 
 	#[test]
 	fn set_operation() {
-		assert_eq!(Driver::set_operation(0b0001_00_11, 0b0000_1111), 0b1111_00_11);
-		assert_eq!(Driver::set_operation(0b1111_00_10, 0b0000_1001), 0b1001_00_10);
-		assert_eq!(Driver::set_operation(0b1010_00_10, 0b0000_1010), 0b1010_00_10);
+		assert_eq!(0b0001_00_11_u8.set_operation(0b0000_1111), 0b1111_00_11);
+		assert_eq!(0b1111_00_10_u8.set_operation(0b0000_1001), 0b1001_00_10);
+		assert_eq!(0b1010_00_10_u8.set_operation(0b0000_1010), 0b1010_00_10);
 
 		// Truncating extension
-		assert_eq!(Driver::set_operation(0b0000_00_00, 0b1111_1111), 0b1111_00_00);
-		assert_eq!(Driver::set_operation(0b0000_10_01, 0b1111_1111), 0b1111_10_01);
+		assert_eq!(0b0000_00_00_u8.set_operation(0b1111_1111), 0b1111_00_00);
+		assert_eq!(0b0000_10_01_u8.set_operation(0b1111_1111), 0b1111_10_01);
 	}
 
 	#[test]
 	fn extract_addressing() {
-		assert_eq!(Driver::extract_addressing(0b0011_10_00), 0b000000_10);
-		assert_eq!(Driver::extract_addressing(0b1011_11_00), 0b000000_11);
-		assert_eq!(Driver::extract_addressing(0b0000_00_00), 0b000000_00);
+		assert_eq!(0b0011_10_00_u8.extract_addressing(), 0b000000_10);
+		assert_eq!(0b1011_11_00_u8.extract_addressing(), 0b000000_11);
+		assert_eq!(0b0000_00_00_u8.extract_addressing(), 0b000000_00);
 	}
 
 	#[test]
 	fn set_addressing() {
-		assert_eq!(Driver::set_addressing(0b0000_11_00, 0b000000_00), 0b0000_00_00);
-		assert_eq!(Driver::set_addressing(0b0011_00_00, 0b000000_01), 0b0011_01_00);
-		assert_eq!(Driver::set_addressing(0b1011_00_00, 0b000000_00), 0b1011_00_00);
+		assert_eq!(0b0000_11_00_u8.set_addressing(0b000000_00), 0b0000_00_00);
+		assert_eq!(0b0011_00_00_u8.set_addressing(0b000000_01), 0b0011_01_00);
+		assert_eq!(0b1011_00_00_u8.set_addressing(0b000000_00), 0b1011_00_00);
 
 		// Truncating extension
-		assert_eq!(Driver::set_addressing(0b0000_00_00, 0b111111_11), 0b0000_11_00);
-		assert_eq!(Driver::set_addressing(0b1010_00_01, 0b111111_11), 0b1010_11_01);
+		assert_eq!(0b0000_00_00_u8.set_addressing(0b111111_11), 0b0000_11_00);
+		assert_eq!(0b1010_00_01_u8.set_addressing(0b111111_11), 0b1010_11_01);
 	}
 
 	#[test]
 	fn extract_immediate_exponent() {
-		assert_eq!(Driver::extract_immediate_exponent(0b0000_00_11), 0b000000_11);
-		assert_eq!(Driver::extract_immediate_exponent(0b1010_11_01), 0b000000_01);
+		assert_eq!(0b0000_00_11_u8.extract_immediate_exponent(), 0b000000_11);
+		assert_eq!(0b1010_11_01_u8.extract_immediate_exponent(), 0b000000_01);
 	}
 
 	#[test]
 	fn set_immediate_exponent() {
-		assert_eq!(Driver::set_immediate_exponent(0b0011_00_00, 0b000000_11), 0b0011_00_11);
-		assert_eq!(Driver::set_immediate_exponent(0b0000_11_00, 0b000000_10), 0b0000_11_10);
-		assert_eq!(Driver::set_immediate_exponent(0b1011_01_00, 0b000000_00), 0b1011_01_00);
+		assert_eq!(0b0011_00_00_u8.set_immediate_exponent(0b000000_11), 0b0011_00_11);
+		assert_eq!(0b0000_11_00_u8.set_immediate_exponent(0b000000_10), 0b0000_11_10);
+		assert_eq!(0b1011_01_00_u8.set_immediate_exponent(0b000000_00), 0b1011_01_00);
 
 		// Truncating extension
-		assert_eq!(Driver::set_immediate_exponent(0b0000_00_00, 0b111111_11), 0b0000_00_11);
-		assert_eq!(Driver::set_immediate_exponent(0b1011_01_00, 0b111111_10), 0b1011_01_10);
+		assert_eq!(0b0000_00_00_u8.set_immediate_exponent(0b111111_11), 0b0000_00_11);
+		assert_eq!(0b1011_01_00_u8.set_immediate_exponent(0b111111_10), 0b1011_01_10);
 	}
+}
+
+#[cfg(test)]
+mod driver_test {
+	use crate::instruction::Driver;
 
 	#[test]
 	fn from_encoded() {
@@ -547,13 +611,13 @@ mod driver_test {
 }
 
 #[cfg(test)]
-mod registers_test {
-	use crate::instruction::Registers;
+mod registers_encoding_test {
+	use crate::instruction::{RegistersEncoding};
 
 	#[test]
 	fn extract_width() {
-		assert_eq!(Registers::extract_width(0b11_000_000), 0b000000_11);
-		assert_eq!(Registers::extract_width(0b10_010_000), 0b000000_10);
+		assert_eq!(0b11_000_000.extract_width(), 0b000000_11);
+		assert_eq!(0b10_010_000.extract_width(), 0b000000_10);
 	}
 	
 	#[test]
@@ -562,6 +626,11 @@ mod registers_test {
 	}
 	
 	// TODO: More
+}
+
+#[cfg(test)]
+mod registers_test {
+	// TODO: Complete
 }
 
 #[cfg(test)]
