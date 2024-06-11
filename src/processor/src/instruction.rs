@@ -340,6 +340,9 @@ pub struct Registers {
 }
 
 impl Registers {
+	/// ```
+	/// // TODO:
+	/// ```
 	pub fn from_encoded(encoded: u8) -> Self {
 		Self {
 			width: encoded.extract_width(),
@@ -348,6 +351,9 @@ impl Registers {
 		}
 	}
 
+	/// ```
+	/// // TODO
+	/// ```
 	pub fn encode(&self) -> u8 {
 		let mut encoded = 0.set_width(self.width);
 		encoded = encoded.set_static(self.x_static);
@@ -356,6 +362,7 @@ impl Registers {
 }
 
 // region: Uint traits
+// TODO: ADD TESTS
 pub trait RegistersEncoding {
 	fn extract_width(self) -> u8;
 
@@ -406,6 +413,7 @@ impl RegistersEncoding for u8 {
 }
 // endregion
 
+/// Structure containing information about the operands of an instruction.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Data {
 	/// Width of operands when dereferenced and for storing result.
@@ -413,6 +421,70 @@ pub struct Data {
 	pub destination: Destination,
 	pub synchronise: bool,
 	pub operands: Operands
+}
+
+pub enum DataConstructError {
+	/// Error caused when reading from stream.
+	StreamRead(io::Error),
+	/// Stream did not contain enough bytes.
+	Length,
+	/// Error caused from parsing the dynamic operand.
+	Dynamic(FromCodesError),
+	/// Both the synchronous state and register addressing mode were used which is not allowed.
+	SynchronousRegister,
+	/// The operation does not expect operands. There is nothing to decode.
+	NoOperands
+}
+
+impl Data {
+	/// TODO UNIT TEST
+	pub fn new(stream: &mut impl Read, operation: &mut impl Operation, driver: &Driver) -> Result<Self, DataConstructError> {
+		// If there is no requirement for operands then there is nothing to decode.
+		if !operation.expects_operand() { return Err(DataConstructError::NoOperands) }
+		
+		// Decode registers byte.
+		let mut data_encoded = [0u8; 1];
+		match stream.read(&mut data_encoded) {
+			Ok(length) => if length != data_encoded.len() { return Err(DataConstructError::Length); },
+			Err(error) => return Err(DataConstructError::StreamRead(error))
+		};
+
+		let registers = Registers::from_encoded(data_encoded[0]);
+
+		let x_dynamic = if operation.expects_dynamic() {
+			Some(match Dynamic::from_codes(registers.x_dynamic, driver.addressing, driver.immediate_exponent, stream) {
+				Ok(operand) => operand,
+				Err(error) => return Err(DataConstructError::Dynamic(error))
+			})
+		} else { None };
+
+		// Do not allow the processor to be synchronous and use the register or constant addressing mode in the same
+		// core. This is incompatible as the registers are localized to each processor and synchronous 
+		// instructions are meant to allow memory actions to be predictable between multiple processors.
+		if let Some(value) = &x_dynamic && let Dynamic::Register(_) = value && driver.synchronise { return Err(DataConstructError::SynchronousRegister) }
+
+		// Construct operand field.
+		let operands = if operation.expects_all() {
+			Operands::AllPresent(AllPresent {
+				x_static: registers.x_static,
+				x_dynamic: x_dynamic.unwrap()
+			})
+		} else if operation.expects_only_static() {
+			Operands::Static(registers.x_static)
+		} else if operation.expects_only_dynamic() {
+			Operands::Dynamic(x_dynamic.unwrap())
+		} else {
+			unreachable!()
+		};
+
+		// Construct data.
+		Ok(Data {
+			width: number::Type::from_exponent(registers.width).unwrap(),
+			destination: if driver.dynamic_destination { Destination::Dynamic } else { Destination::Static },
+			synchronise: driver.synchronise,
+			operands
+		})
+	}
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -432,7 +504,7 @@ pub enum DecodeError {
 	/// Error caused from interpreting the dynamic operand
 	Dynamic(FromCodesError),
 	/// Both the synchronous state and register addressing mode were used which is not allowed.
-	SynchronousRegister
+	SynchronousRegister,
 }
 
 /// Caused by using a destination which corresponds to an operand that is not provided.
@@ -480,54 +552,69 @@ impl Instruction {
 		};
 
 		// Decode data bytes.
-		let mut data: Option<Data> = None;
 		let operation = extension.operation();
+		let data: Option<Data> = match Data::new(stream, operation, &driver) {
+			Err(error) => {
+				// Handle every error manually to ensure that the now operands error doesn't make it out. If there are 
+				// no operands then the data field of the instruction should be [None] without an error.
+				match error {
+					DataConstructError::NoOperands => {},
+					DataConstructError::StreamRead(error) => return Err(DecodeError::StreamRead(error)),
+					DataConstructError::Length => return Err(DecodeError::Length),
+					DataConstructError::Dynamic(error) => return Err(DecodeError::Dynamic(error)),
+					DataConstructError::SynchronousRegister => return Err(DecodeError::SynchronousRegister)
+				}
+				
+				None
+			},
+			Ok(some) => Some(some)
+		};
 
-		if operation.expects_operand() {
-			// Decode registers byte.
-			let mut data_encoded = [0u8; 1];
-			match stream.read(&mut data_encoded) {
-				Ok(length) => if length != data_encoded.len() { return Err(DecodeError::Length); },
-				Err(error) => return Err(DecodeError::StreamRead(error))
-			};
-
-			let registers = Registers::from_encoded(data_encoded[0]);
-
-			let x_dynamic = if operation.expects_dynamic() {
-				Some(match Dynamic::from_codes(registers.x_dynamic, driver.addressing, driver
-					.immediate_exponent, stream) {
-					Ok(operand) => operand,
-					Err(error) => return Err(DecodeError::Dynamic(error))
-				})
-			} else { None };
-
-			// Do not allow the processor to be synchronous and use the register or constant addressing mode in the same
-			// core. This is incompatible as the registers are localized to each processor and synchronous 
-			// instructions are meant to allow memory actions to be predictable between multiple processors.
-			if let Some(value) = &x_dynamic && let Dynamic::Register(_) = value && driver.synchronise { return Err(DecodeError::SynchronousRegister) }
-
-			// Construct operand field.
-			let operands = if operation.expects_all() {
-				Operands::AllPresent(AllPresent {
-					x_static: registers.x_static,
-					x_dynamic: x_dynamic.unwrap()
-				})
-			} else if operation.expects_only_static() {
-				Operands::Static(registers.x_static)
-			} else if operation.expects_only_dynamic() {
-				Operands::Dynamic(x_dynamic.unwrap())
-			} else {
-				unreachable!()
-			};
-
-			// Construct data.
-			data = Some(Data {
-				width: number::Type::from_exponent(registers.width).unwrap(),
-				destination: if driver.dynamic_destination { Destination::Dynamic } else { Destination::Static },
-				synchronise: driver.synchronise,
-				operands
-			})
-		}
+		// if operation.expects_operand() {
+		// 	// Decode registers byte.
+		// 	let mut data_encoded = [0u8; 1];
+		// 	match stream.read(&mut data_encoded) {
+		// 		Ok(length) => if length != data_encoded.len() { return Err(DecodeError::Length); },
+		// 		Err(error) => return Err(DecodeError::StreamRead(error))
+		// 	};
+		// 
+		// 	let registers = Registers::from_encoded(data_encoded[0]);
+		// 
+		// 	let x_dynamic = if operation.expects_dynamic() {
+		// 		Some(match Dynamic::from_codes(registers.x_dynamic, driver.addressing, driver
+		// 			.immediate_exponent, stream) {
+		// 			Ok(operand) => operand,
+		// 			Err(error) => return Err(DecodeError::Dynamic(error))
+		// 		})
+		// 	} else { None };
+		// 
+		// 	// Do not allow the processor to be synchronous and use the register or constant addressing mode in the same
+		// 	// core. This is incompatible as the registers are localized to each processor and synchronous 
+		// 	// instructions are meant to allow memory actions to be predictable between multiple processors.
+		// 	if let Some(value) = &x_dynamic && let Dynamic::Register(_) = value && driver.synchronise { return Err(DecodeError::SynchronousRegister) }
+		// 
+		// 	// Construct operand field.
+		// 	let operands = if operation.expects_all() {
+		// 		Operands::AllPresent(AllPresent {
+		// 			x_static: registers.x_static,
+		// 			x_dynamic: x_dynamic.unwrap()
+		// 		})
+		// 	} else if operation.expects_only_static() {
+		// 		Operands::Static(registers.x_static)
+		// 	} else if operation.expects_only_dynamic() {
+		// 		Operands::Dynamic(x_dynamic.unwrap())
+		// 	} else {
+		// 		unreachable!()
+		// 	};
+		// 
+		// 	// Construct data.
+		// 	data = Some(Data {
+		// 		width: number::Type::from_exponent(registers.width).unwrap(),
+		// 		destination: if driver.dynamic_destination { Destination::Dynamic } else { Destination::Static },
+		// 		synchronise: driver.synchronise,
+		// 		operands
+		// 	})
+		// }
 
 		// Construction
 		Ok(Self {
