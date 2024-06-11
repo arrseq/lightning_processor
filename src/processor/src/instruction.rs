@@ -1,8 +1,10 @@
+//! Tools for encoding and decoding instructions into and from an intuitive structure.
+//! 
 //! The instruction encoding and decoding format involved an intermediate format. Instructions involve 2 mandatory 
 //! driver bytes and an optional register byte. 
 //! - The driver bytes are encoded & decoded through the [Driver] structure which depends on the [Driver0Encoding] & 
 //! [Driver1Encoding] traits.
-//! - The register byte is encoded & decoded through the [Register] structure which depends on the [RegisterEncoding]
+//! - The register byte is encoded & decoded through the [Registers] structure which depends on the [RegisterEncoding]
 //! trait.
 //! 
 //! Once the instruction data has been decoded into the intermediates, data is conditioned and extracted into a more 

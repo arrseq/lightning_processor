@@ -26,7 +26,7 @@ pub enum Type {
 
 impl Type {
 	/// Number of bytes the current variant holds. The uint size.
-	pub fn bytes(&self) -> u8 {
+	pub fn size(&self) -> u8 {
 		match self {
 			Self::Byte => BYTE_SIZE,
 			Self::Word => WORD_SIZE,
@@ -171,57 +171,4 @@ pub enum ExtractError {
 	StartOutOfBounds,
 	/// The selection size is too large for the start. 
 	EndOutOfBounds
-}
-
-/// The byte count is the number of bytes in the number. Implement for primitive datatypes only.
-pub trait UnsignedByteFrame {
-	const BYTE_COUNT: u8;
-	
-	/// Extract a byte from an unsigned line. Start and end are included in result. The index of start will target the 
-	/// first byte nearest to the most significant bit. That byte will be included. The size will be used to 
-	/// calculate the end. Result includes bytes from the start and end.
-	fn extract(self, start: u8, size: Type) -> Result<Data, ExtractError>;
-}
-
-// TODO: Unify behavior. Don't repeat yourself. Implement for other uint types.
-impl UnsignedByteFrame for u64 {
-	const BYTE_COUNT: u8 = QUAD_SIZE;
-	
-	fn extract(self, start: u8, size: Type) -> Result<Data, ExtractError> {
-		// Prevent overflows and or underflow's.
-		if start > Self::BYTE_COUNT { return Err(ExtractError::StartOutOfBounds) }
-		if start + size.bytes() > Self::BYTE_COUNT { return Err(ExtractError::EndOutOfBounds) }
-
-		// Trim off any remaining bytes at the end that aren't included in the result.
-		// Number of bytes past the end.
-		let unused_end = Self::BYTE_COUNT - start - size.bytes();
-
-		dbg!(unused_end);
-
-		// Remove bytes prepending the start. Bits shifted off the left then shifted back right are set to 0. The 
-		// system doesn't record these lost bits. Shift right to remove unused bytes on right hand.
-		let capture = self << (start * 8) >> (start * 8) >> unused_end;
-
-		println!("{:064b}", capture);
-
-		Ok(Data::from_quad_selecting(capture))
-	}
-}
-
-#[cfg(test)]
-mod unsigned_byte_frame_test {
-	use crate::number;
-	use crate::number::UnsignedByteFrame;
-
-	#[test]
-	fn extract() {
-		assert_eq!(UnsignedByteFrame::extract(u64::MAX, 0, number::Type::Quad).unwrap().quad(), u64::MAX);
-		assert_eq!(UnsignedByteFrame::extract(u64::MAX, 7, number::Type::Byte).unwrap().quad(), u64::MAX << (8 * 7)
-			>> (8 * 7));
-		assert_eq!(UnsignedByteFrame::extract(u8::MAX as u64, 7, number::Type::Byte).unwrap().quad(), u8::MAX as u64);
-
-		// Errors.
-		// dbg!(Memory::extract_byte(u64::MAX, 7, absolute::Type::Byte).unwrap());
-		// assert_eq!(Memory::extract_byte(u64::MAX, 8, absolute::Type::Byte).unwrap().quad(), u64::MAX);
-	}
 }

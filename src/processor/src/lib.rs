@@ -48,7 +48,7 @@ impl Core {
 		if let Err(error) = instruction.extension.operation().execute(code, instruction.data.as_ref(), &mut
 			self.execution_context) { return Err(ExecuteError::Execute(error)) }
 		
-		memory.at(1, number::Type::Byte).unwrap();
+		// memory.at(1, number::Type::Byte).unwrap();
 		
 		Ok(())
 	}
