@@ -1,19 +1,26 @@
-//! Binary processor format is as follows.
-//!
-//! Driver 0:
-//! - Extension: Operation's extension.
-//! - Synchronise: Ensure execution is synchronous in respect to other processors.
-//! - Destination Dynamic: Base the result location off the dynamic operand.
-//!
-//! Driver 1
-//! - Operation: Operation to execute.
-//! - Addressing: Dynamic operand's addressing method.
-//! - immediate exponent: Addressing method's control parameter.
-//!
-//! Data:
-//! - Width: Operating data size.
-//! - Static Operand: Static register operand.
-//! - Dynamic Operand: Dynamically addressable operand.
+//! The instruction encoding and decoding format involved an intermediate format. Instructions involve 2 mandatory 
+//! driver bytes and an optional register byte. 
+//! - The driver bytes are encoded & decoded through the [Driver] structure which depends on the [Driver0Encoding] & 
+//! [Driver1Encoding] traits.
+//! - The register byte is encoded & decoded through the [Register] structure which depends on the [RegisterEncoding]
+//! trait.
+//! 
+//! Once the instruction data has been decoded into the intermediates, data is conditioned and extracted into a more 
+//! intuitive instruction structure.
+//! 
+//! Binary instruction format is as follows.
+//! 
+//! | Byte Name | Field               | Size     | Description                                                     |
+//! | --------- | ------------------- | -------- | --------------------------------------------------------------- |
+//! | Driver 0  | Extension           | 6 bits   | Operation's extension.                                          |
+//! | Driver 0  | Synchronise         | 1 bits   | Ensure execution is synchronous in respect to other processors. |
+//! | Driver 0  | Destination Dynamic | 1 bits   | Base the result location off the dynamic operand.               |
+//! | Driver 1  | Operation           | 4 bits   | Operation to execute.                                           |
+//! | Driver 1  | Addressing          | 2 bits   | Dynamic operand's addressing method.                            |
+//! | Driver 1  | Immediate Exponent  | 2 bits   | Immediate input size power on 2.                                | 
+//! | Register  | Width               | 2 bits   | Operating data size.                                            |
+//! | Register  | Static Operand      | 3 bits   | Static register operand.                                        |
+//! | Register  | Dynamic Operand     | 3 bits   | Dynamically addressable operand.                                |
 //!
 //! Immediate 0..8 quantized to 0, 2, 4 and 8.
 
