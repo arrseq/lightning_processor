@@ -12,17 +12,17 @@
 //! 
 //! Binary instruction format is as follows.
 //! 
-//! | Byte Name | Field               | Size     | Description                                                     |
-//! | --------- | ------------------- | -------- | --------------------------------------------------------------- |
-//! | Driver 0  | Extension           | 6 bits   | Operation's extension.                                          |
-//! | Driver 0  | Synchronise         | 1 bits   | Ensure execution is synchronous in respect to other processors. |
-//! | Driver 0  | Destination Dynamic | 1 bits   | Base the result location off the dynamic operand.               |
-//! | Driver 1  | Operation           | 4 bits   | Operation to execute.                                           |
-//! | Driver 1  | Addressing          | 2 bits   | Dynamic operand's addressing method.                            |
-//! | Driver 1  | Immediate Exponent  | 2 bits   | Immediate input size power on 2.                                | 
-//! | Register  | Width               | 2 bits   | Operating data size.                                            |
-//! | Register  | Static Operand      | 3 bits   | Static register operand.                                        |
-//! | Register  | Dynamic Operand     | 3 bits   | Dynamically addressable operand.                                |
+//! | Required | Byte Name | Field               | Size     | Description                                                     |
+//! | -------- | --------- | ------------------- | -------- | --------------------------------------------------------------- |
+//! | Yes      | Driver 0  | Extension           | 6 bits   | Operation's extension.                                          |
+//! | Yes      | Driver 0  | Synchronise         | 1 bits   | Ensure execution is synchronous in respect to other processors. |
+//! | Yes      | Driver 0  | Destination Dynamic | 1 bits   | Base the result location off the dynamic operand.               |
+//! | Yes      | Driver 1  | Operation           | 4 bits   | Operation to execute.                                           |
+//! | Yes      | Driver 1  | Addressing          | 2 bits   | Dynamic operand's addressing method.                            |
+//! | Yes      | Driver 1  | Immediate Exponent  | 2 bits   | Immediate input size power on 2.                                | 
+//! | No       | Register  | Width               | 2 bits   | Operating data size.                                            |
+//! | No       | Register  | Static Operand      | 3 bits   | Static register operand.                                        |
+//! | No       | Register  | Dynamic Operand     | 3 bits   | Dynamically addressable operand.                                |
 //!
 //! Immediate 0..8 quantized to 0, 2, 4 and 8.
 
@@ -65,6 +65,22 @@ pub struct Driver {
 }
 
 impl Driver {
+	/// Decode the driver bytes into an instance of a driver.
+	/// ```
+	/// use atln_processor::instruction::Driver;
+	/// 
+	/// let driver = Driver::from_encoded([0b001010_0_1, 0b1111_10_01]);
+	///
+	/// // Driver 0
+	/// assert_eq!(driver.extension, 0b001010);
+	/// assert!(!driver.synchronise);
+	/// assert!(driver.dynamic_destination);
+	///
+	/// // Driver 1
+	/// assert_eq!(driver.operation, 0b1111);
+	/// assert_eq!(driver.addressing, 0b10);
+	/// assert_eq!(driver.immediate_exponent, 0b1);
+	/// ```
 	pub fn from_encoded(bytes: [u8; 2]) -> Self {
 		let driver0 = bytes[0];
 		let driver1 = bytes[1];
@@ -94,17 +110,65 @@ impl Driver {
 
 // region: Uint driver traits
 pub trait Driver0Encoding {
+	/// ```
+	/// use atln_processor::instruction::Driver0Encoding;
+	///
+	/// assert_eq!(0b001101_0_0_u8.extract_extension(), 0b00_001101);
+	/// assert_eq!(0b101010_0_1_u8.extract_extension(), 0b00_101010);
+	///```
 	fn extract_extension(self) -> u8;
 
 	/// Only the first 6 bits of the extension is used.
+	/// ```
+	/// use atln_processor::instruction::Driver0Encoding;
+	/// 
+	/// assert_eq!(0b000000_0_1_u8.set_extension(10), 0b001010_0_1);
+	/// assert_eq!(0b101100_0_0_u8.set_extension(0b101100), 0b101100_0_0);
+	/// assert_eq!(0b101100_1_0_u8.set_extension(0b101100), 0b101100_1_0);
+	///
+	/// // Truncating extension
+	/// assert_eq!(0b00000000_0_0_u8.set_extension(0b11_111111), 0b111111_0_0);
+	/// assert_eq!(0b00000000_0_1_u8.set_extension(0b11_111110), 0b111110_0_1);
+	/// ```
 	fn set_extension(self, extension: u8) -> u8;
 
+	/// ```
+	/// use atln_processor::instruction::Driver0Encoding;
+	///
+	/// assert!(0b000000_1_0_u8.extract_synchronise());
+	/// assert!(!0b000000_0_0_u8.extract_synchronise());
+	/// assert!(0b001010_1_1_u8.extract_synchronise());
+	/// assert!(!0b001010_0_1_u8.extract_synchronise());
+	/// ```
 	fn extract_synchronise(self) -> bool;
 
+	/// ```
+	/// use atln_processor::instruction::Driver0Encoding;
+	/// assert_eq!(0b000000_0_0_u8.set_synchronise(true), 0b000000_1_0);
+	/// assert_eq!(0b000000_1_0_u8.set_synchronise(false), 0b000000_0_0);
+	/// assert_eq!(0b000000_0_1_u8.set_synchronise(true), 0b000000_1_1);
+	/// assert_eq!(0b111111_0_0_u8.set_synchronise(false), 0b111111_0_0);
+	/// ```
 	fn set_synchronise(self, lock: bool) -> u8;
 
+	/// ```
+	/// use atln_processor::instruction::Driver0Encoding;
+	/// 
+	/// assert!(0b000000_0_1_u8.extract_dynamic_destination());
+	/// assert!(!0b000000_0_0_u8.extract_dynamic_destination());
+	/// assert!(0b000000_1_1_u8.extract_dynamic_destination());
+	/// assert!(!0b000000_1_0_u8.extract_dynamic_destination());
+	/// ```
 	fn extract_dynamic_destination(self) -> bool;
 
+	/// ```
+	/// use atln_processor::instruction::Driver0Encoding;
+	/// 
+	/// assert_eq!(0b000000_0_0_u8.set_dynamic_destination(true), 0b000000_0_1);
+	/// assert_eq!(0b000000_1_0_u8.set_dynamic_destination(true), 0b000000_1_1);
+	/// assert_eq!(0b000000_0_1_u8.set_dynamic_destination(false), 0b000000_0_0);
+	/// assert_eq!(0b000000_1_1_u8.set_dynamic_destination(false), 0b000000_1_0);
+	/// ```
 	fn set_dynamic_destination(self, dynamic_destination: bool) -> u8;
 }
 
@@ -315,9 +379,7 @@ impl Instruction {
 	/// Use the driver, registers, and immediate to encode into a dynamic number of bytes. Encoding is variable 
 	/// length. The data is not validated here. To use an immediate, registers must be of the [Some] variant. If an 
 	/// immediate is [Some] and registers is [None] then [None] will also be returned.
-	pub fn encode_driver_registers_immediate(driver: &Driver, registers: Option<&Registers>, immediate: 
-	Option<&number::Data>) ->
-																											   Option<Vec<u8>> {
+	pub fn encode_driver_registers_immediate(driver: &Driver, registers: Option<&Registers>, immediate: Option<&number::Data>) -> Option<Vec<u8>> {
 		let mut encoded = Vec::new();
 
 		encoded.extend(driver.encode());
@@ -371,8 +433,7 @@ impl Instruction {
 			// Do not allow the processor to be synchronous and use the register or constant addressing mode in the same
 			// core. This is incompatible as the registers are localized to each processor and synchronous 
 			// instructions are meant to allow memory actions to be predictable between multiple processors.
-			if let Some(value) = &x_dynamic && let Dynamic::Register(_) = value && driver.synchronise { return Err
-				(DecodeError::SynchronousRegister) }
+			if let Some(value) = &x_dynamic && let Dynamic::Register(_) = value && driver.synchronise { return Err(DecodeError::SynchronousRegister) }
 
 			// Construct operand field.
 			let operands = if operation.expects_all() {
@@ -391,8 +452,7 @@ impl Instruction {
 			// Construct data.
 			data = Some(Data {
 				width: number::Type::from_exponent(registers.width).unwrap(),
-				destination: if driver.dynamic_destination { Destination::Dynamic } else {
-					Destination::Static },
+				destination: if driver.dynamic_destination { Destination::Dynamic } else { Destination::Static },
 				synchronise: driver.synchronise,
 				operands
 			})
@@ -450,8 +510,7 @@ impl Instruction {
 		
 		// Unwrapping should not fail because the processor is a controlled environment.
 		if let Some(registers) = registers {
-			if let Some(immediate) = immediate { Instruction::encode_driver_registers_immediate(&driver, Some
-				(&registers), Some(&immediate)).unwrap() } 
+			if let Some(immediate) = immediate { Instruction::encode_driver_registers_immediate(&driver, Some(&registers), Some(&immediate)).unwrap() } 
 			else { Instruction::encode_driver_registers_immediate(&driver, Some(&registers), None).unwrap() }
 		} else { Instruction::encode_driver_registers_immediate(&driver, None, None).unwrap() }
 	}
@@ -473,279 +532,5 @@ impl Instruction {
 				None => return Err(DestinationError::Dynamic)
 			}
 		})
-	}
-}
-
-#[cfg(test)]
-mod driver_encoding_test {
-	use crate::instruction::{Driver, Driver0Encoding, Driver1Encoding};
-
-	#[test]
-	fn extract_extension() {
-		assert_eq!(0b001101_0_0_u8.extract_extension(), 0b00_001101);
-		assert_eq!(0b101010_0_1_u8.extract_extension(), 0b00_101010);
-	}
-
-	#[test]
-	fn set_extension() {
-		assert_eq!(0b000000_0_1_u8.set_extension(10), 0b001010_0_1);
-		assert_eq!(0b101100_0_0_u8.set_extension(0b101100), 0b101100_0_0);
-		assert_eq!(0b101100_1_0_u8.set_extension(0b101100), 0b101100_1_0);
-
-		// Truncating extension
-		assert_eq!(0b00000000_0_0_u8.set_extension(0b11_111111), 0b111111_0_0);
-		assert_eq!(0b00000000_0_1_u8.set_extension(0b11_111110), 0b111110_0_1);
-	}
-
-	#[test]
-	fn extract_synchronise() {
-		assert!(0b000000_1_0_u8.extract_synchronise());
-		assert!(!0b000000_0_0_u8.extract_synchronise());
-		assert!(0b001010_1_1_u8.extract_synchronise());
-		assert!(!0b001010_0_1_u8.extract_synchronise());
-	}
-
-	#[test]
-	fn set_synchronise() {
-		assert_eq!(0b000000_0_0_u8.set_synchronise(true), 0b000000_1_0);
-		assert_eq!(0b000000_1_0_u8.set_synchronise(false), 0b000000_0_0);
-		assert_eq!(0b000000_0_1_u8.set_synchronise(true), 0b000000_1_1);
-		assert_eq!(0b111111_0_0_u8.set_synchronise(false), 0b111111_0_0);
-	}
-
-	#[test]
-	fn extract_dynamic_destination() {
-		assert!(0b000000_0_1_u8.extract_dynamic_destination());
-		assert!(!0b000000_0_0_u8.extract_dynamic_destination());
-		assert!(0b000000_1_1_u8.extract_dynamic_destination());
-		assert!(!0b000000_1_0_u8.extract_dynamic_destination());
-	}
-
-	#[test]
-	fn set_dynamic_destination() {
-		assert_eq!(0b000000_0_0_u8.set_dynamic_destination(true), 0b000000_0_1);
-		assert_eq!(0b000000_1_0_u8.set_dynamic_destination(true), 0b000000_1_1);
-		assert_eq!(0b000000_0_1_u8.set_dynamic_destination(false), 0b000000_0_0);
-		assert_eq!(0b000000_1_1_u8.set_dynamic_destination(false), 0b000000_1_0);
-	}
-
-	#[test]
-	fn extract_operation() {
-		assert_eq!(0b1101_00_00_u8.extract_operation(), 0b0000_1101);
-		assert_eq!(0b1010_01_10_u8.extract_operation(), 0b0000_1010);
-	}
-
-	#[test]
-	fn set_operation() {
-		assert_eq!(0b0001_00_11_u8.set_operation(0b0000_1111), 0b1111_00_11);
-		assert_eq!(0b1111_00_10_u8.set_operation(0b0000_1001), 0b1001_00_10);
-		assert_eq!(0b1010_00_10_u8.set_operation(0b0000_1010), 0b1010_00_10);
-
-		// Truncating extension
-		assert_eq!(0b0000_00_00_u8.set_operation(0b1111_1111), 0b1111_00_00);
-		assert_eq!(0b0000_10_01_u8.set_operation(0b1111_1111), 0b1111_10_01);
-	}
-
-	#[test]
-	fn extract_addressing() {
-		assert_eq!(0b0011_10_00_u8.extract_addressing(), 0b000000_10);
-		assert_eq!(0b1011_11_00_u8.extract_addressing(), 0b000000_11);
-		assert_eq!(0b0000_00_00_u8.extract_addressing(), 0b000000_00);
-	}
-
-	#[test]
-	fn set_addressing() {
-		assert_eq!(0b0000_11_00_u8.set_addressing(0b000000_00), 0b0000_00_00);
-		assert_eq!(0b0011_00_00_u8.set_addressing(0b000000_01), 0b0011_01_00);
-		assert_eq!(0b1011_00_00_u8.set_addressing(0b000000_00), 0b1011_00_00);
-
-		// Truncating extension
-		assert_eq!(0b0000_00_00_u8.set_addressing(0b111111_11), 0b0000_11_00);
-		assert_eq!(0b1010_00_01_u8.set_addressing(0b111111_11), 0b1010_11_01);
-	}
-
-	#[test]
-	fn extract_immediate_exponent() {
-		assert_eq!(0b0000_00_11_u8.extract_immediate_exponent(), 0b000000_11);
-		assert_eq!(0b1010_11_01_u8.extract_immediate_exponent(), 0b000000_01);
-	}
-
-	#[test]
-	fn set_immediate_exponent() {
-		assert_eq!(0b0011_00_00_u8.set_immediate_exponent(0b000000_11), 0b0011_00_11);
-		assert_eq!(0b0000_11_00_u8.set_immediate_exponent(0b000000_10), 0b0000_11_10);
-		assert_eq!(0b1011_01_00_u8.set_immediate_exponent(0b000000_00), 0b1011_01_00);
-
-		// Truncating extension
-		assert_eq!(0b0000_00_00_u8.set_immediate_exponent(0b111111_11), 0b0000_00_11);
-		assert_eq!(0b1011_01_00_u8.set_immediate_exponent(0b111111_10), 0b1011_01_10);
-	}
-}
-
-#[cfg(test)]
-mod driver_test {
-	use crate::instruction::Driver;
-
-	#[test]
-	fn from_encoded() {
-		let driver = Driver::from_encoded([0b001010_0_1, 0b1111_10_01]);
-
-		// Driver 0
-		assert_eq!(driver.extension, 0b001010);
-		assert!(!driver.synchronise);
-		assert!(driver.dynamic_destination);
-
-		// Driver 1
-		assert_eq!(driver.operation, 0b1111);
-		assert_eq!(driver.addressing, 0b10);
-		assert_eq!(driver.immediate_exponent, 0b1);
-	}
-
-	#[test]
-	fn encode() {
-		let driver = Driver {
-			operation: 0b1110,
-			extension: 0b1010,
-			synchronise: true,
-			dynamic_destination: false,
-			addressing: 0b11,
-			immediate_exponent: 0b10
-		};
-
-		let encoded = driver.encode();
-
-		assert_eq!(encoded[0], 0b001010_1_0);
-		assert_eq!(encoded[1], 0b1110_11_10);
-	}
-}
-
-#[cfg(test)]
-mod registers_encoding_test {
-	use crate::instruction::{RegistersEncoding};
-
-	#[test]
-	fn extract_width() {
-		assert_eq!(0b11_000_000.extract_width(), 0b000000_11);
-		assert_eq!(0b10_010_000.extract_width(), 0b000000_10);
-	}
-	
-	#[test]
-	fn set_width() {
-		// TODO
-	}
-	
-	// TODO: More
-}
-
-#[cfg(test)]
-mod registers_test {
-	// TODO: Complete
-}
-
-#[cfg(test)]
-mod instruction_test {
-	use std::io::Cursor;
-	use crate::number;
-	use crate::instruction::{Data, DecodeError, Destination, Driver, Instruction, Registers};
-	use crate::instruction::operand::{AllPresent, CONSTANT_ADDRESSING, Dynamic, IMMEDIATE_EXPONENT_BYTE, Operand, 
-								   Operands, 
-						  REGISTER_ADDRESSING};
-	use crate::instruction::operation::arithmetic::{ADD_CODE, Arithmetic};
-	use crate::instruction::operation::{ARITHMETIC_CODE, Extension};
-
-	#[test]
-	fn encode_instruction() {
-		let driver = Driver {
-			extension: ARITHMETIC_CODE,
-			operation: ADD_CODE,
-			synchronise: true,
-			dynamic_destination: false,
-			addressing: CONSTANT_ADDRESSING,
-			immediate_exponent: IMMEDIATE_EXPONENT_BYTE
-		};
-
-		let registers = Registers {
-			width: IMMEDIATE_EXPONENT_BYTE,
-			x_static: 1,
-			x_dynamic: 0
-		};
-		
-		let target = [ 0b000000_1_0, 0b0000_10_00, 0b00_001_000, 0b00001010 ];
-		
-		assert_eq!(
-			Instruction::encode_driver_registers_immediate(&driver, Some(&registers), Some(&number::Data::Byte(10))
-			).unwrap(),
-			target
-		);
-	}
-
-	#[test]
-	fn decode() {
-		// Decode a valid processor.
-		let mut driver = Driver {
-			extension: 0,
-			operation: 0,
-			synchronise: true,
-			dynamic_destination: false,
-			addressing: 2,
-			immediate_exponent: 0
-		};
-		
-		let registers = Registers {
-			width: 0,
-			x_static: 10,
-			x_dynamic: 20
-		};
-
-		let mut cursor = Cursor::new(
-			Instruction::encode_driver_registers_immediate(&driver, Some(&registers), Some(&number::Data::Byte(10))
-			).unwrap());
-
-		let instruction = Instruction::from_encoded(&mut cursor).unwrap();
-
-		assert!(matches!(instruction.extension, Extension::Arithmetic(_)));
-		assert!(matches!(instruction.data.unwrap().operands.x_dynamic().unwrap(), Dynamic::Constant
-			(number::Data::Byte(10))));
-
-		// Synchronous register addressing processor should fail to decode.
-		driver.addressing = REGISTER_ADDRESSING;
-		cursor = Cursor::new(
-			Instruction::encode_driver_registers_immediate(&driver, Some(&registers), Some(&number::Data::Byte(10))
-			).unwrap());
-		let error = Instruction::from_encoded(&mut cursor);
-
-		assert!(matches!(error, Err(DecodeError::SynchronousRegister)));
-	}
-
-	#[test]
-	fn destination() {
-	    let x_static = Instruction {
-	        extension: Extension::Arithmetic(Arithmetic::Add),
-			data: Some(Data {
-				width: number::Type::Byte,
-				destination: Destination::Static,
-				synchronise: false,
-				operands: Operands::AllPresent(AllPresent {
-					x_static: 0,
-					x_dynamic: Dynamic::Register(1)
-				})
-			})
-	    };
-
-		let x_dynamic = Instruction {
-			extension: Extension::Arithmetic(Arithmetic::Add),
-			data: Some(Data {
-				width: number::Type::Byte,
-				destination: Destination::Dynamic,
-				synchronise: false,
-				operands: Operands::AllPresent(AllPresent {
-					x_static: 0,
-					x_dynamic: Dynamic::Register(1)
-				})
-			})
-		};
-	
-	    assert!(matches!(x_static.destination().unwrap(), Operand::Static(_)));
-	    assert!(!matches!(x_dynamic.destination().unwrap(), Operand::Static(_)));
 	}
 }
