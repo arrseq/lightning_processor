@@ -570,52 +570,6 @@ impl Instruction {
 			Ok(some) => Some(some)
 		};
 
-		// if operation.expects_operand() {
-		// 	// Decode registers byte.
-		// 	let mut data_encoded = [0u8; 1];
-		// 	match stream.read(&mut data_encoded) {
-		// 		Ok(length) => if length != data_encoded.len() { return Err(DecodeError::Length); },
-		// 		Err(error) => return Err(DecodeError::StreamRead(error))
-		// 	};
-		// 
-		// 	let registers = Registers::from_encoded(data_encoded[0]);
-		// 
-		// 	let x_dynamic = if operation.expects_dynamic() {
-		// 		Some(match Dynamic::from_codes(registers.x_dynamic, driver.addressing, driver
-		// 			.immediate_exponent, stream) {
-		// 			Ok(operand) => operand,
-		// 			Err(error) => return Err(DecodeError::Dynamic(error))
-		// 		})
-		// 	} else { None };
-		// 
-		// 	// Do not allow the processor to be synchronous and use the register or constant addressing mode in the same
-		// 	// core. This is incompatible as the registers are localized to each processor and synchronous 
-		// 	// instructions are meant to allow memory actions to be predictable between multiple processors.
-		// 	if let Some(value) = &x_dynamic && let Dynamic::Register(_) = value && driver.synchronise { return Err(DecodeError::SynchronousRegister) }
-		// 
-		// 	// Construct operand field.
-		// 	let operands = if operation.expects_all() {
-		// 		Operands::AllPresent(AllPresent {
-		// 			x_static: registers.x_static,
-		// 			x_dynamic: x_dynamic.unwrap()
-		// 		})
-		// 	} else if operation.expects_only_static() {
-		// 		Operands::Static(registers.x_static)
-		// 	} else if operation.expects_only_dynamic() {
-		// 		Operands::Dynamic(x_dynamic.unwrap())
-		// 	} else {
-		// 		unreachable!()
-		// 	};
-		// 
-		// 	// Construct data.
-		// 	data = Some(Data {
-		// 		width: number::Type::from_exponent(registers.width).unwrap(),
-		// 		destination: if driver.dynamic_destination { Destination::Dynamic } else { Destination::Static },
-		// 		synchronise: driver.synchronise,
-		// 		operands
-		// 	})
-		// }
-
 		// Construction
 		Ok(Self {
 			extension,
