@@ -9,38 +9,38 @@ pub const SUBTRACT_CODE: u8 = 1;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Arithmetic {
-	Add,
-	Subtract
+    Add,
+    Subtract
 }
 
 // Implementation
 
 impl Operation for Arithmetic {
-	fn expects_static(&mut self) -> bool { true }
-	fn expects_dynamic(&mut self) -> bool { true }
+    fn expects_static(&mut self) -> bool { true }
+    fn expects_dynamic(&mut self) -> bool { true }
 
-	fn execute(&mut self, _code: u8, _data: Option<&Data>, context: &mut ExecutionContext) -> Result<(), 
-		OperationExecuteError> {
-		context.accumulator = 100;
-		Ok(())
-	}
+    fn execute(&mut self, _code: u8, _data: Option<&Data>, context: &mut ExecutionContext) -> Result<(),
+        OperationExecuteError> {
+        context.accumulator = 100;
+        Ok(())
+    }
 }
 
 impl Coded<u8> for Arithmetic {
-	fn code(&mut self) -> u8 {
-		match self {
-			Self::Add      => ADD_CODE,
-			Self::Subtract => SUBTRACT_CODE
-		}
-	}
+    fn code(&mut self) -> u8 {
+        match self {
+            Self::Add      => ADD_CODE,
+            Self::Subtract => SUBTRACT_CODE
+        }
+    }
 }
 
 impl Arithmetic {
-	pub fn from_code(code: u8) -> Option<Self> {
-		Some(match code {
-			ADD_CODE      => Self::Add,
-			SUBTRACT_CODE => Self::Subtract,
-			_ => return None
-		})
-	}
+    pub fn from_code(code: u8) -> Option<Self> {
+        Some(match code {
+            ADD_CODE      => Self::Add,
+            SUBTRACT_CODE => Self::Subtract,
+            _ => return None
+        })
+    }
 }

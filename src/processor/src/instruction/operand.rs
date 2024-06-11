@@ -22,151 +22,151 @@ pub type Static = u8;
 /// Allows dereferencing a memory address by reading the value from a register then adding an offset.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Offset {
-	register: u8,
-	offset: number::Data
+    register: u8,
+    offset: number::Data
 }
 
 /// Either a register code or immediate value addressing mode. Being dynamic means this gives the programmer freedom to 
 /// pick either of the addressing modes.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Dynamic {
-	/// Read value from register.
-	Register(u8),
-	/// Read value from register, add an offset to it, then use the sum to dereference memory.
-	Offset(Offset),
-	/// Read value from immediate as data.
-	Constant(number::Data),
-	/// Read value from memory address by addressing it with the immediate.
-	Memory(number::Data)
+    /// Read value from register.
+    Register(u8),
+    /// Read value from register, add an offset to it, then use the sum to dereference memory.
+    Offset(Offset),
+    /// Read value from immediate as data.
+    Constant(number::Data),
+    /// Read value from memory address by addressing it with the immediate.
+    Memory(number::Data)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ReadImmediateError {
-	/// Caused by reading from the stream.
-	Read,
-	/// The stream does not contain enough bytes.
-	Length,
-	/// The exponent is larger than 3.
-	Exponent
+    /// Caused by reading from the stream.
+    Read,
+    /// The stream does not contain enough bytes.
+    Length,
+    /// The exponent is larger than 3.
+    Exponent
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FromCodesError {
-	/// The immediate exponent is out of bounds. 3 is the largest exponent for immediate.
-	Immediate(ReadImmediateError),
-	/// The addressing mode does not exist.
-	Addressing
+    /// The immediate exponent is out of bounds. 3 is the largest exponent for immediate.
+    Immediate(ReadImmediateError),
+    /// The addressing mode does not exist.
+    Addressing
 }
 
 impl Dynamic {
-	// fn read_stream<const buffer>()
+    // fn read_stream<const buffer>()
 
-	/// Read the immediate based on the exponent. The number of bytes read from the stream is based on using the
-	/// immediate exponent as a power of 2.
-	pub fn read_immediate(exponent: u8, stream: &mut impl Read) -> Result<number::Data, ReadImmediateError> {
-		Ok(match exponent {
-			IMMEDIATE_EXPONENT_BYTE => {
-				let mut buffer = [0u8; BYTE_SIZE as usize];
-				match stream.read(&mut buffer) {
-					Ok(length) => if length != buffer.len() { return Err(ReadImmediateError::Length) },
-					Err(_) => return Err(ReadImmediateError::Read)
-				};
+    /// Read the immediate based on the exponent. The number of bytes read from the stream is based on using the
+    /// immediate exponent as a power of 2.
+    pub fn read_immediate(exponent: u8, stream: &mut impl Read) -> Result<number::Data, ReadImmediateError> {
+        Ok(match exponent {
+            IMMEDIATE_EXPONENT_BYTE => {
+                let mut buffer = [0u8; BYTE_SIZE as usize];
+                match stream.read(&mut buffer) {
+                    Ok(length) => if length != buffer.len() { return Err(ReadImmediateError::Length) },
+                    Err(_) => return Err(ReadImmediateError::Read)
+                };
 
-				number::Data::Byte(buffer[0])
-			},
-			IMMEDIATE_EXPONENT_WORD => {
-				let mut buffer = [0u8; WORD_SIZE as usize];
-				match stream.read(&mut buffer) {
-					Ok(length) => if length != buffer.len() { return Err(ReadImmediateError::Length) },
-					Err(_) => return Err(ReadImmediateError::Read)
-				};
+                number::Data::Byte(buffer[0])
+            },
+            IMMEDIATE_EXPONENT_WORD => {
+                let mut buffer = [0u8; WORD_SIZE as usize];
+                match stream.read(&mut buffer) {
+                    Ok(length) => if length != buffer.len() { return Err(ReadImmediateError::Length) },
+                    Err(_) => return Err(ReadImmediateError::Read)
+                };
 
-				number::Data::Word(u16::from_le_bytes(buffer))
-			},
-			IMMEDIATE_EXPONENT_DUAL => {
-				let mut buffer = [0u8; DUAL_SIZE as usize];
-				match stream.read(&mut buffer) {
-					Ok(length) => if length != buffer.len() { return Err(ReadImmediateError::Length) },
-					Err(_) => return Err(ReadImmediateError::Read)
-				};
+                number::Data::Word(u16::from_le_bytes(buffer))
+            },
+            IMMEDIATE_EXPONENT_DUAL => {
+                let mut buffer = [0u8; DUAL_SIZE as usize];
+                match stream.read(&mut buffer) {
+                    Ok(length) => if length != buffer.len() { return Err(ReadImmediateError::Length) },
+                    Err(_) => return Err(ReadImmediateError::Read)
+                };
 
-				number::Data::Dual(u32::from_le_bytes(buffer))
-			},
-			IMMEDIATE_EXPONENT_QUAD => {
-				let mut buffer = [0u8; QUAD_SIZE as usize];
-				match stream.read(&mut buffer) {
-					Ok(length) => if length != buffer.len() { return Err(ReadImmediateError::Length) },
-					Err(_) => return Err(ReadImmediateError::Read)
-				};
+                number::Data::Dual(u32::from_le_bytes(buffer))
+            },
+            IMMEDIATE_EXPONENT_QUAD => {
+                let mut buffer = [0u8; QUAD_SIZE as usize];
+                match stream.read(&mut buffer) {
+                    Ok(length) => if length != buffer.len() { return Err(ReadImmediateError::Length) },
+                    Err(_) => return Err(ReadImmediateError::Read)
+                };
 
-				number::Data::Quad(u64::from_le_bytes(buffer))
-			},
-			_ => return Err(ReadImmediateError::Exponent)
-		})
-	}
+                number::Data::Quad(u64::from_le_bytes(buffer))
+            },
+            _ => return Err(ReadImmediateError::Exponent)
+        })
+    }
 
-	/// Create a new dynamic operand from codes. Not all the codes may be used. Returns [None] if the addressing code
-	/// is invalid.
-	///
-	/// The immediate is expected to start where the immediate bytes would be. The immediate exponent is
-	/// used to calculate how many immediate bytes should be read. These bytes will only be read if not in Register
-	/// addressing mode.
-	/// - The register is only used by the Register and Offset addressing modes.
-	pub fn from_codes(register: u8, addressing: u8, immediate_exponent: u8, immediate_stream: &mut impl Read) -> 
-																											  Result<Self, FromCodesError> {
-		if addressing == REGISTER_ADDRESSING { return Ok(Self::Register(register)) }
+    /// Create a new dynamic operand from codes. Not all the codes may be used. Returns [None] if the addressing code
+    /// is invalid.
+    ///
+    /// The immediate is expected to start where the immediate bytes would be. The immediate exponent is
+    /// used to calculate how many immediate bytes should be read. These bytes will only be read if not in Register
+    /// addressing mode.
+    /// - The register is only used by the Register and Offset addressing modes.
+    pub fn from_codes(register: u8, addressing: u8, immediate_exponent: u8, immediate_stream: &mut impl Read) ->
+                                                                                                              Result<Self, FromCodesError> {
+        if addressing == REGISTER_ADDRESSING { return Ok(Self::Register(register)) }
 
-		let immediate = match Self::read_immediate(immediate_exponent, immediate_stream) {
-			Ok(immediate) => immediate,
-			Err(error) => return Err(FromCodesError::Immediate(error))
-		};
+        let immediate = match Self::read_immediate(immediate_exponent, immediate_stream) {
+            Ok(immediate) => immediate,
+            Err(error) => return Err(FromCodesError::Immediate(error))
+        };
 
-		Ok(match addressing {
-			OFFSET_ADDRESSING => Self::Offset(Offset {
-				register,
-				offset: immediate,
-			}),
-			CONSTANT_ADDRESSING => Self::Constant(immediate),
-			MEMORY_ADDRESSING => Self::Memory(immediate),
-			_ => return Err(FromCodesError::Addressing)
-		})
-	}
-	
-	pub fn addressing(&self) -> u8 {
-		match self {
-			Self::Register(_) => REGISTER_ADDRESSING,
-			Self::Offset(_) => OFFSET_ADDRESSING,
-			Self::Constant(_) => CONSTANT_ADDRESSING,
-			Self::Memory(_) => MEMORY_ADDRESSING
-		}
-	}
-	
-	pub fn immediate(&self) -> Option<&number::Data> {
-		Some(match self {
-			Self::Register(_) => return None,
-			Self::Offset(offset) => &offset.offset,
-			Self::Constant(constant) => constant,
-			Self::Memory(memory) => memory
-		})
-	}
-	
-	/// Get the register code if the addressing includes one. Addressing modes [Register] and [Offset] support this 
-	/// function and will return an instance of [Some] otherwise [None] will be returned.
-	pub fn register(&self) -> Option<u8> {
-		Some(match self {
-			Self::Register(register) => *register,
-			Self::Offset(offset) => offset.register,
-			_ => return None
-		})
-	}
+        Ok(match addressing {
+            OFFSET_ADDRESSING => Self::Offset(Offset {
+                register,
+                offset: immediate,
+            }),
+            CONSTANT_ADDRESSING => Self::Constant(immediate),
+            MEMORY_ADDRESSING => Self::Memory(immediate),
+            _ => return Err(FromCodesError::Addressing)
+        })
+    }
+
+    pub fn addressing(&self) -> u8 {
+        match self {
+            Self::Register(_) => REGISTER_ADDRESSING,
+            Self::Offset(_) => OFFSET_ADDRESSING,
+            Self::Constant(_) => CONSTANT_ADDRESSING,
+            Self::Memory(_) => MEMORY_ADDRESSING
+        }
+    }
+
+    pub fn immediate(&self) -> Option<&number::Data> {
+        Some(match self {
+            Self::Register(_) => return None,
+            Self::Offset(offset) => &offset.offset,
+            Self::Constant(constant) => constant,
+            Self::Memory(memory) => memory
+        })
+    }
+
+    /// Get the register code if the addressing includes one. Addressing modes [Register] and [Offset] support this
+    /// function and will return an instance of [Some] otherwise [None] will be returned.
+    pub fn register(&self) -> Option<u8> {
+        Some(match self {
+            Self::Register(register) => *register,
+            Self::Offset(offset) => offset.register,
+            _ => return None
+        })
+    }
 }
 
 /// Operands provide the operation the arguments necessary for computing, There are 2 types of operands, static and 
 /// dynamic operands.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Operand {
-	Static(Static),
-	Dynamic(Dynamic)
+    Static(Static),
+    Dynamic(Dynamic)
 }
 // endregion
 
@@ -174,124 +174,124 @@ pub enum Operand {
 /// All operands.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AllPresent {
-	pub x_static: Static,
-	pub x_dynamic: Dynamic
+    pub x_static: Static,
+    pub x_dynamic: Dynamic
 }
 
 /// Multi configuration of operands for an processor.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Operands {
-	AllPresent(AllPresent),
-	Static(Static),
-	Dynamic(Dynamic)
+    AllPresent(AllPresent),
+    Static(Static),
+    Dynamic(Dynamic)
 }
 
 impl Operands {
-	/// Try to get the static operand.
-	pub fn x_static(&self) -> Option<Static> {
-		Some(match self {
-			Self::Static(x_static) => *x_static,
-			Self::AllPresent(x_all) => x_all.x_static,
-			_ => return None
-		})
-	}
+    /// Try to get the static operand.
+    pub fn x_static(&self) -> Option<Static> {
+        Some(match self {
+            Self::Static(x_static) => *x_static,
+            Self::AllPresent(x_all) => x_all.x_static,
+            _ => return None
+        })
+    }
 
-	/// Try to get the dynamic operand.
-	pub fn x_dynamic(&self) -> Option<&Dynamic> {
-		Some(match self {
-			Self::Dynamic(x_dynamic) => x_dynamic,
-			Self::AllPresent(x_all) => &x_all.x_dynamic,
-			_ => return None
-		})
-	}
+    /// Try to get the dynamic operand.
+    pub fn x_dynamic(&self) -> Option<&Dynamic> {
+        Some(match self {
+            Self::Dynamic(x_dynamic) => x_dynamic,
+            Self::AllPresent(x_all) => &x_all.x_dynamic,
+            _ => return None
+        })
+    }
 }
 // endregion
 
 #[cfg(test)]
 mod dynamic_test {
-	use std::io::Cursor;
-	use crate::number;
-	use crate::instruction::operand::{CONSTANT_ADDRESSING, Dynamic, IMMEDIATE_EXPONENT_BYTE, IMMEDIATE_EXPONENT_DUAL, 
-						 IMMEDIATE_EXPONENT_QUAD, IMMEDIATE_EXPONENT_WORD, MEMORY_ADDRESSING, Offset, 
-						 OFFSET_ADDRESSING, REGISTER_ADDRESSING};
-	
-	#[test]
-	fn read_immediate() {
-		let word = 0b11110000_11111111u16;
-		let dual = 0b00001111_11111111_11110000_11001100u32;
-		let quad = 0b00001111_11111111_11110000_11001100_00001111_11111111_11110000_11001100u64;
-		
-		assert!(matches!(Dynamic::read_immediate(IMMEDIATE_EXPONENT_BYTE, &mut Cursor::new([10])).unwrap(), 
-				number::Data::Byte(10)));
-		assert!(matches!(Dynamic::read_immediate(IMMEDIATE_EXPONENT_WORD, &mut Cursor::new(word.to_le_bytes()))
-			.unwrap(), number::Data::Word(_word)));
-		assert!(matches!(Dynamic::read_immediate(IMMEDIATE_EXPONENT_DUAL, &mut Cursor::new(dual.to_le_bytes())).unwrap(), 
-			number::Data::Dual(_dual)));
-		assert!(matches!(Dynamic::read_immediate(IMMEDIATE_EXPONENT_QUAD, &mut Cursor::new(quad.to_le_bytes())).unwrap(), 
-			number::Data::Quad(_quad)));
-	}
+    use std::io::Cursor;
+    use crate::number;
+    use crate::instruction::operand::{CONSTANT_ADDRESSING, Dynamic, IMMEDIATE_EXPONENT_BYTE, IMMEDIATE_EXPONENT_DUAL,
+                         IMMEDIATE_EXPONENT_QUAD, IMMEDIATE_EXPONENT_WORD, MEMORY_ADDRESSING, Offset,
+                         OFFSET_ADDRESSING, REGISTER_ADDRESSING};
 
-	#[test]
-	fn from_codes() {
-		// Immediate is not used here.
-		let register = Dynamic::from_codes(5, REGISTER_ADDRESSING, 0, &mut Cursor::new([])).unwrap();
-		// Word sized immediate.
-		let offset = Dynamic::from_codes(7, OFFSET_ADDRESSING, 1, &mut Cursor::new([0b00001111, 0b00111111])).unwrap();
-		// Byte sized immediate.
-		let constant = Dynamic::from_codes(0, CONSTANT_ADDRESSING, 0, &mut Cursor::new([0])).unwrap();
-		// Quad sized immediate.
-		let memory = Dynamic::from_codes(0, MEMORY_ADDRESSING, 2, &mut Cursor::new([0b00001111, 0b00111111,
-			0b00001111, 0b00111111]))
-			.unwrap();
+    #[test]
+    fn read_immediate() {
+        let word = 0b11110000_11111111u16;
+        let dual = 0b00001111_11111111_11110000_11001100u32;
+        let quad = 0b00001111_11111111_11110000_11001100_00001111_11111111_11110000_11001100u64;
 
-		dbg!(memory.clone());
+        assert!(matches!(Dynamic::read_immediate(IMMEDIATE_EXPONENT_BYTE, &mut Cursor::new([10])).unwrap(),
+                number::Data::Byte(10)));
+        assert!(matches!(Dynamic::read_immediate(IMMEDIATE_EXPONENT_WORD, &mut Cursor::new(word.to_le_bytes()))
+            .unwrap(), number::Data::Word(_word)));
+        assert!(matches!(Dynamic::read_immediate(IMMEDIATE_EXPONENT_DUAL, &mut Cursor::new(dual.to_le_bytes())).unwrap(),
+            number::Data::Dual(_dual)));
+        assert!(matches!(Dynamic::read_immediate(IMMEDIATE_EXPONENT_QUAD, &mut Cursor::new(quad.to_le_bytes())).unwrap(),
+            number::Data::Quad(_quad)));
+    }
 
-		assert!(matches!(register, Dynamic::Register(5)));
-		assert!(matches!(offset, Dynamic::Offset(Offset {
-			offset: number::Data::Word(0b00111111_00001111),
-			register: 7
-		})));
-		assert!(matches!(constant, Dynamic::Constant(number::Data::Byte(0))));
-		assert!(matches!(memory, Dynamic::Memory(number::Data::Dual(0b00111111_00001111_00111111_00001111))));
-	}
+    #[test]
+    fn from_codes() {
+        // Immediate is not used here.
+        let register = Dynamic::from_codes(5, REGISTER_ADDRESSING, 0, &mut Cursor::new([])).unwrap();
+        // Word sized immediate.
+        let offset = Dynamic::from_codes(7, OFFSET_ADDRESSING, 1, &mut Cursor::new([0b00001111, 0b00111111])).unwrap();
+        // Byte sized immediate.
+        let constant = Dynamic::from_codes(0, CONSTANT_ADDRESSING, 0, &mut Cursor::new([0])).unwrap();
+        // Quad sized immediate.
+        let memory = Dynamic::from_codes(0, MEMORY_ADDRESSING, 2, &mut Cursor::new([0b00001111, 0b00111111,
+            0b00001111, 0b00111111]))
+            .unwrap();
+
+        dbg!(memory.clone());
+
+        assert!(matches!(register, Dynamic::Register(5)));
+        assert!(matches!(offset, Dynamic::Offset(Offset {
+            offset: number::Data::Word(0b00111111_00001111),
+            register: 7
+        })));
+        assert!(matches!(constant, Dynamic::Constant(number::Data::Byte(0))));
+        assert!(matches!(memory, Dynamic::Memory(number::Data::Dual(0b00111111_00001111_00111111_00001111))));
+    }
 }
 
 #[cfg(test)]
 mod operands_test {
-	use crate::number;
-	use crate::instruction::operand::{AllPresent, Dynamic, Operands};
+    use crate::number;
+    use crate::instruction::operand::{AllPresent, Dynamic, Operands};
 
-	#[test]
-	fn x_static() {
-		let x_static = 5;
+    #[test]
+    fn x_static() {
+        let x_static = 5;
 
-		let all = Operands::AllPresent(AllPresent {
-		    x_static,
-		    x_dynamic: Dynamic::Constant(number::Data::Byte(5))
-		});
+        let all = Operands::AllPresent(AllPresent {
+            x_static,
+            x_dynamic: Dynamic::Constant(number::Data::Byte(5))
+        });
 
-		let static_only = Operands::Static(x_static);
-		let dynamic_only = Operands::Dynamic(Dynamic::Constant(number::Data::Byte(5)));
+        let static_only = Operands::Static(x_static);
+        let dynamic_only = Operands::Dynamic(Dynamic::Constant(number::Data::Byte(5)));
 
-		assert_eq!(all.x_static().unwrap(), x_static);
-		assert_eq!(static_only.x_static().unwrap(), x_static);
-		assert!(dynamic_only.x_static().is_none());
-	}
+        assert_eq!(all.x_static().unwrap(), x_static);
+        assert_eq!(static_only.x_static().unwrap(), x_static);
+        assert!(dynamic_only.x_static().is_none());
+    }
 
-	#[test]
-	fn x_dynamic() {
-		let x_dynamic = Dynamic::Constant(number::Data::Byte(5));
+    #[test]
+    fn x_dynamic() {
+        let x_dynamic = Dynamic::Constant(number::Data::Byte(5));
 
-		let all = Operands::AllPresent(AllPresent {
-		    x_static: 10,
-		    x_dynamic: x_dynamic.clone()
-		});
+        let all = Operands::AllPresent(AllPresent {
+            x_static: 10,
+            x_dynamic: x_dynamic.clone()
+        });
 
-		let static_only = Operands::Static(10);
-		let dynamic_only = Operands::Dynamic(x_dynamic.clone());
+        let static_only = Operands::Static(10);
+        let dynamic_only = Operands::Dynamic(x_dynamic.clone());
 
-		assert_eq!(*all.x_dynamic().unwrap(), x_dynamic);
-		assert_eq!(*dynamic_only.x_dynamic().unwrap(), x_dynamic);
-		assert!(static_only.x_dynamic().is_none());
-	}
+        assert_eq!(*all.x_dynamic().unwrap(), x_dynamic);
+        assert_eq!(*dynamic_only.x_dynamic().unwrap(), x_dynamic);
+        assert!(static_only.x_dynamic().is_none());
+    }
 }
