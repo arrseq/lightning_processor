@@ -95,6 +95,25 @@ impl Driver {
 		}
 	}
 
+	/// Encode the current [Driver] instance into a byte tuple which encodes all the driver information and can be 
+	/// lossless decoded.
+	/// ```
+	/// use atln_processor::instruction::Driver;
+	/// 
+	/// let driver = Driver {
+	///     operation: 0b1110,
+	///     extension: 0b1010,
+	///     synchronise: true,
+	///     dynamic_destination: false,
+	///     addressing: 0b11,
+	///     immediate_exponent: 0b10
+	/// };
+	///
+	/// let encoded = driver.encode();
+	///
+	/// assert_eq!(encoded[0], 0b001010_1_0);
+	/// assert_eq!(encoded[1], 0b1110_11_10);
+	/// ```
 	pub fn encode(&self) -> [u8; 2] {
 		let mut driver0 = 0.set_extension(self.extension);
 		driver0 = driver0.set_synchronise(self.synchronise);
@@ -205,19 +224,71 @@ impl Driver0Encoding for u8 {
 }
 
 pub trait Driver1Encoding {
+	/// ```
+	/// use atln_processor::instruction::Driver1Encoding;
+	/// 
+	/// assert_eq!(0b1101_00_00_u8.extract_operation(), 0b0000_1101);
+	/// assert_eq!(0b1010_01_10_u8.extract_operation(), 0b0000_1010);
+	/// ```
 	fn extract_operation(self) -> u8;
 
 	/// Only the first 4 bits of the operation is used.
+	/// ```
+	/// use atln_processor::instruction::Driver1Encoding;
+	/// 
+	/// assert_eq!(0b0001_00_11_u8.set_operation(0b0000_1111), 0b1111_00_11);
+	/// assert_eq!(0b1111_00_10_u8.set_operation(0b0000_1001), 0b1001_00_10);
+	/// assert_eq!(0b1010_00_10_u8.set_operation(0b0000_1010), 0b1010_00_10);
+	///
+	/// // Truncating extension
+	/// assert_eq!(0b0000_00_00_u8.set_operation(0b1111_1111), 0b1111_00_00);
+	/// assert_eq!(0b0000_10_01_u8.set_operation(0b1111_1111), 0b1111_10_01);
+	/// ```
 	fn set_operation(self, operation: u8) -> u8;
 
+	/// ```
+	/// use atln_processor::instruction::Driver1Encoding;
+	/// 
+	/// assert_eq!(0b0011_10_00_u8.extract_addressing(), 0b000000_10);
+	/// assert_eq!(0b1011_11_00_u8.extract_addressing(), 0b000000_11);
+	/// assert_eq!(0b0000_00_00_u8.extract_addressing(), 0b000000_00);
+	/// ```
 	fn extract_addressing(self) -> u8;
 
 	/// Only the first 2 bits of the addressing is used.
+	/// ```
+	/// use atln_processor::instruction::Driver1Encoding;
+	/// 
+	/// assert_eq!(0b0000_11_00_u8.set_addressing(0b000000_00), 0b0000_00_00);
+	/// assert_eq!(0b0011_00_00_u8.set_addressing(0b000000_01), 0b0011_01_00);
+	/// assert_eq!(0b1011_00_00_u8.set_addressing(0b000000_00), 0b1011_00_00);
+	///
+	/// // Truncating extension
+	/// assert_eq!(0b0000_00_00_u8.set_addressing(0b111111_11), 0b0000_11_00);
+	/// assert_eq!(0b1010_00_01_u8.set_addressing(0b111111_11), 0b1010_11_01);
+	/// ```
 	fn set_addressing(self, addressing: u8) -> u8;
 
+	/// ```
+	/// use atln_processor::instruction::Driver1Encoding;
+	/// 
+	/// assert_eq!(0b0000_00_11_u8.extract_immediate_exponent(), 0b000000_11);
+	/// assert_eq!(0b1010_11_01_u8.extract_immediate_exponent(), 0b000000_01);
+	/// ```
 	fn extract_immediate_exponent(self) -> u8;
 
 	/// Only the first 2 bits of the addressing is used.
+	/// ```
+	/// use atln_processor::instruction::Driver1Encoding;
+	/// 
+	/// assert_eq!(0b0011_00_00_u8.set_immediate_exponent(0b000000_11), 0b0011_00_11);
+	/// assert_eq!(0b0000_11_00_u8.set_immediate_exponent(0b000000_10), 0b0000_11_10);
+	/// assert_eq!(0b1011_01_00_u8.set_immediate_exponent(0b000000_00), 0b1011_01_00);
+	///
+	/// // Truncating extension
+	/// assert_eq!(0b0000_00_00_u8.set_immediate_exponent(0b111111_11), 0b0000_00_11);
+	/// assert_eq!(0b1011_01_00_u8.set_immediate_exponent(0b111111_10), 0b1011_01_10);
+	/// ```
 	fn set_immediate_exponent(self, immediate_exponent: u8) -> u8;
 }
 
