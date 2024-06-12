@@ -39,7 +39,7 @@ impl Core {
 
     /// Execute instructions from a stream
     pub fn execute(&mut self, stream: &mut impl Read, memory: &mut Memory) -> Result<(), ExecuteError> {
-        let mut instruction = match Instruction::from_encoded(stream) {
+        let mut instruction = match Instruction::new(stream) {
             Ok(value) => value,
             Err(error) => return Err(ExecuteError::Decode(error))
         };

@@ -193,19 +193,19 @@ pub enum OperandsConstructError {
     /// Error when constructing the dynamic operand.
     Dynamic(FromCodesError),
     /// The dynamic operand was set to register or constant which are not memory locations and therefor this cannot be
-    /// permitted. This is incompatible as the registers are localized to each processor and synchronous instructions 
+    /// permitted. This is incompatible as the registers are localized to each processor and synchronous instructions
     /// are meant to allow memory actions to be predictable between multiple processors.
     SynchronousAddressing
 }
 
 impl<'a> Operands {
-    /// Create a new operands set from 
+    /// Create a new operands set from
     /// - A stream which will be used to retrieve the immediate bytes if necessary.
     /// - The operation which will be used to determine which operands are present.
     /// - The decoded registers byte to get the register information.
-    /// - The decoded driver byte to get `immediate_exponent`, `x_dynamic`, `addressing`, and `synchronise` ensure the 
+    /// - The decoded driver byte to get `immediate_exponent`, `x_dynamic`, `addressing`, and `synchronise` ensure the
     ///   addressing rules are valid and construct the dynamic operand.
-    /// 
+    ///
     /// ```
     /// // TODO: Complete test
     /// ```
@@ -236,7 +236,7 @@ impl<'a> Operands {
             unreachable!()
         })
     }
-    
+
     /// Try to get the static operand.
     /// TODO: Test
     pub fn x_static(&self) -> Option<Static> {
