@@ -1,2 +1,2 @@
 [workspace]
-members=["src/compiler", "src/graphical-interface", "src/processor"]
+members=[ "src/assembler","src/compiler", "src/graphical-interface", "src/processor"]

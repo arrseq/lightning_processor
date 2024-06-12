@@ -26,7 +26,9 @@ pub enum OperationExecuteError {
     ExpectedNone
 }
 
-pub trait Operation: Coded<u8> {
+pub trait Operation<'a>: Coded<u8> {
+    /// Get the name of the operation. This will be used by assemblers.
+    fn name(&mut self) -> &'a str;
     /// Whether the operation requires the static operand.
     fn expects_static(&mut self) -> bool;
     /// Whether the operation requires the dynamic operand.

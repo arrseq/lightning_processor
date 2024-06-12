@@ -1,5 +1,7 @@
 use std::io::Read;
 use crate::{number};
+use crate::instruction::{DataConstructError, Driver, Registers};
+use crate::instruction::operation::Operation;
 use crate::number::{BYTE_SIZE, DUAL_SIZE, QUAD_SIZE, WORD_SIZE};
 
 // region: Constants
@@ -178,7 +180,7 @@ pub struct AllPresent {
     pub x_dynamic: Dynamic
 }
 
-/// Multi configuration of operands for an processor.
+/// Multi configuration of operands for a processor.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Operands {
     AllPresent(AllPresent),
@@ -186,8 +188,57 @@ pub enum Operands {
     Dynamic(Dynamic)
 }
 
-impl Operands {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum OperandsConstructError {
+    /// Error when constructing the dynamic operand.
+    Dynamic(FromCodesError),
+    /// The dynamic operand was set to register or constant which are not memory locations and therefor this cannot be
+    /// permitted. This is incompatible as the registers are localized to each processor and synchronous instructions 
+    /// are meant to allow memory actions to be predictable between multiple processors.
+    SynchronousAddressing
+}
+
+impl<'a> Operands {
+    /// Create a new operands set from 
+    /// - A stream which will be used to retrieve the immediate bytes if necessary.
+    /// - The operation which will be used to determine which operands are present.
+    /// - The decoded registers byte to get the register information.
+    /// - The decoded driver byte to get `immediate_exponent`, `x_dynamic`, `addressing`, and `synchronise` ensure the 
+    ///   addressing rules are valid and construct the dynamic operand.
+    /// 
+    /// ```
+    /// // TODO: Complete test
+    /// ```
+    pub fn new(stream: &mut impl Read, operation: &mut impl Operation<'a>, registers: &Registers, driver: &Driver) -> Result<Self, OperandsConstructError> {
+        // Create the dynamic operand
+        let x_dynamic = if operation.expects_dynamic() {
+            Some(match Dynamic::from_codes(registers.x_dynamic, driver.addressing, driver.immediate_exponent, stream) {
+                Ok(operand) => operand,
+                Err(error) => return Err(OperandsConstructError::Dynamic(error))
+            })
+        } else { None };
+
+        // Do not allow the processor to be synchronous and use the register or constant addressing mode in the same
+        // core.
+        if let Some(value) = &x_dynamic && let Dynamic::Register(_) = value && driver.synchronise { return Err(OperandsConstructError::SynchronousAddressing) }
+
+        // Construct operand field.
+        Ok(if operation.expects_all() {
+            Operands::AllPresent(AllPresent {
+                x_static: registers.x_static,
+                x_dynamic: x_dynamic.unwrap()
+            })
+        } else if operation.expects_only_static() {
+            Operands::Static(registers.x_static)
+        } else if operation.expects_only_dynamic() {
+            Operands::Dynamic(x_dynamic.unwrap())
+        } else {
+            unreachable!()
+        })
+    }
+    
     /// Try to get the static operand.
+    /// TODO: Test
     pub fn x_static(&self) -> Option<Static> {
         Some(match self {
             Self::Static(x_static) => *x_static,
@@ -197,6 +248,7 @@ impl Operands {
     }
 
     /// Try to get the dynamic operand.
+    /// TODO: Test
     pub fn x_dynamic(&self) -> Option<&Dynamic> {
         Some(match self {
             Self::Dynamic(x_dynamic) => x_dynamic,

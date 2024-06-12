@@ -15,7 +15,9 @@ pub enum Arithmetic {
 
 // Implementation
 
-impl Operation for Arithmetic {
+impl<'a> Operation<'a> for Arithmetic {
+    fn name(&mut self) -> &'a str { "add" }
+
     fn expects_static(&mut self) -> bool { true }
     fn expects_dynamic(&mut self) -> bool { true }
 

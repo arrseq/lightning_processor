@@ -34,7 +34,7 @@ pub mod operation;
 use std::io;
 use std::io::Read;
 use crate::number;
-use crate::instruction::operand::{AllPresent, Dynamic, FromCodesError, Operand, Operands};
+use crate::instruction::operand::{AllPresent, Dynamic, FromCodesError, Operand, Operands, OperandsConstructError};
 use crate::instruction::operation::{Coded, Extension, ExtensionFromCodeInvalid, Operation};
 
 // region: Binary processor bit masks
@@ -69,7 +69,7 @@ impl Driver {
     /// ```
     /// use atln_processor::instruction::Driver;
     ///
-    /// let driver = Driver::from_encoded([0b001010_0_1, 0b1111_10_01]);
+    /// let driver = Driver::new([0b001010_0_1, 0b1111_10_01]);
     ///
     /// // Driver 0
     /// assert_eq!(driver.extension, 0b001010);
@@ -81,7 +81,7 @@ impl Driver {
     /// assert_eq!(driver.addressing, 0b10);
     /// assert_eq!(driver.immediate_exponent, 0b1);
     /// ```
-    pub fn from_encoded(bytes: [u8; 2]) -> Self {
+    pub fn new(bytes: [u8; 2]) -> Self {
         let driver0 = bytes[0];
         let driver1 = bytes[1];
 
@@ -340,10 +340,11 @@ pub struct Registers {
 }
 
 impl Registers {
+    /// Create a new instance from an encoded form of the registers byte.
     /// ```
     /// // TODO:
     /// ```
-    pub fn from_encoded(encoded: u8) -> Self {
+    pub fn new(encoded: u8) -> Self {
         Self {
             width: encoded.extract_width(),
             x_static: encoded.extract_static(),
@@ -428,17 +429,41 @@ pub enum DataConstructError {
     StreamRead(io::Error),
     /// Stream did not contain enough bytes.
     Length,
-    /// Error caused from parsing the dynamic operand.
-    Dynamic(FromCodesError),
-    /// Both the synchronous state and register addressing mode were used which is not allowed.
-    SynchronousRegister,
     /// The operation does not expect operands. There is nothing to decode.
-    NoOperands
+    NoOperands,
+    /// Failed to construct the operands. This could be due to rule breaking or the operation trait is bad.
+    Operands(OperandsConstructError)
 }
 
-impl Data {
-    /// TODO UNIT TEST
-    pub fn new(stream: &mut impl Read, operation: &mut impl Operation, driver: &Driver) -> Result<Self, DataConstructError> {
+impl<'a> Data {
+    /// Try to construct a data field from data with an operation and driver. The data structure contains information 
+    /// operands and how they should be handled and dealt with as well as addressing information for x_dynamic. This 
+    /// involves decoding the stream with [Registers].
+    /// ```
+    /// use std::io::Cursor;
+    /// use atln_processor::instruction::{Data, Driver};
+    /// use atln_processor::instruction::operation::arithmetic::Arithmetic;
+    /// use atln_processor::instruction::operation::{Coded, Extension};
+    ///
+    /// let mut extension = Extension::Arithmetic(Arithmetic::Add);
+    /// let operation = &mut extension.operation();
+    ///
+    /// let data = Data::new(
+    ///     &mut Cursor::new([ 00_000_000 ]),
+    ///     operation,
+    ///     &Driver {
+    ///         extension: extension.code(),
+    ///         operation: operation.code(),
+    ///         addressing: 0,
+    ///         dynamic_destination: false,
+    ///         immediate_exponent: 0,
+    ///         synchronise: false
+    ///     }
+    /// );
+    /// 
+    /// // TODO: Complete
+    /// ```
+    pub fn new(stream: &mut impl Read, operation: &mut impl Operation<'a>, driver: &Driver) -> Result<Self, DataConstructError> {
         // If there is no requirement for operands then there is nothing to decode.
         if !operation.expects_operand() { return Err(DataConstructError::NoOperands) }
 
@@ -449,32 +474,12 @@ impl Data {
             Err(error) => return Err(DataConstructError::StreamRead(error))
         };
 
-        let registers = Registers::from_encoded(data_encoded[0]);
+        let registers = Registers::new(data_encoded[0]);
 
-        let x_dynamic = if operation.expects_dynamic() {
-            Some(match Dynamic::from_codes(registers.x_dynamic, driver.addressing, driver.immediate_exponent, stream) {
-                Ok(operand) => operand,
-                Err(error) => return Err(DataConstructError::Dynamic(error))
-            })
-        } else { None };
-
-        // Do not allow the processor to be synchronous and use the register or constant addressing mode in the same
-        // core. This is incompatible as the registers are localized to each processor and synchronous
-        // instructions are meant to allow memory actions to be predictable between multiple processors.
-        if let Some(value) = &x_dynamic && let Dynamic::Register(_) = value && driver.synchronise { return Err(DataConstructError::SynchronousRegister) }
-
-        // Construct operand field.
-        let operands = if operation.expects_all() {
-            Operands::AllPresent(AllPresent {
-                x_static: registers.x_static,
-                x_dynamic: x_dynamic.unwrap()
-            })
-        } else if operation.expects_only_static() {
-            Operands::Static(registers.x_static)
-        } else if operation.expects_only_dynamic() {
-            Operands::Dynamic(x_dynamic.unwrap())
-        } else {
-            unreachable!()
+        // operands extracting here
+        let operands = match Operands::new(stream, operation, &registers, &driver) {
+            Ok(value) => value,
+            Err(error) => return Err(DataConstructError::Operands(error))
         };
 
         // Construct data.
@@ -501,10 +506,8 @@ pub enum DecodeError {
     Length,
     /// The extension and or operation are invalid.
     InvalidCode(ExtensionFromCodeInvalid),
-    /// Error caused from interpreting the dynamic operand
-    Dynamic(FromCodesError),
-    /// Both the synchronous state and register addressing mode were used which is not allowed.
-    SynchronousRegister,
+    /// Error when constructing operands.
+    Operands(OperandsConstructError)
 }
 
 /// Caused by using a destination which corresponds to an operand that is not provided.
@@ -544,7 +547,7 @@ impl Instruction {
             Err(error) => return Err(DecodeError::StreamRead(error))
         };
 
-        let driver = Driver::from_encoded(encoded_driver);
+        let driver = Driver::new(encoded_driver);
 
         let mut extension =  match Extension::from_codes(driver.extension, driver.operation) {
             Ok(operation) => operation,
@@ -561,8 +564,7 @@ impl Instruction {
                     DataConstructError::NoOperands => {},
                     DataConstructError::StreamRead(error) => return Err(DecodeError::StreamRead(error)),
                     DataConstructError::Length => return Err(DecodeError::Length),
-                    DataConstructError::Dynamic(error) => return Err(DecodeError::Dynamic(error)),
-                    DataConstructError::SynchronousRegister => return Err(DecodeError::SynchronousRegister)
+                    DataConstructError::Operands(error) => return Err(DecodeError::Operands(error))
                 }
 
                 None
