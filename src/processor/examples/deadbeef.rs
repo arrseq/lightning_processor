@@ -2,6 +2,7 @@ use std::io::Cursor;
 use atln_processor::{number, Core};
 use atln_processor::instruction::{Driver0Encoding, Instruction};
 use atln_processor::memory::Memory;
+use atln_processor::number::Type;
 
 fn main() {
     let uuid = 1218646354314924054u64;

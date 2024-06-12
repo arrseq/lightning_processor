@@ -113,12 +113,27 @@ impl Data {
         }
     }
 
-    /// Try to fit a 64-bit number into the smallest division variant of this type.
+    /// Fit a 64-bit number into the smallest division variant of this type.
     pub fn from_quad_selecting(quad: u64) -> Self {
         if quad <= u8::MAX as u64 { return Self::Byte(quad as u8) }
         if quad <= u16::MAX as u64 { return Self::Word(quad as u16) }
         if quad <= u32::MAX as u64 { return Self::Dual(quad as u32) }
         Self::Quad(quad)
+    }
+    
+    /// Store a u64 into the correct type with an exponent hint. If the exponent is for a smaller number, then
+    /// some information may be lost due to type conversion. If the exponent is not supported, then [None] is returned. 
+    /// Only exponents 1, 2, 3 and 4 are supported.
+    /// 
+    /// TODO: Test
+    pub fn from_exponent_selecting(exponent: u8, number: u64) -> Option<Self> {
+        Some(match exponent {
+            IMMEDIATE_EXPONENT_BYTE => Self::Byte(number as u8),
+            IMMEDIATE_EXPONENT_WORD => Self::Word(number as u16),
+            IMMEDIATE_EXPONENT_DUAL => Self::Dual(number as u32),
+            IMMEDIATE_EXPONENT_QUAD => Self::Quad(number),
+            _ => return None
+        })
     }
 }
 
