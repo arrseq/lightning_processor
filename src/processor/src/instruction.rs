@@ -24,7 +24,7 @@
 //! | No       | Register  | Static Operand      | 3 bits   | Static register operand.                                        |
 //! | No       | Register  | Dynamic Operand     | 3 bits   | Dynamically addressable operand.                                |
 //!
-//! Immediate 0..8 quantized to 0, 2, 4 and 8.
+//! Immediate 0..8 quantized to 0, 1, 2, 4 and 8.
 
 #![allow(clippy::unusual_byte_groupings)]
 
