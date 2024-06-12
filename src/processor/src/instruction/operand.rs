@@ -1,3 +1,7 @@
+//! Non-generic operand structure module containing tools for decoding operands and other operand related utilities.
+//! 
+//! The static operand is a simple and optional register field which can be used as the destination.
+
 use std::io::Read;
 use crate::{number};
 use crate::instruction::{Driver, Registers};
@@ -62,11 +66,11 @@ pub enum DynamicConstructError {
 
 impl Dynamic {
     /// Read the immediate based on the exponent. The number of bytes read from the stream is based on using the
-    /// immediate exponent as a power of 2. 
+    /// immediate exponent as a power of 2.
     /// - If the exponent is invalid then [Err(ReadImmediateError::Exponent)] is returned.
     /// - If the stream fails then [Err(ReadImmediateError::Stream)] is returned.
     /// - If the stream does not contain enough elements then [Err(ReadImmediateError::Length)] is returned.
-    /// 
+    ///
     /// ```
     /// use std::io::Cursor;
     /// use atln_processor::instruction::operand::{Dynamic, IMMEDIATE_EXPONENT_BYTE, IMMEDIATE_EXPONENT_DUAL, IMMEDIATE_EXPONENT_QUAD, IMMEDIATE_EXPONENT_WORD};
@@ -83,7 +87,7 @@ impl Dynamic {
     /// ```
     pub fn read_immediate(exponent: u8, stream: &mut impl Read) -> Result<number::Data, ReadImmediateError> {
         let mut quad_buffer = [0u8; QUAD_SIZE as usize];
-        
+
         let buffer: &mut [u8] = match exponent {
             IMMEDIATE_EXPONENT_BYTE => &mut quad_buffer[0..BYTE_SIZE as usize],
             IMMEDIATE_EXPONENT_WORD => &mut quad_buffer[0..WORD_SIZE as usize],
@@ -96,8 +100,8 @@ impl Dynamic {
             Ok(length) => if length != buffer.len() { return Err(ReadImmediateError::Length) },
             Err(_) => return Err(ReadImmediateError::Read)
         };
-        
-        // Unwrapping is safe here because the exponent is validated when creating the buffer. 
+
+        // Unwrapping is safe here because the exponent is validated when creating the buffer.
         Ok(number::Data::from_exponent_selecting(exponent, u64::from_le_bytes(quad_buffer)).unwrap())
     }
 
@@ -195,6 +199,13 @@ pub enum Operand {
 pub struct AllPresent {
     pub x_static: Static,
     pub x_dynamic: Dynamic
+}
+
+/// An operand selector to indicate an operand to point to.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Destination {
+    Static,
+    Dynamic
 }
 
 /// Multi configuration of operands for a processor.

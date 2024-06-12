@@ -34,7 +34,7 @@ pub mod operation;
 use std::io;
 use std::io::Read;
 use crate::number;
-use crate::instruction::operand::{Operand, Operands, OperandsConstructError};
+use crate::instruction::operand::{Destination, Dynamic, Operand, Operands, OperandsConstructError};
 use crate::instruction::operation::{Coded, Extension, ExtensionFromCodeInvalid, Operation};
 
 // region: Binary processor bit masks
@@ -326,13 +326,6 @@ impl Driver1Encoding for u8 {
 }
 // endregion
 
-/// The operand to dereference store the operation result in.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Destination {
-    Static,
-    Dynamic
-}
-
 /// Register byte encoding.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Registers {
@@ -424,6 +417,8 @@ impl RegistersEncoding for u8 {
 pub struct Data {
     /// Width of operands when dereferenced and for storing result.
     pub width: number::Type,
+    /// The name of the operand to store the result of the computation in, if the computation produces a result. There 
+    /// is always a destination even if the instruction does not compute and store anything.
     pub destination: Destination,
     pub synchronise: bool,
     pub operands: Operands
@@ -437,7 +432,15 @@ pub enum DataConstructError {
     /// The operation does not expect operands. There is nothing to decode.
     NoOperands,
     /// Failed to construct the operands. This could be due to rule breaking or the operation trait is bad.
-    Operands(OperandsConstructError)
+    Operands(OperandsConstructError),
+    /// Invalid destination for the current addressing or operand modes. The current destination cannot be used. Reasons
+    /// may include:
+    /// - Dynamic destination was used with the constant addressing mode. 
+    /// - The dynamic operand is not expected, therefore there is no location to store the result at.
+    /// 
+    /// This error is not produced if there are no operands because the destination is encoded as a boolean in the 
+    /// instruction.
+    Destination
 }
 
 impl<'a> Data {
@@ -480,17 +483,24 @@ impl<'a> Data {
         };
 
         let registers = Registers::new(data_encoded[0]);
+        let destination = if driver.dynamic_destination { Destination::Dynamic } else { Destination::Static };
 
         // operands extracting here
         let operands = match Operands::new(stream, operation, &registers, driver) {
             Ok(value) => value,
             Err(error) => return Err(DataConstructError::Operands(error))
         };
+        
+        // Prevent the invalid instruction configuration which involves pointing to a constant dynamic operand as the 
+        // destination operand.
+        if let Some(x_dynamic) = operands.x_dynamic() && let Destination::Dynamic = destination && let Dynamic::Constant(_) = x_dynamic {
+            return Err(DataConstructError::Destination);
+        }
 
         // Construct data.
         Ok(Data {
             width: number::Type::from_exponent(registers.width).unwrap(),
-            destination: if driver.dynamic_destination { Destination::Dynamic } else { Destination::Static },
+            destination,
             synchronise: driver.synchronise,
             operands
         })
@@ -512,7 +522,9 @@ pub enum DecodeError {
     /// The extension and or operation are invalid.
     InvalidCode(ExtensionFromCodeInvalid),
     /// Error when constructing operands.
-    Operands(OperandsConstructError)
+    Operands(OperandsConstructError),
+    /// Error information found in [DataConstructError::Destination].
+    Destination
 }
 
 /// Caused by using a destination which corresponds to an operand that is not provided.
@@ -569,7 +581,8 @@ impl Instruction {
                     DataConstructError::NoOperands => {},
                     DataConstructError::StreamRead(error) => return Err(DecodeError::StreamRead(error)),
                     DataConstructError::Length => return Err(DecodeError::Length),
-                    DataConstructError::Operands(error) => return Err(DecodeError::Operands(error))
+                    DataConstructError::Operands(error) => return Err(DecodeError::Operands(error)),
+                    DataConstructError::Destination => return Err(DecodeError::Destination)
                 }
 
                 None
