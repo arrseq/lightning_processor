@@ -34,7 +34,7 @@ pub mod operation;
 use std::io;
 use std::io::Read;
 use crate::number;
-use crate::instruction::operand::{AllPresent, Dynamic, DynamicConstructError, Operand, Operands, OperandsConstructError};
+use crate::instruction::operand::{Operand, Operands, OperandsConstructError};
 use crate::instruction::operation::{Coded, Extension, ExtensionFromCodeInvalid, Operation};
 
 // region: Binary processor bit masks
@@ -482,7 +482,7 @@ impl<'a> Data {
         let registers = Registers::new(data_encoded[0]);
 
         // operands extracting here
-        let operands = match Operands::new(stream, operation, &registers, &driver) {
+        let operands = match Operands::new(stream, operation, &registers, driver) {
             Ok(value) => value,
             Err(error) => return Err(DataConstructError::Operands(error))
         };

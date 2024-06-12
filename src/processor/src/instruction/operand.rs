@@ -1,6 +1,6 @@
 use std::io::Read;
 use crate::{number};
-use crate::instruction::{DataConstructError, Driver, Registers};
+use crate::instruction::{Driver, Registers};
 use crate::instruction::operation::Operation;
 use crate::number::{BYTE_SIZE, DUAL_SIZE, QUAD_SIZE, WORD_SIZE};
 

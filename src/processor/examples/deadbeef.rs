@@ -15,6 +15,6 @@ fn main() {
     let mut mem = Memory::from(Vec::new());
 
     // core.execute(&mut rom, &mut mem).unwrap();
-    let i = Instruction::new(&mut Cursor::new([ 0, 0b0000_11_00, 0b00_011_000, 255 ])).expect("No...");
+    let i = Instruction::new(&mut Cursor::new([ 0b000000_1_1, 0b0000_11_00, 0b00_011_000, 255 ])).expect("No...");
     dbg!(i);
 }

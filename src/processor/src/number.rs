@@ -109,7 +109,7 @@ impl Data {
             Self::Byte(value) => value as u64,
             Self::Word(value) => value as u64,
             Self::Dual(value) => value as u64,
-            Self::Quad(value) => value as u64
+            Self::Quad(value) => value
         }
     }
 
