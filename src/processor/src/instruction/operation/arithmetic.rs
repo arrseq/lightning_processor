@@ -2,10 +2,10 @@ use crate::ExecutionContext;
 use crate::instruction::Data;
 use crate::instruction::operation::{Coded, Operation, OperationExecuteError};
 
-// Operation codes
-
+// region: Constants
 pub const ADD_CODE     : u8 = 0;
 pub const SUBTRACT_CODE: u8 = 1;
+// endregion
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Arithmetic {
@@ -13,11 +13,7 @@ pub enum Arithmetic {
     Subtract
 }
 
-// Implementation
-
 impl<'a> Operation<'a> for Arithmetic {
-    fn name(&mut self) -> &'a str { "add" }
-
     fn expects_static(&mut self) -> bool { true }
     fn expects_dynamic(&mut self) -> bool { true }
 

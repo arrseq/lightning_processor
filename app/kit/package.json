@@ -1,0 +1,14 @@
+{
+  "name": "atln-kit",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tfe-exr/Processor.git"
+  },
+  "private": true,
+  "dependencies": {
+    "sass": "^1.77.5"
+  }
+}

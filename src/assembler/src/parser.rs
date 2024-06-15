@@ -2,5 +2,5 @@
 //!
 //! ```asm
 //! start:
-//!     arithmetic::add r0, 
+//!     arithmetic::add r0,
 //! ```

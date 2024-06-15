@@ -6,9 +6,14 @@ Execute instructions, manage memory, run programs. Provides hardware, compiler, 
 - Complex instruction set (CISC)
 - Versatile instruction encoding and x86 translatable.
 
+# Required tools
+- Cargo and other Rust tools (Setup with Rustup)
+- Windows C++ build tools
+- Python
+
 # Started
 - [x] Instruction decoder
-- [ ] Emulation 
-- [ ] Assembler 
+- [x] Emulation 
+- [x] Assembler 
 - [ ] Syntax parser 
 - [ ] Compiler
