@@ -1,2 +1,2 @@
 [workspace]
-members=[ "src/assembler","src/compiler", "src/processor"]
+members=[ "src/assembler","src/compiler", "src/processor", "app/emulator/rust"]
