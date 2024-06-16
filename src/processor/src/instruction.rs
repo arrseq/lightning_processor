@@ -130,13 +130,30 @@ impl Driver {
 
 // region: Uint driver traits
 pub trait Driver0Encoding {
+    fn extract_extension(self) -> u8;
+
+    /// Only the first 6 bits of the extension is used.
+    fn set_extension(self, extension: u8) -> u8;
+    
+    fn extract_synchronise(self) -> bool;
+    
+    fn set_synchronise(self, lock: bool) -> u8;
+    
+    fn extract_dynamic_destination(self) -> bool;
+    
+    fn set_dynamic_destination(self, dynamic_destination: bool) -> u8;
+}
+
+impl Driver0Encoding for u8 {
     /// ```
     /// use atln_processor::instruction::Driver0Encoding;
     ///
     /// assert_eq!(0b001101_0_0_u8.extract_extension(), 0b00_001101);
     /// assert_eq!(0b101010_0_1_u8.extract_extension(), 0b00_101010);
     ///```
-    fn extract_extension(self) -> u8;
+    fn extract_extension(self) -> u8 {
+        (DRIVER0_EXTENSION_MASK & self) >> 2
+    }
 
     /// Only the first 6 bits of the extension is used.
     /// ```
@@ -150,7 +167,10 @@ pub trait Driver0Encoding {
     /// assert_eq!(0b00000000_0_0_u8.set_extension(0b11_111111), 0b111111_0_0);
     /// assert_eq!(0b00000000_0_1_u8.set_extension(0b11_111110), 0b111110_0_1);
     /// ```
-    fn set_extension(self, extension: u8) -> u8;
+    fn set_extension(self, extension: u8) -> u8 {
+        let layer = (0b00_111111 & extension) << 2;
+        (!DRIVER0_EXTENSION_MASK & self) | layer
+    }
 
     /// ```
     /// use atln_processor::instruction::Driver0Encoding;
@@ -160,7 +180,11 @@ pub trait Driver0Encoding {
     /// assert!(0b001010_1_1_u8.extract_synchronise());
     /// assert!(!0b001010_0_1_u8.extract_synchronise());
     /// ```
-    fn extract_synchronise(self) -> bool;
+    fn extract_synchronise(self) -> bool {
+        // Value will always be 1 bit.
+        let bit = (DRIVER0_SYNCHRONISE_MASK & self) >> 1;
+        bit == 1
+    }
 
     /// ```
     /// use atln_processor::instruction::Driver0Encoding;
@@ -169,7 +193,10 @@ pub trait Driver0Encoding {
     /// assert_eq!(0b000000_0_1_u8.set_synchronise(true), 0b000000_1_1);
     /// assert_eq!(0b111111_0_0_u8.set_synchronise(false), 0b111111_0_0);
     /// ```
-    fn set_synchronise(self, lock: bool) -> u8;
+    fn set_synchronise(self, lock: bool) -> u8 {
+        let layer = (lock as u8) << 1;
+        (!DRIVER0_SYNCHRONISE_MASK & self) | layer
+    }
 
     /// ```
     /// use atln_processor::instruction::Driver0Encoding;
@@ -179,7 +206,10 @@ pub trait Driver0Encoding {
     /// assert!(0b000000_1_1_u8.extract_dynamic_destination());
     /// assert!(!0b000000_1_0_u8.extract_dynamic_destination());
     /// ```
-    fn extract_dynamic_destination(self) -> bool;
+    fn extract_dynamic_destination(self) -> bool {
+        // Value will always be 1 bit.
+        (DRIVER0_DYNAMIC_DESTINATION & self) == 1
+    }
 
     /// ```
     /// use atln_processor::instruction::Driver0Encoding;
@@ -189,49 +219,38 @@ pub trait Driver0Encoding {
     /// assert_eq!(0b000000_0_1_u8.set_dynamic_destination(false), 0b000000_0_0);
     /// assert_eq!(0b000000_1_1_u8.set_dynamic_destination(false), 0b000000_1_0);
     /// ```
-    fn set_dynamic_destination(self, dynamic_destination: bool) -> u8;
-}
-
-impl Driver0Encoding for u8 {
-    fn extract_extension(self) -> u8 {
-        (DRIVER0_EXTENSION_MASK & self) >> 2
-    }
-
-    /// Only the first 6 bits of the extension is used.
-    fn set_extension(self, extension: u8) -> u8 {
-        let layer = (0b00_111111 & extension) << 2;
-        (!DRIVER0_EXTENSION_MASK & self) | layer
-    }
-
-    fn extract_synchronise(self) -> bool {
-        // Value will always be 1 bit.
-        let bit = (DRIVER0_SYNCHRONISE_MASK & self) >> 1;
-        bit == 1
-    }
-
-    fn set_synchronise(self, lock: bool) -> u8 {
-        let layer = (lock as u8) << 1;
-        (!DRIVER0_SYNCHRONISE_MASK & self) | layer
-    }
-
-    fn extract_dynamic_destination(self) -> bool {
-        // Value will always be 1 bit.
-        (DRIVER0_DYNAMIC_DESTINATION & self) == 1
-    }
-
     fn set_dynamic_destination(self, dynamic_destination: bool) -> u8 {
         (!DRIVER0_DYNAMIC_DESTINATION & self) | dynamic_destination as u8
     }
 }
 
 pub trait Driver1Encoding {
+    fn extract_operation(self) -> u8;
+
+    /// Only the first 4 bits of the operation is used.
+    fn set_operation(self, operation: u8) -> u8;
+    
+    fn extract_addressing(self) -> u8;
+
+    /// Only the first 2 bits of the addressing is used.
+    fn set_addressing(self, addressing: u8) -> u8;
+    
+    fn extract_immediate_exponent(self) -> u8;
+
+    /// Only the first 2 bits of the addressing is used.
+    fn set_immediate_exponent(self, immediate_exponent: u8) -> u8;
+}
+
+impl Driver1Encoding for u8 {
     /// ```
     /// use atln_processor::instruction::Driver1Encoding;
     ///
     /// assert_eq!(0b1101_00_00_u8.extract_operation(), 0b0000_1101);
     /// assert_eq!(0b1010_01_10_u8.extract_operation(), 0b0000_1010);
     /// ```
-    fn extract_operation(self) -> u8;
+    fn extract_operation(self) -> u8 {
+        (DRIVER1_OPERATION_MASK & self) >> 4
+    }
 
     /// Only the first 4 bits of the operation is used.
     /// ```
@@ -245,7 +264,10 @@ pub trait Driver1Encoding {
     /// assert_eq!(0b0000_00_00_u8.set_operation(0b1111_1111), 0b1111_00_00);
     /// assert_eq!(0b0000_10_01_u8.set_operation(0b1111_1111), 0b1111_10_01);
     /// ```
-    fn set_operation(self, operation: u8) -> u8;
+    fn set_operation(self, operation: u8) -> u8 {
+        let layer = (0b0000_1111 & operation) << 4;
+        (!DRIVER1_OPERATION_MASK & self) | layer
+    }
 
     /// ```
     /// use atln_processor::instruction::Driver1Encoding;
@@ -254,7 +276,9 @@ pub trait Driver1Encoding {
     /// assert_eq!(0b1011_11_00_u8.extract_addressing(), 0b000000_11);
     /// assert_eq!(0b0000_00_00_u8.extract_addressing(), 0b000000_00);
     /// ```
-    fn extract_addressing(self) -> u8;
+    fn extract_addressing(self) -> u8 {
+        (DRIVER1_ADDRESSING_MASK & self) >> 2
+    }
 
     /// Only the first 2 bits of the addressing is used.
     /// ```
@@ -268,7 +292,10 @@ pub trait Driver1Encoding {
     /// assert_eq!(0b0000_00_00_u8.set_addressing(0b111111_11), 0b0000_11_00);
     /// assert_eq!(0b1010_00_01_u8.set_addressing(0b111111_11), 0b1010_11_01);
     /// ```
-    fn set_addressing(self, addressing: u8) -> u8;
+    fn set_addressing(self, addressing: u8) -> u8 {
+        let layer = (0b_000000_11 & addressing) << 2;
+        (!DRIVER1_ADDRESSING_MASK & self) | layer
+    }
 
     /// ```
     /// use atln_processor::instruction::Driver1Encoding;
@@ -276,7 +303,9 @@ pub trait Driver1Encoding {
     /// assert_eq!(0b0000_00_11_u8.extract_immediate_exponent(), 0b000000_11);
     /// assert_eq!(0b1010_11_01_u8.extract_immediate_exponent(), 0b000000_01);
     /// ```
-    fn extract_immediate_exponent(self) -> u8;
+    fn extract_immediate_exponent(self) -> u8 {
+        DRIVER1_ADDRESSING_PARAMETER_MASK & self
+    }
 
     /// Only the first 2 bits of the addressing is used.
     /// ```
@@ -290,35 +319,6 @@ pub trait Driver1Encoding {
     /// assert_eq!(0b0000_00_00_u8.set_immediate_exponent(0b111111_11), 0b0000_00_11);
     /// assert_eq!(0b1011_01_00_u8.set_immediate_exponent(0b111111_10), 0b1011_01_10);
     /// ```
-    fn set_immediate_exponent(self, immediate_exponent: u8) -> u8;
-}
-
-impl Driver1Encoding for u8 {
-    fn extract_operation(self) -> u8 {
-        (DRIVER1_OPERATION_MASK & self) >> 4
-    }
-
-    /// Only the first 4 bits of the operation is used.
-    fn set_operation(self, operation: u8) -> u8 {
-        let layer = (0b0000_1111 & operation) << 4;
-        (!DRIVER1_OPERATION_MASK & self) | layer
-    }
-
-    fn extract_addressing(self) -> u8 {
-        (DRIVER1_ADDRESSING_MASK & self) >> 2
-    }
-
-    /// Only the first 2 bits of the addressing is used.
-    fn set_addressing(self, addressing: u8) -> u8 {
-        let layer = (0b_000000_11 & addressing) << 2;
-        (!DRIVER1_ADDRESSING_MASK & self) | layer
-    }
-
-    fn extract_immediate_exponent(self) -> u8 {
-        DRIVER1_ADDRESSING_PARAMETER_MASK & self
-    }
-
-    /// Only the first 2 bits of the addressing is used.
     fn set_immediate_exponent(self, immediate_exponent: u8) -> u8 {
         let layer = 0b000000_11 & immediate_exponent;
         (!DRIVER1_ADDRESSING_PARAMETER_MASK & self) | layer
