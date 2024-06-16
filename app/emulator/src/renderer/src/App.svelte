@@ -1,8 +1,8 @@
 <script lang="ts">
     import { Button, Field } from "atln-kit";
     import { onMount } from "svelte"
-    import rust from "atln_rust";
 
+    let rust = require("atln_rust");
     console.log(rust.get());
 
     onMount(() => {

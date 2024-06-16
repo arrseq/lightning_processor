@@ -11,3 +11,4 @@ crate-type = ["cdylib"]
 
 [dependencies]
 neon = "1"
+atln-processor = { path="../../../src/processor" }
