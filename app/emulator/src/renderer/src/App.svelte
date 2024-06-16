@@ -1,6 +1,9 @@
 <script lang="ts">
     import { Button, Field } from "atln-kit";
-  import { onMount } from "svelte"
+    import { onMount } from "svelte"
+    import rust from "atln_rust";
+
+    console.log(rust.get());
 
     onMount(() => {
         const canvas = document.querySelector("canvas")
