@@ -678,8 +678,8 @@ impl Instruction {
 
     /// Get the operand that the destination property corresponds to.
     /// ```
-    /// use atln_processor::instruction::{Data, Destination, Instruction};
-    /// use atln_processor::instruction::operand::{AllPresent, Dynamic, Operands, Operand};
+    /// use atln_processor::instruction::{Data, Instruction, DestinationError};
+    /// use atln_processor::instruction::operand::{AllPresent, Dynamic, Operands, Operand, Destination};
     /// use atln_processor::instruction::operation::arithmetic::Arithmetic;
     /// use atln_processor::instruction::operation::Extension;
     /// use atln_processor::number;
@@ -709,9 +709,15 @@ impl Instruction {
     ///         })
     ///     })
     /// };
+    /// 
+    /// let no_operands = Instruction {
+    ///     extension: Extension::Arithmetic(Arithmetic::Add),
+    ///     data: None
+    /// };
     ///
     /// assert!(matches!(x_static.destination().unwrap(), Operand::Static(_)));
     /// assert!(!matches!(x_dynamic.destination().unwrap(), Operand::Static(_)));
+    /// assert!(matches!(no_operands.destination(), Err(DestinationError::Data)));
     /// ```
     pub fn destination(&self) -> Result<Operand, DestinationError> {
         let data = match &self.data {

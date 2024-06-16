@@ -28,8 +28,8 @@ pub type Static = u8;
 /// Allows dereferencing a memory address by reading the value from a register then adding an offset.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Offset {
-    register: u8,
-    offset: number::Data
+    pub register: u8,
+    pub offset: number::Data
 }
 
 /// Either a register code or immediate value addressing mode. Being dynamic means this gives the programmer freedom to 
