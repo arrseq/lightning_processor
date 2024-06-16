@@ -1,6 +1,7 @@
 <script lang="ts">
-    import Button from "atln-kit/src/Button.svelte";
+    import { Button, Field } from "atln-kit";
 </script>
 
 Test
-<Button></Button>
+<Button>None</Button>
+<Field />
