@@ -1,9 +1,14 @@
+use std::collections::HashMap;
+use std::iter::Map;
 use crate::number;
 
 // region: Constants
-pub const DUAL_ALIGNED_MASK: u64 = 0b1;
-pub const WORD_ALIGNED_MASK: u64 = 0b11;
-pub const QUAD_ALIGNED_MASK: u64 = 0b111;
+pub const DUAL_ALIGNED_MASK   : u64 = 0b1;
+pub const WORD_ALIGNED_MASK   : u64 = 0b11;
+pub const QUAD_ALIGNED_MASK   : u64 = 0b111;
+pub const PAGE_ITEM_BITS      : u64 = 13;
+pub const PAGE_IDENTIFIER_MASK: u64 = u64::MAX << PAGE_ITEM_BITS;
+pub const PAGE_ITEM_MASK      : u64 = u64::MAX >> (64 - PAGE_ITEM_BITS);
 // endregion
 
 /// An address frame which includes a memory address and the frame size.
@@ -15,6 +20,22 @@ pub struct Frame {
 impl Frame {
     /// Check to see if the current address frame is aligned to memory. Only aligned frames can be used to interact
     /// with memory.
+    /// ```
+    /// use atln_processor::memory::Frame;
+    /// use atln_processor::number::Type;
+    ///
+    /// // Aligned
+    /// assert!(Frame { address: 0, size: Type::Byte }.is_aligned());
+    /// assert!(Frame { address: 0, size: Type::Quad }.is_aligned());
+    /// assert!(Frame { address: 7, size: Type::Byte }.is_aligned());
+    ///
+    /// assert!(Frame { address: 8, size: Type::Word }.is_aligned());
+    /// assert!(Frame { address: 8, size: Type::Quad }.is_aligned());
+    ///
+    /// // Not aligned
+    /// assert!(!Frame { address: 7, size: Type::Word }.is_aligned());
+    /// assert!(!Frame { address: 1, size: Type::Quad }.is_aligned());
+    /// ```
     pub fn is_aligned(&self) -> bool {
         let masked = match self.size {
             number::Type::Byte => 0,
@@ -32,13 +53,37 @@ impl Frame {
     }
 }
 
+/// A page remapping utility.
+pub trait Page {
+    fn with_virtual(&self, r#virtual: u64) -> u64;
+}
+
+impl Page for u64 {
+    /// Translate a virtual address into a physical address.
+    /// ```
+    /// use atln_processor::memory::Page;
+    /// 
+    /// // TODO: Exhaustive testing potentially required.
+    /// assert_eq!(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000.with_virtual(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_11111111), 0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_11111111);
+    /// assert_eq!(0b00000000_00000000_00000000_00000000_00000000_00000000_00100000_00000000.with_virtual(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000011), 0b00000000_00000000_00000000_00000000_00000000_00000000_00100000_00000011);
+    fn with_virtual(&self, r#virtual: u64) -> u64 {
+        let page_item = r#virtual & PAGE_ITEM_MASK;
+        (self & PAGE_IDENTIFIER_MASK) | page_item
+    }
+}
+
 /// Memory addressing must be aligned. Rules must be followed for frame based operations on memory.
 /// - If the memory is size constrained, then ensure the frame is not reaching past the memory size limit.
 /// - Frames must be aligned to simulate hardware limitations of an implemented memory module.
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone)]
 pub struct Memory {
     pub bytes: Vec<u64>,
-    pub max_address: Option<u64>
+    pub max_address: Option<u64>,
+    /// Number of bytes in each page.
+    pub page_size: u64,
+    /// Map containing page table mappings with a process association. They first key contains the process identifier
+    /// and the second contains the page table entry.
+    pub pages: HashMap<u64, u64>
 }
 
 /// Error caused from setting data in memory.
@@ -62,6 +107,12 @@ impl Memory {
     }
 
     /// Read and return the data targeted by the frame with safeguards and emulated hardware limitations.
+    /// ```
+    /// use atln_processor::memory::Memory;
+    ///
+    /// let memory = Memory::from(Vec::from([ u64::MAX << 8 ]));
+    /// // assert_eq!(memory.at(0, number::Type::Byte).unwrap().quad(), u8::MAX as u64);
+    /// ```
     pub fn read(&self, frame: &Frame) -> Result<number::Data, ReadError> {
         // TODO: Implement virtual memory
 
@@ -85,40 +136,9 @@ impl From<Vec<u64>> for Memory {
     fn from(value: Vec<u64>) -> Self {
         Self {
             max_address: Some(value.len() as u64),
+            page_size: 0,
             bytes: value,
+            pages: HashMap::new(),
         }
-    }
-}
-
-#[cfg(test)]
-mod frame_test {
-    use crate::memory::Frame;
-    use crate::number::Type;
-
-    #[test]
-    fn is_aligned() {
-        // Aligned
-        assert!(Frame { address: 0, size: Type::Byte }.is_aligned());
-        assert!(Frame { address: 0, size: Type::Quad }.is_aligned());
-        assert!(Frame { address: 7, size: Type::Byte }.is_aligned());
-
-        assert!(Frame { address: 8, size: Type::Word }.is_aligned());
-        assert!(Frame { address: 8, size: Type::Quad }.is_aligned());
-
-        // Not aligned
-        assert!(!Frame { address: 7, size: Type::Word }.is_aligned());
-        assert!(!Frame { address: 1, size: Type::Quad }.is_aligned());
-    }
-}
-// endregion
-
-#[cfg(test)]
-mod memory_test {
-    use crate::memory::Memory;
-
-    #[test]
-    fn at() {
-        let memory = Memory::from(Vec::from([ u64::MAX << 8 ]));
-        // assert_eq!(memory.at(0, number::Type::Byte).unwrap().quad(), u8::MAX as u64);
     }
 }
