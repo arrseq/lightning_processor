@@ -86,13 +86,13 @@ pub struct Memory {
     pub page_size: u64,
     /// Map containing page table mappings with a context association. They first key contains the context identifier
     /// and the second contains the page table entry.
-    /// 
+    ///
     /// The page table entry contains two parts, the virtual address prefix, and the page to remap to.
     pub pages: HashMap<u64, HashMap<u64, u64>>,
     /// The current context code. If [None] is set, then there is no context, otherwise if [Some] is used then virtual
-    /// memory should be used and use/create pages associated with the context identifier.  
-    /// 
-    /// The determined whether virtual memory mapping happens. 
+    /// memory should be used and use/create pages associated with the context identifier.
+    ///
+    /// The determined whether virtual memory mapping happens.
     pub context: Option<u64>
 }
 
@@ -118,30 +118,61 @@ impl Memory {
     pub fn get_pages(&self, context: u64) -> Option<&HashMap<u64, u64>> {
         self.pages.get(&context)
     }
-    
+
     /// Translate the virtual address into a physical address based on the current situation. This returns a unit if the
     /// page mapping does not exist. This is a page fault.
-    /// - The context is a unique code that allows pages to be groups. This could be used for organizing processes or 
+    /// - The context is a unique code that allows pages to be groups. This could be used for organizing processes or
     ///   other execution context's, hence the name, a context.
-    /// - The virtual address is the address that what ever is executing in a context see's. 
-    /// 
+    /// - The virtual address is the address that what ever is executing in a context see's.
+    ///
     /// We are parameterizing the context because the context could potentially be [None]. This is to execute only with
     /// a valid context.
     /// ```
-    /// // TODO: Test. This test isn't so simple. It deals with bits on a low level and also requires configuring the
-    /// // TODO: memory for every test.
+    /// use std::collections::HashMap;
+    /// use atln_processor::memory::Memory;
+    ///
+    /// let mut memory = Memory::from(Vec::new());
+    /// memory.pages = HashMap::from([
+    ///     (1, HashMap::from([ (10, 200) ])),
+    ///     (0, HashMap::from([ (10, 200) ])),
+    /// 
+    ///     // Pages that are next to each other.
+    ///     (100, HashMap::from([ 
+    ///         (10, 200),
+    ///         (9, 199),
+    ///         (8, 198)
+    ///     ]))
+    /// ]);
+    ///
+    /// // Test different contexts.
+    /// assert_eq!(memory.translate_virtual(1, 0b000_00000000_00000000_00000000_00000000_00000000_00001010__00000_00000011).unwrap(), 0b000_00000000_00000000_00000000_00000000_00000000_11001000__00000_00000011);
+    /// assert_eq!(memory.translate_virtual(0, 0b000_00000000_00000000_00000000_00000000_00000000_00001010__00000_00000011).unwrap(), 0b000_00000000_00000000_00000000_00000000_00000000_11001000__00000_00000011);
+    /// 
+    /// // Test multiple mappings.
+    /// assert_eq!(memory.translate_virtual(100, 0b000_00000000_00000000_00000000_00000000_00000000_00001010__00000_00001010).unwrap(), 0b000_00000000_00000000_00000000_00000000_00000000_11001000__00000_00001010);
+    /// assert_eq!(memory.translate_virtual(100, 0b000_00000000_00000000_00000000_00000000_00000000_00001001__00000_00001010).unwrap(), 0b000_00000000_00000000_00000000_00000000_00000000_11000111__00000_00001010);
+    /// assert_eq!(memory.translate_virtual(100, 0b000_00000000_00000000_00000000_00000000_00000000_00001000__00000_00001010).unwrap(), 0b000_00000000_00000000_00000000_00000000_00000000_11000110__00000_00001010);
+    /// 
+    /// // region: Page fault.
+    /// // Invalid context
+    /// assert!(matches!(memory.translate_virtual(199, 0b000_00000000_00000000_00000000_00000000_00000000_00001000__00000_00001010), None));
+    /// // Unmapped page.
+    /// assert!(matches!(memory.translate_virtual(200, 0b000_00000000_00000000_00000000_00000000_00000000_00000000__00000_00001010), None));
+    /// // endregion
     /// ```
     pub fn translate_virtual(&self, context: u64, r#virtual: u64) -> Option<u64> {
         // This is the page identifier of the virtual address. The virtual address space doesn't have pages on its
         // own but this is used to find out what the page mapping is. Thus making it the prefix.
-        let virtual_prefix = PAGE_IDENTIFIER_MASK & r#virtual;
+        //
+        // Shift the bits right to allow for it to be treated as a real number.
+        let virtual_prefix = (PAGE_IDENTIFIER_MASK & r#virtual) >> PAGE_ITEM_BITS;
 
         // If no page table group exists for the context then this will also result in a page fault.
         let pages = match self.get_pages(context) {
             Some(pages) => pages,
             None => return None
         };
-        
+
         // Try to get the page mapping item itself. No match will cause a page fault. For safety, ensure that the page
         // mapping identifier does not use more bits than is supported.
         let physical_prefix = match pages.get(&virtual_prefix) {
@@ -149,18 +180,18 @@ impl Memory {
             Some(value) => *value,
             None => return None
         }
-            // Use this to guarantee that the item side of the bits dont interfere with anything when using the "or"
-            // operation on the virtual address suffix.
-            & PAGE_IDENTIFIER_MASK;
-        
+            // Used as a mask, needs to be shifted over to allow for it to layer on an item suffix. This also behaves
+            // as removing the items bits.
+            << PAGE_ITEM_BITS;
+
         // Remove the prefix bits. This will make sure nothing goes wrong when doing the "or" operation.
         let virtual_suffix = PAGE_ITEM_MASK & r#virtual;
-        
+
         // use the virtual address suffix to select the individual byte and the physical prefix to select the page
         // block.
         Some(virtual_suffix | physical_prefix)
     }
-    
+
     /// Read and return the data targeted by the frame with safeguards and emulated hardware limitations. If the page
     /// is not cached in this list, then a [ReadError::PageFault] is caused.
     /// ```
@@ -177,7 +208,7 @@ impl Memory {
                 None => return Err(ReadError::PageFault)
             };
         }
-        
+
         dbg!(address_start);
 
         // Make sure the frame bounds lies in the memory size range.
