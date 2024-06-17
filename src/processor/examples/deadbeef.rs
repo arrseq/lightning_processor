@@ -2,12 +2,14 @@
 
 use std::intrinsics::black_box;
 use std::io::Cursor;
-use atln_processor::{number, Core};
+use atln_processor::{number, Core, memory};
 use atln_processor::instruction::{Driver0Encoding, Instruction};
 use atln_processor::memory::Memory;
 use atln_processor::number::Type;
 
 fn main() {
+    println!("MAX: {}", memory::PAGES_MAX);
+    
     let rom_bytes = include_bytes!("./deadbeef.bin");
     let mut rom = Cursor::new(rom_bytes);
 
