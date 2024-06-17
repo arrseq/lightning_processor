@@ -71,11 +71,10 @@ fn read_vec(vec: &Vec<u8>, start: usize, buffer: &mut [u8]) -> usize {
     for index in 0..buffer.len() {
         match vec.get(start + index) {
             Some(value) => buffer[start + index] = *value,
-            None => {
-                bytes_read += 1;
-                return bytes_read;
-            }
+            None => return bytes_read
         }
+        
+        bytes_read += 1;
     }
     
     bytes_read
@@ -124,6 +123,15 @@ pub enum SetError {
     /// Error from using an unaligned address frame.
     UnalignedFrame
 }
+
+/// An error caused when a page could not be found.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PageFault {
+    /// The page was not found for a particular context.
+    Context, 
+    /// The context was found but no page for the specific virtual prefix.
+    Virtual
+}
  
 /// Caused by invalid parameters to initialize an address frame.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -133,7 +141,7 @@ pub enum ReadError {
     /// The address frame crosses the positive memory boundaries.
     OutOfBounds,
     /// Virtual memory context was in use but the remapping did not exist in tge page list.
-    PageFault
+    PageFault(PageFault)
 }
 
 impl Memory {
@@ -183,7 +191,7 @@ impl Memory {
     /// assert!(matches!(memory.translate_virtual(200, 0b000_00000000_00000000_00000000_00000000_00000000_00000000__00000_00001010), None));
     /// // endregion
     /// ```
-    pub fn translate_virtual(&self, context: u64, r#virtual: u64) -> Option<u64> {
+    pub fn translate_virtual(&self, context: u64, r#virtual: u64) -> Result<u64, PageFault> {
         // This is the page identifier of the virtual address. The virtual address space doesn't have pages on its
         // own but this is used to find out what the page mapping is. Thus making it the prefix.
         //
@@ -193,7 +201,7 @@ impl Memory {
         // If no page table group exists for the context then this will also result in a page fault.
         let pages = match self.get_pages(context) {
             Some(pages) => pages,
-            None => return None
+            None => return Err(PageFault::Context)
         };
 
         // Try to get the page mapping item itself. No match will cause a page fault. For safety, ensure that the page
@@ -201,7 +209,7 @@ impl Memory {
         let physical_prefix = match pages.get(&virtual_prefix) {
             // it's ok to dereference a number.
             Some(value) => *value,
-            None => return None
+            None => return Err(PageFault::Virtual)
         }
             // Used as a mask, needs to be shifted over to allow for it to layer on an item suffix. This also behaves
             // as removing the items bits.
@@ -212,7 +220,7 @@ impl Memory {
 
         // use the virtual address suffix to select the individual byte and the physical prefix to select the page
         // block.
-        Some(virtual_suffix | physical_prefix)
+        Ok(virtual_suffix | physical_prefix)
     }
 
     /// Read and return the data targeted by the frame with safeguards and emulated hardware limitations. If the page
@@ -220,15 +228,16 @@ impl Memory {
     /// ```
     /// use atln_processor::memory::Memory;
     ///
-    /// let memory = Memory::from(Vec::from([ u64::MAX << 8 ]));
-    /// // assert_eq!(memory.at(0, number::Type::Byte).unwrap().quad(), u8::MAX as u64);
+    /// let memory = Memory::from(Vec::from([ 0, 0, 0, 0 ]));
+    /// 
+    /// 
     /// ```
     pub fn read(&self, frame: &Frame) -> Result<number::Data, ReadError> {
         let mut address_start = frame.address;
         if let Some(context) = self.context {
             address_start = match self.translate_virtual(context, frame.address) {
-                Some(value) => value,
-                None => return Err(ReadError::PageFault)
+                Ok(value) => value,
+                Err(error) => return Err(ReadError::PageFault(error))
             };
         }
         
