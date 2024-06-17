@@ -70,7 +70,7 @@ fn read_vec(vec: &Vec<u8>, start: usize, buffer: &mut [u8]) -> usize {
     let mut bytes_read = 0;
     for index in 0..buffer.len() {
         match vec.get(start + index) {
-            Some(value) => buffer[start + index] = *value,
+            Some(value) => buffer[index] = *value,
             None => return bytes_read
         }
         
