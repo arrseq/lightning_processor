@@ -268,7 +268,7 @@ impl Memory {
     }
 }
 
-impl From<Vec<u64>> for Memory {
+impl From<Vec<u8>> for Memory {
     /// Initialize the memory from a vector. The length of the vector is used to set the max address of the memory.
     fn from(value: Vec<u8>) -> Self {
         Self {
