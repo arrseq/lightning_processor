@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::iter::Map;
 use crate::number;
+use crate::number::{BYTE_SIZE, DUAL_SIZE, QUAD_SIZE, WORD_SIZE};
 
 // region: Constants
 pub const DUAL_ALIGNED_MASK   : u64 = 0b1;
@@ -13,6 +14,7 @@ pub const PAGES_MAX           : u64 = u64::MAX & PAGE_IDENTIFIER_MASK;
 // endregion
 
 /// An address frame which includes a memory address and the frame size.
+#[derive(Debug, Clone)]
 pub struct Frame {
     pub address: u64,
     pub size: number::Type
@@ -59,6 +61,27 @@ pub trait Page {
     fn with_virtual(&self, r#virtual: u64) -> u64;
 }
 
+// region: TODO: Rust as of now does not implement Read for Vec<u8>. These functions should be replaced when rust
+//         TODO: supports them.
+
+/// Read a vector like a stream. Read buffer.len() amount of bytes from the vector and into the buffer. This will return
+/// the number of bytes read.
+fn read_vec(vec: &Vec<u8>, start: usize, buffer: &mut [u8]) -> usize {
+    let mut bytes_read = 0;
+    for index in 0..buffer.len() {
+        match vec.get(start + index) {
+            Some(value) => buffer[start + index] = *value,
+            None => {
+                bytes_read += 1;
+                return bytes_read;
+            }
+        }
+    }
+    
+    bytes_read
+}
+// endregion
+
 impl Page for u64 {
     /// Translate a virtual address into a physical address.
     /// ```
@@ -80,7 +103,7 @@ impl Page for u64 {
 /// - Frames must be aligned to simulate hardware limitations of an implemented memory module.
 #[derive(Debug, Clone)]
 pub struct Memory {
-    pub bytes: Vec<u64>,
+    pub bytes: Vec<u8>,
     pub max_address: Option<u64>,
     /// Number of bytes in each page.
     pub page_size: u64,
@@ -208,27 +231,46 @@ impl Memory {
                 None => return Err(ReadError::PageFault)
             };
         }
-
-        dbg!(address_start);
-
+        
+        // New frame with potential for translated address.
+        let mut frame = frame.clone();
+        frame.address = address_start;
+        
         // Make sure the frame bounds lies in the memory size range.
         if let Some(max_address) = self.max_address && frame.max_address() > max_address
             { return Err(ReadError::OutOfBounds) }
         // Ensure the frame is aligned to emulate hardware limitations.
         if !frame.is_aligned() { return Err(ReadError::UnalignedFrame) }
 
-        Ok(match frame.size { // TODO
-            number::Type::Byte => number::Data::Byte(0),
-            number::Type::Word => number::Data::Byte(0),
-            number::Type::Dual => number::Data::Byte(0),
-            number::Type::Quad => number::Data::Byte(0)
+        let mut max_buffer = [0u8; QUAD_SIZE as usize];
+        Ok(match frame.size {
+            number::Type::Byte => {
+                let buffer = &mut max_buffer[0..BYTE_SIZE as usize];
+                if read_vec(&self.bytes, address_start as usize, buffer) != buffer.len() { return Err(ReadError::OutOfBounds) }
+                number::Data::Byte(buffer[0])
+            },
+            number::Type::Word => {
+                let buffer = &mut max_buffer[0..WORD_SIZE as usize];
+                if read_vec(&self.bytes, address_start as usize, buffer) != buffer.len() { return Err(ReadError::OutOfBounds) }
+                number::Data::Word(u16::from_le_bytes([ buffer[0], buffer[1] ]))
+            },
+            number::Type::Dual => {
+                let buffer = &mut max_buffer[0..DUAL_SIZE as usize];
+                if read_vec(&self.bytes, address_start as usize, buffer) != buffer.len() { return Err(ReadError::OutOfBounds) }
+                number::Data::Dual(u32::from_le_bytes([ buffer[0], buffer[1], buffer[2], buffer[3] ]))
+            },
+            number::Type::Quad => {
+                let buffer = &mut max_buffer[0..QUAD_SIZE as usize];
+                if read_vec(&self.bytes, address_start as usize, buffer) != buffer.len() { return Err(ReadError::OutOfBounds) }
+                number::Data::Quad(u64::from_le_bytes([ buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7] ]))
+            }
         })
     }
 }
 
 impl From<Vec<u64>> for Memory {
     /// Initialize the memory from a vector. The length of the vector is used to set the max address of the memory.
-    fn from(value: Vec<u64>) -> Self {
+    fn from(value: Vec<u8>) -> Self {
         Self {
             max_address: Some(value.len() as u64),
             page_size: 0,
