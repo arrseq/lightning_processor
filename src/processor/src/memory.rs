@@ -61,12 +61,12 @@ pub trait Page {
     fn with_virtual(&self, r#virtual: u64) -> u64;
 }
 
-// region: TODO: Rust as of now does not implement Read for Vec<u8>. These functions should be replaced when rust
-//         TODO: supports them.
-
 /// Read a vector like a stream. Read buffer.len() amount of bytes from the vector and into the buffer. This will return
 /// the number of bytes read.
-fn read_vec(vec: &Vec<u8>, start: usize, buffer: &mut [u8]) -> usize {
+/// ```
+/// // TODO: Test
+/// ```
+pub fn read_vec_into_buffer(vec: &Vec<u8>, start: usize, buffer: &mut [u8]) -> usize {
     let mut bytes_read = 0;
     for index in 0..buffer.len() {
         match vec.get(start + index) {
@@ -79,8 +79,6 @@ fn read_vec(vec: &Vec<u8>, start: usize, buffer: &mut [u8]) -> usize {
     
     bytes_read
 }
-// endregion
-
 impl Page for u64 {
     /// Translate a virtual address into a physical address.
     /// ```
@@ -255,22 +253,22 @@ impl Memory {
         Ok(match frame.size {
             number::Type::Byte => {
                 let buffer = &mut max_buffer[0..BYTE_SIZE as usize];
-                if read_vec(&self.bytes, address_start as usize, buffer) != buffer.len() { return Err(ReadError::OutOfBounds) }
+                if read_vec_into_buffer(&self.bytes, address_start as usize, buffer) != buffer.len() { return Err(ReadError::OutOfBounds) }
                 number::Data::Byte(buffer[0])
             },
             number::Type::Word => {
                 let buffer = &mut max_buffer[0..WORD_SIZE as usize];
-                if read_vec(&self.bytes, address_start as usize, buffer) != buffer.len() { return Err(ReadError::OutOfBounds) }
+                if read_vec_into_buffer(&self.bytes, address_start as usize, buffer) != buffer.len() { return Err(ReadError::OutOfBounds) }
                 number::Data::Word(u16::from_le_bytes([ buffer[0], buffer[1] ]))
             },
             number::Type::Dual => {
                 let buffer = &mut max_buffer[0..DUAL_SIZE as usize];
-                if read_vec(&self.bytes, address_start as usize, buffer) != buffer.len() { return Err(ReadError::OutOfBounds) }
+                if read_vec_into_buffer(&self.bytes, address_start as usize, buffer) != buffer.len() { return Err(ReadError::OutOfBounds) }
                 number::Data::Dual(u32::from_le_bytes([ buffer[0], buffer[1], buffer[2], buffer[3] ]))
             },
             number::Type::Quad => {
                 let buffer = &mut max_buffer[0..QUAD_SIZE as usize];
-                if read_vec(&self.bytes, address_start as usize, buffer) != buffer.len() { return Err(ReadError::OutOfBounds) }
+                if read_vec_into_buffer(&self.bytes, address_start as usize, buffer) != buffer.len() { return Err(ReadError::OutOfBounds) }
                 number::Data::Quad(u64::from_le_bytes([ buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7] ]))
             }
         })

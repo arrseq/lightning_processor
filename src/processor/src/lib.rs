@@ -3,7 +3,8 @@
 use std::io::Read;
 use crate::instruction::{DecodeError, Instruction, operation::Operation};
 use crate::instruction::operation::{Coded, OperationExecuteError};
-use crate::memory::Memory;
+use crate::memory::{Frame, Memory};
+use crate::number::Type;
 
 pub mod number;
 pub mod instruction;
@@ -48,7 +49,10 @@ impl Core {
         if let Err(error) = instruction.extension.operation().execute(code, instruction.data.as_ref(), &mut
             self.execution_context) { return Err(ExecuteError::Execute(error)) }
 
-        // memory.at(1, number::Type::Byte).unwrap();
+        memory.read(&Frame {
+            address: 0,
+            size: Type::Byte
+        }).unwrap();
 
         Ok(())
     }
