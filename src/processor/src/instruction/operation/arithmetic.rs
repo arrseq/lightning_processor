@@ -7,8 +7,9 @@ pub const ADD_CODE     : u8 = 0;
 pub const SUBTRACT_CODE: u8 = 1;
 // endregion
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum Arithmetic {
+    #[default]
     Add,
     Subtract
 }

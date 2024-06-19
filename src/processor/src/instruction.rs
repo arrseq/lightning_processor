@@ -416,7 +416,7 @@ impl RegistersEncoding for u8 {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Data {
     /// Width of operands when dereferenced and for storing result.
-    pub width: number::Type,
+    pub width: number::Size,
     /// The name of the operand to store the result of the computation in, if the computation produces a result. There
     /// is always a destination even if the instruction does not compute and store anything.
     pub destination: Destination,
@@ -499,7 +499,7 @@ impl<'a> Data {
 
         // Construct data.
         Ok(Data {
-            width: number::Type::from_exponent(registers.width).unwrap(),
+            width: number::Size::from_exponent(registers.width).unwrap(),
             destination,
             synchronise: driver.synchronise,
             operands
@@ -507,14 +507,14 @@ impl<'a> Data {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Default)]
 pub struct Instruction {
     pub extension: Extension,
     pub data: Option<Data>
 }
 
 #[derive(Debug)]
-pub enum DecodeError {
+pub enum InstructionConstructError {
     /// Stream failed to read.
     StreamRead(io::Error),
     /// Not enough bytes.
@@ -555,20 +555,20 @@ impl Instruction {
     }
 
     // Decode an encoded binary stream into a processor instruction. TODO: Tests
-    pub fn new(stream: &mut impl Read) -> Result<Self, DecodeError> {
+    pub fn new(stream: &mut impl Read) -> Result<Self, InstructionConstructError> {
         // Decode driver bytes.
         let mut encoded_driver = [0u8; 2];
 
         match stream.read(&mut encoded_driver) {
-            Ok(length) => if length != encoded_driver.len() { return Err(DecodeError::Length) },
-            Err(error) => return Err(DecodeError::StreamRead(error))
+            Ok(length) => if length != encoded_driver.len() { return Err(InstructionConstructError::Length) },
+            Err(error) => return Err(InstructionConstructError::StreamRead(error))
         };
 
         let driver = Driver::new(encoded_driver);
 
         let mut extension =  match Extension::from_codes(driver.extension, driver.operation) {
             Ok(operation) => operation,
-            Err(error) => return Err(DecodeError::InvalidCode(error))
+            Err(error) => return Err(InstructionConstructError::InvalidCode(error))
         };
 
         // Decode data bytes.
@@ -579,10 +579,10 @@ impl Instruction {
                 // no operands then the data field of the instruction should be [None] without an error.
                 match error {
                     DataConstructError::NoOperands => {},
-                    DataConstructError::StreamRead(error) => return Err(DecodeError::StreamRead(error)),
-                    DataConstructError::Length => return Err(DecodeError::Length),
-                    DataConstructError::Operands(error) => return Err(DecodeError::Operands(error)),
-                    DataConstructError::Destination => return Err(DecodeError::Destination)
+                    DataConstructError::StreamRead(error) => return Err(InstructionConstructError::StreamRead(error)),
+                    DataConstructError::Length => return Err(InstructionConstructError::Length),
+                    DataConstructError::Operands(error) => return Err(InstructionConstructError::Operands(error)),
+                    DataConstructError::Destination => return Err(InstructionConstructError::Destination)
                 }
 
                 None
@@ -687,7 +687,7 @@ impl Instruction {
     /// let x_static = Instruction {
     ///     extension: Extension::Arithmetic(Arithmetic::Add),
     ///     data: Some(Data {
-    ///         width: number::Type::Byte,
+    ///         width: number::Size::Byte,
     ///         destination: Destination::Static,
     ///         synchronise: false,
     ///         operands: Operands::AllPresent(AllPresent {
@@ -700,7 +700,7 @@ impl Instruction {
     /// let x_dynamic = Instruction {
     ///     extension: Extension::Arithmetic(Arithmetic::Add),
     ///     data: Some(Data {
-    ///         width: number::Type::Byte,
+    ///         width: number::Size::Byte,
     ///         destination: Destination::Dynamic,
     ///         synchronise: false,
     ///         operands: Operands::AllPresent(AllPresent {
@@ -709,7 +709,7 @@ impl Instruction {
     ///         })
     ///     })
     /// };
-    /// 
+    ///
     /// let no_operands = Instruction {
     ///     extension: Extension::Arithmetic(Arithmetic::Add),
     ///     data: None

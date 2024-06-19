@@ -7,8 +7,9 @@ pub const HALT_CODE: u8 = 0;
 pub const DIVERT_CODE: u8 = 1;
 // endregion
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum Executor {
+    #[default]
     Halt,
     Divert
 }

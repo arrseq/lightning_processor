@@ -4,19 +4,41 @@
 
 // Constants
 
+use std::io::Read;
 use crate::instruction::operand::{IMMEDIATE_EXPONENT_BYTE, IMMEDIATE_EXPONENT_DUAL, IMMEDIATE_EXPONENT_QUAD, IMMEDIATE_EXPONENT_WORD};
+use crate::memory::ReadAll;
 
-pub const BYTE_SIZE: u8 = 1;
-pub const WORD_SIZE: u8 = 2;
-pub const DUAL_SIZE: u8 = 4;
-pub const QUAD_SIZE: u8 = 8;
+pub const BYTE_SIZE: usize = 1;
+pub const WORD_SIZE: usize = 2;
+pub const DUAL_SIZE: usize = 4;
+pub const QUAD_SIZE: usize = 8;
+
+// region: Array utilities.
+pub trait ArrayBounds {
+    /// Whether an array index is inbounds of the self array or list.
+    fn in_bounds(&self, index: usize) -> bool;
+    
+    /// Whether an index is out of bounds to the self array.
+    fn out_of_bounds(&self, index: usize) -> bool {
+        !self.in_bounds(index)
+    }
+}
+
+impl<T> ArrayBounds for [T] {
+    fn in_bounds(&self, index: usize) -> bool {
+        // Since the length is 0 if there are elements, and if the index is 0, that means every index is out of bounds.
+        // An in bounds index is always smaller than the length of the array,
+        index < self.len()
+    }
+}
+// endregion
 
 // Implementations
 
 /// Absolute modes.
 /// Base type variants for representing an absolute value.
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
-pub enum Type {
+pub enum Size {
     #[default]
     Byte,
     Word,
@@ -24,19 +46,19 @@ pub enum Type {
     Quad
 }
 
-impl Type {
+impl Size {
     /// Number of bytes the current variant holds. The uint size.
     pub fn size(&self) -> u8 {
         match self {
-            Self::Byte => BYTE_SIZE,
-            Self::Word => WORD_SIZE,
-            Self::Dual => DUAL_SIZE,
-            Self::Quad => QUAD_SIZE
+            Self::Byte => BYTE_SIZE as u8,
+            Self::Word => WORD_SIZE as u8,
+            Self::Dual => DUAL_SIZE as u8,
+            Self::Quad => QUAD_SIZE as u8
         }
     }
 }
 
-impl From<Data> for Type {
+impl From<Data> for Size {
     fn from(value: Data) -> Self {
         match value {
             Data::Byte(_) => Self::Byte,
@@ -47,21 +69,21 @@ impl From<Data> for Type {
     }
 }
 
-impl Type {
+impl Size {
     /// Create from a number of bytes.
-    pub fn from_bytes(bytes: u8) -> Option<Self> {
+    pub fn from_size(bytes: usize) -> Option<Self> {
         Some(match bytes {
-            BYTE_SIZE => Type::Byte,
-            WORD_SIZE => Type::Word,
-            DUAL_SIZE => Type::Dual,
-            QUAD_SIZE => Type::Quad,
+            BYTE_SIZE => Size::Byte,
+            WORD_SIZE => Size::Word,
+            DUAL_SIZE => Size::Dual,
+            QUAD_SIZE => Size::Quad,
             _ => return None
         })
     }
 
     /// Create from an exponent of 2. The maximum supported exponent is 3.
     pub fn from_exponent(exponent: u8) -> Option<Self> {
-        Self::from_bytes(2u8.pow(exponent as u32))
+        Self::from_size(2u8.pow(exponent as u32) as usize)
     }
 
     pub fn exponent(&self) -> u8 {
@@ -98,9 +120,9 @@ impl Data {
 
         bytes
     }
-
+    
     pub fn exponent(self) -> u8 {
-        Type::from(self).exponent()
+        Size::from(self).exponent()
     }
 
     /// Get the data as a quad sized uint.
@@ -135,6 +157,18 @@ impl Data {
             _ => return None
         })
     }
+    
+    /// Get the number of bytes that is stored in the variant associative data of the enum.
+    /// 
+    /// TODO: Test
+    pub fn size(&self) -> u8 {
+        match self {
+            Self::Byte(_) => BYTE_SIZE as u8,
+            Self::Word(_) => WORD_SIZE as u8,
+            Self::Dual(_) => DUAL_SIZE as u8,
+            Self::Quad(_) => QUAD_SIZE as u8
+        }
+    }
 }
 
 // region: Converting numbers to data instances
@@ -163,13 +197,13 @@ impl From<u64> for Data {
 }
 // endregion
 
-impl From<Type> for Data {
-    fn from(value: Type) -> Self {
+impl From<Size> for Data {
+    fn from(value: Size) -> Self {
         match value {
-            Type::Byte => Self::Byte(0),
-            Type::Word => Self::Word(0),
-            Type::Dual => Self::Dual(0),
-            Type::Quad => Self::Quad(0)
+            Size::Byte => Self::Byte(0),
+            Size::Word => Self::Word(0),
+            Size::Dual => Self::Dual(0),
+            Size::Quad => Self::Quad(0)
         }
     }
 }
@@ -177,6 +211,49 @@ impl From<Type> for Data {
 impl PartialEq for Data {
     fn eq(&self, other: &Self) -> bool {
         self.quad() == other.quad()
+    }
+}
+
+impl ReadAll<[u8]> for Data {
+    /// Read bytes of the stored number type into a slice reference.
+    /// ```
+    /// use atln_processor::memory::ReadAll;
+    /// use atln_processor::number::Data;
+    ///
+    /// let mut byte_buffer = [0u8; 1];
+    ///
+    /// Data::Byte(255).read_all(&mut byte_buffer); 
+    /// assert_eq!(byte_buffer, [255; 1]);
+    /// Data::Byte(65).read_all(&mut byte_buffer);
+    /// assert_eq!(byte_buffer, [65; 1]);
+    ///
+    /// let mut dual_buffer = [0u8; 4];
+    ///
+    /// assert_eq!(Data::Dual(u16::MAX as u32).read_all(&mut dual_buffer), 4);
+    /// assert_eq!(dual_buffer, [255, 255, 0, 0]);
+    ///
+    /// // Clean up buffer for next test.
+    /// dual_buffer = [0u8; 4];
+    ///
+    /// // Test to ensure larger numbers still store but are chopped off.
+    /// Data::Quad(u64::MAX).read_all(&mut dual_buffer);
+    /// assert_eq!(dual_buffer, [255u8; 4]);
+    /// ```
+    fn read_all(&mut self, target: &mut [u8]) -> usize {
+        let mut bytes_written = 0;
+        let bytes = self.to_le_bytes();
+        
+        for index in 0..self.size() {
+            if target.in_bounds(index as usize) {
+                target[index as usize] = bytes[index as usize];
+                bytes_written += 1;
+                continue;
+            }
+            
+            break;
+        }
+
+        bytes_written
     }
 }
 

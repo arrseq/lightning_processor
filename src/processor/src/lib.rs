@@ -1,10 +1,10 @@
 #![feature(let_chains)]
 
 use std::io::Read;
-use crate::instruction::{DecodeError, Instruction, operation::Operation};
+use crate::instruction::{InstructionConstructError, Instruction, operation::Operation};
 use crate::instruction::operation::{Coded, OperationExecuteError};
 use crate::memory::{Frame, Memory};
-use crate::number::Type;
+use crate::number::Size;
 
 pub mod number;
 pub mod instruction;
@@ -19,41 +19,17 @@ pub struct ExecutionContext {
     pub general_purpose: [u64; 4]
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Default)]
 pub struct Core {
-    execution_context: ExecutionContext
-}
-
-#[derive(Debug)]
-pub enum ExecuteError {
-    /// The instruction could not be decoded from the stream.
-    Decode(DecodeError),
-    Execute(OperationExecuteError)
+    execution_context: ExecutionContext,
+    /// The current decoded instruction.
+    instruction: Instruction
 }
 
 impl Core {
-    pub fn new() -> Self {
-        Self {
-            execution_context: ExecutionContext::default()
-        }
-    }
-
-    /// Execute instructions from a stream
-    pub fn execute(&mut self, stream: &mut impl Read, memory: &mut Memory) -> Result<(), ExecuteError> {
-        let mut instruction = match Instruction::new(stream) {
-            Ok(value) => value,
-            Err(error) => return Err(ExecuteError::Decode(error))
-        };
-
-        let code = instruction.extension.code();
-        if let Err(error) = instruction.extension.operation().execute(code, instruction.data.as_ref(), &mut
-            self.execution_context) { return Err(ExecuteError::Execute(error)) }
-
-        memory.read(&Frame {
-            address: 0,
-            size: Type::Byte
-        }).unwrap();
-
-        Ok(())
+    /// Decode an instruction from memory based on the program counter.
+    pub fn decode(&mut self, memory: &mut Memory) -> Result<(), InstructionConstructError> {
+        todo!()
+        // self.instruction = Instruction::new(memory);
     }
 }

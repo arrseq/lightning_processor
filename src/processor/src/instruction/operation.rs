@@ -26,7 +26,7 @@ pub enum OperationExecuteError {
     ExpectedNone
 }
 
-pub trait Operation<'a>: Coded<u8> {
+pub trait Operation<'a>: Coded<u8> + Default {
     /// Whether the operation requires the static operand.
     fn expects_static(&mut self) -> bool;
     /// Whether the operation requires the dynamic operand.
@@ -77,6 +77,12 @@ pub enum ExtensionFromCodeInvalid {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Extension {
     Arithmetic(Arithmetic),
+}
+
+impl Default for Extension {
+    fn default() -> Self {
+        Self::Arithmetic(Arithmetic::default())
+    }
 }
 
 impl Extension {
