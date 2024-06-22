@@ -21,9 +21,9 @@ pub struct ExecutionContext {
 
 #[derive(Debug, Default)]
 pub struct Core {
-    execution_context: ExecutionContext,
+    pub execution_context: ExecutionContext,
     /// The current decoded instruction.
-    instruction: Instruction
+    pub instruction: Instruction
 }
 
 impl Core {
