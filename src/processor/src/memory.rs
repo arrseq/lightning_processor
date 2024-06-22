@@ -9,10 +9,14 @@ use crate::number::{BYTE_SIZE, Data, DUAL_SIZE, QUAD_SIZE, Size, WORD_SIZE};
 pub const DUAL_ALIGNED_MASK   : u64 = 0b1;
 pub const WORD_ALIGNED_MASK   : u64 = 0b11;
 pub const QUAD_ALIGNED_MASK   : u64 = 0b111;
+
 pub const PAGE_ITEM_BITS      : u64 = 13;
 pub const PAGE_IDENTIFIER_MASK: u64 = u64::MAX << PAGE_ITEM_BITS;
 pub const PAGE_ITEM_MASK      : u64 = u64::MAX >> (64 - PAGE_ITEM_BITS);
-pub const PAGES_MAX           : u64 = u64::MAX & PAGE_IDENTIFIER_MASK;
+pub const MAX_PAGES_COUNT     : u64 = u64::MAX & PAGE_IDENTIFIER_MASK;
+pub const PAGE_BYTES_COUNT    : u64 = (u64::MAX & PAGE_ITEM_MASK) + 1;
+
+// pub const PAGE_BYTES_COUNT    : u64 = 2u64.pow(PAGE_ITEM_BITS as u32);
 // endregion
 
 // region: Binary buffer
@@ -183,7 +187,7 @@ impl Memory {
     /// a valid context.
     /// ```
     /// use std::collections::HashMap;
-    /// use atln_processor::memory::Memory;
+    /// use atln_processor::memory::{Memory, PageFault};
     ///
     /// let mut memory = Memory::from(Vec::new());
     /// memory.pages = HashMap::from([
@@ -209,9 +213,9 @@ impl Memory {
     /// 
     /// // region: Page fault.
     /// // Invalid context
-    /// assert!(matches!(memory.translate_virtual(199, 0b000_00000000_00000000_00000000_00000000_00000000_00001000__00000_00001010), None));
+    /// assert!(matches!(memory.translate_virtual(199, 0b000_00000000_00000000_00000000_00000000_00000000_00001000__00000_00001010), Err(PageFault::Context)));
     /// // Unmapped page.
-    /// assert!(matches!(memory.translate_virtual(200, 0b000_00000000_00000000_00000000_00000000_00000000_00000000__00000_00001010), None));
+    /// assert!(matches!(memory.translate_virtual(200, 0b000_00000000_00000000_00000000_00000000_00000000_00000000__00000_00001010), Err(PageFault::Virtual)));
     /// // endregion
     /// ```
     pub fn translate_virtual(&self, context: u64, r#virtual: u64) -> Result<u64, PageFault> {
@@ -250,9 +254,10 @@ impl Memory {
     /// is not cached in this list, then a [GetError::PageFault] is caused.
     /// ```
     /// use std::collections::HashMap;
-    /// use atln_processor::memory::{Frame, Memory, PAGE_ITEM_BITS};
+    /// use atln_processor::memory::{Frame, Memory, PAGE_BYTES_COUNT, PAGE_ITEM_BITS};
     /// use atln_processor::number::{Data, Size};
     ///
+    /// // region: Basic non virtual addressing.
     /// let mut memory = Memory::from(Vec::from([ 0, 0, 0, 0 ]));
     /// assert_eq!(memory.get(&Frame { address: 0, size: Size::Dual }).unwrap(), Data::Dual(0));
     ///
@@ -262,32 +267,45 @@ impl Memory {
     /// let mut memory = Memory::from(Vec::from(1001u64.to_le_bytes()));
     /// assert_eq!(memory.get(&Frame { address: 0, size: Size::Quad }).unwrap(), Data::Quad(1001));
     /// assert_eq!(memory.get(&Frame { address: 1, size: Size::Byte }).unwrap(), Data::Byte(3));
-    ///
-    /// // region: Test virtual memory. This requires having at least two pages to test. Each page can hold 2.pow(13)
-    /// //         bytes, so that many bytes, then multiplies by 2 must be created for this test.
+    /// // endregion
+    /// 
+    /// // region: Test virtual memory. This is very address specific and everything must work perfectly.
     /// let mut memory = Memory::from({
-    ///     let mut store = vec![0u8; 2u64.pow(PAGE_ITEM_BITS as u32) as usize * 2];
-    ///     store[2u64.pow(PAGE_ITEM_BITS as u32) as usize] = 255;
-    ///     store[(2u64.pow(PAGE_ITEM_BITS as u32) + 1) as usize] = 255;
+    ///     let mut store = vec![0u8; (PAGE_BYTES_COUNT * 2) as usize];
+    ///   
+    ///     // Memory addresses are zero indexed.
+    ///     let second_page_index = PAGE_BYTES_COUNT as usize;
+    ///
+    ///     store[second_page_index] = 255;
+    ///     store[second_page_index + 1] = 1;
+    ///
+    ///     // To account for memory alignment.
+    ///     store[second_page_index + 5] = 1;
+    ///     store[second_page_index + 6] = 255;
+    ///     
     ///     store
     /// });
-    /// let process_id = 4096;
     ///
+    /// let process_id = 4096;
     /// // Map addresses from first virtual page boundary to the second hardware page. Hardware and virtual pages align 
     /// // parallel.
-    /// memory.pages.insert(process_id, HashMap::from([ (2u64.pow(PAGE_ITEM_BITS as u32), 2u64.pow(PAGE_ITEM_BITS as u32) * 2) ]));
-    /// 
-    /// // Enable virtual memory.
+    /// memory.pages.insert(process_id, HashMap::from([ (0, 1) ]));
+    ///
+    /// // Enable virtual memory address remapping.
     /// memory.context = Some(process_id);
-    /// 
+    ///
     /// // Test.
     /// assert_eq!(memory.get(&Frame { address: 0, size: Size::Byte }).unwrap(), Data::Byte(255));
-    /// assert_eq!(memory.get(&Frame { address: 0, size: Size::Word }).unwrap(), Data::Word(u16::MAX  ));
+    /// assert_eq!(memory.get(&Frame { address: 0, size: Size::Word }).unwrap(), Data::Word(511));
+    /// assert_eq!(memory.get(&Frame { address: 4, size: Size::Word }).unwrap(), Data::Word(256));
     /// // endregion
     /// ```
     pub fn get(&mut self, frame: &Frame) -> Result<number::Data, GetError> {
+        dbg!(frame.address);
+
         fn inner(memory: &Memory, frame: &Frame) -> Result<number::Data, GetError> {
             // region: Addressing
+            // TODO: Make this a separate function with its own tests.
             let mut address_start = frame.address;
             if let Some(context) = memory.context {
                 address_start = match memory.translate_virtual(context, frame.address) {
