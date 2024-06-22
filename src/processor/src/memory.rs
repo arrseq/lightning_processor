@@ -233,7 +233,7 @@ impl<'a> Read for MemoryCursor<'a> {
             None => return Err(io::Error::new(ErrorKind::Other, "Invalid buffer length"))
         };
 
-        let mut data = match self.memory.get(&Frame { address: self.read_head, size, r#virtual: self.translate }) {
+        let mut data = match self.memory.get(Frame { address: self.read_head, size }, self.translate) {
             Ok(result) => result,
             // Memory errors can be accessed after this function by executing
             // LastError<GetError>::last_error(&mut Memory).
@@ -322,11 +322,11 @@ impl Memory {
     /// ```
     /// // TODO: Test
     /// ```
-    fn process_test_frame(&self, frame: &mut Frame) -> Result<(), GetError> {
+    fn process_test_frame(&self, frame: &mut Frame, translate: bool) -> Result<(), GetError> {
         // Ensure the frame is aligned to emulate hardware limitations.
         if !frame.is_aligned() { return Err(GetError::UnalignedFrame) }
 
-        if frame.r#virtual {
+        if translate {
             frame.address = match self.translate_virtual(frame.address) {
                 Some(value) => value,
                 None => return Err(GetError::PageFault)
@@ -349,14 +349,14 @@ impl Memory {
     ///
     /// // region: Basic non virtual addressing.
     /// let mut memory = Memory::from(Vec::from([ 0, 0, 0, 0 ]));
-    /// assert_eq!(memory.get(Frame { address: 0, size: Size::Dual }).unwrap(), Data::Dual(0));
+    /// assert_eq!(memory.get(Frame { address: 0, size: Size::Dual }, false).unwrap(), Data::Dual(0));
     ///
     /// let mut memory = Memory::from(Vec::from([ 255, 255, 255, 255, 0, 0, 0, 0 ]));
-    /// assert_eq!(memory.get(Frame { address: 0, size: Size::Quad }).unwrap(), Data::Quad(u32::MAX as u64));
+    /// assert_eq!(memory.get(Frame { address: 0, size: Size::Quad }, false).unwrap(), Data::Quad(u32::MAX as u64));
     ///
     /// let mut memory = Memory::from(Vec::from(1001u64.to_le_bytes()));
-    /// assert_eq!(memory.get(Frame { address: 0, size: Size::Quad }).unwrap(), Data::Quad(1001));
-    /// assert_eq!(memory.get(Frame { address: 1, size: Size::Byte }).unwrap(), Data::Byte(3));
+    /// assert_eq!(memory.get(Frame { address: 0, size: Size::Quad }, false).unwrap(), Data::Quad(1001));
+    /// assert_eq!(memory.get(Frame { address: 1, size: Size::Byte }, false).unwrap(), Data::Byte(3));
     /// // endregion
     /// 
     /// // region: Test virtual memory. This is very address specific and everything must work perfectly.
@@ -381,13 +381,13 @@ impl Memory {
     /// memory.pages.insert(0, 1);
     ///
     /// // Test.
-    /// assert_eq!(memory.get(Frame { address: 0, size: Size::Byte }).unwrap(), Data::Byte(255));
-    /// assert_eq!(memory.get(Frame { address: 0, size: Size::Word }).unwrap(), Data::Word(511));
-    /// assert_eq!(memory.get(Frame { address: 4, size: Size::Word }).unwrap(), Data::Word(256));
+    /// assert_eq!(memory.get(Frame { address: 0, size: Size::Byte }, true).unwrap(), Data::Byte(255));
+    /// assert_eq!(memory.get(Frame { address: 0, size: Size::Word }, true).unwrap(), Data::Word(511));
+    /// assert_eq!(memory.get(Frame { address: 4, size: Size::Word }, true).unwrap(), Data::Word(256));
     /// // endregion
     /// ```
-    pub fn get(&mut self, mut frame: Frame) -> Result<number::Data, GetError> {
-        self.process_test_frame(&mut frame)?;
+    pub fn get(&mut self, mut frame: Frame, r#virtual: bool) -> Result<number::Data, GetError> {
+        self.process_test_frame(&mut frame, r#virtual)?;
         let mut max_buffer = [0u8; QUAD_SIZE];
 
         Ok(match frame.size {
