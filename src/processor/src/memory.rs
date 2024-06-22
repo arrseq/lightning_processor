@@ -41,7 +41,9 @@ pub trait LastError<E> {
 #[derive(Debug, Clone)]
 pub struct Frame {
     pub address: u64,
-    pub size: number::Size
+    pub size: number::Size,
+    /// Whether this is a virtual address.
+    pub r#virtual: bool
 }
 
 impl Frame {
@@ -52,16 +54,16 @@ impl Frame {
     /// use atln_processor::number::Size;
     ///
     /// // Aligned
-    /// assert!(Frame { address: 0, size: Size::Byte }.is_aligned());
-    /// assert!(Frame { address: 0, size: Size::Quad }.is_aligned());
-    /// assert!(Frame { address: 7, size: Size::Byte }.is_aligned());
+    /// assert!(Frame { address: 0, size: Size::Byte, r#virtual: true }.is_aligned());
+    /// assert!(Frame { address: 0, size: Size::Quad, r#virtual: true }.is_aligned());
+    /// assert!(Frame { address: 7, size: Size::Byte, r#virtual: false }.is_aligned());
     ///
-    /// assert!(Frame { address: 8, size: Size::Word }.is_aligned());
-    /// assert!(Frame { address: 8, size: Size::Quad }.is_aligned());
+    /// assert!(Frame { address: 8, size: Size::Word, r#virtual: true }.is_aligned());
+    /// assert!(Frame { address: 8, size: Size::Quad, r#virtual: false }.is_aligned());
     ///
     /// // Not aligned
-    /// assert!(!Frame { address: 7, size: Size::Word }.is_aligned());
-    /// assert!(!Frame { address: 1, size: Size::Quad }.is_aligned());
+    /// assert!(!Frame { address: 7, size: Size::Word, r#virtual: false }.is_aligned());
+    /// assert!(!Frame { address: 1, size: Size::Quad, r#virtual: true }.is_aligned());
     /// ```
     pub fn is_aligned(&self) -> bool {
         let masked = match self.size {
@@ -184,12 +186,81 @@ pub struct Memory {
     /// Number of bytes in each page.
     pub page_size: u64,
     /// Mappings of virtual page addresses to physical page addresses.
-    pub pages: HashMap<u64, u64>,
+    pub pages: HashMap<u64, u64>
+}
+
+// region: Memory cursor
+/// A tool used for interacting with memory through a [Read] and [Write] stream.
+#[derive(Debug)]
+pub struct MemoryCursor<'a> {
     /// The location to start reading from. This does not apply when doing direct reads.
     pub read_head: u64,
-    /// The last error caused by memory when getting data.
+    /// Whether to translate the address of the read head.
+    pub translate: bool,
+    pub memory: &'a mut Memory,
+    /// The [GetError] produced by memory from the last fetch from memory. If no error was produced, then [None] is 
+    /// stored.
     pub get_error: Option<GetError>
 }
+
+impl<'a> From<&'a mut Memory> for MemoryCursor<'a> {
+    /// ```
+    /// // TODO: Test
+    /// ```
+    fn from(value: &'a mut Memory) -> Self {
+        Self {
+            read_head: 0,
+            translate: false,
+            memory: value,
+            get_error: None
+        }
+    }
+}
+
+impl<'a> LastError<GetError> for MemoryCursor<'a> {
+    fn last_error(&mut self) -> &Option<GetError> {
+        &self.get_error
+    }
+}
+
+// TODO: Implement write
+
+impl<'a> Read for MemoryCursor<'a> {
+    /// ```
+    /// // TODO: Test
+    /// ```
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        let size = match Size::from_size(buf.len()) {
+            Some(value) => value,
+            None => return Err(io::Error::new(ErrorKind::Other, "Invalid buffer length"))
+        };
+
+        let mut data = match self.memory.get(&Frame { address: self.read_head, size, r#virtual: self.translate }) {
+            Ok(result) => result,
+            // Memory errors can be accessed after this function by executing
+            // LastError<GetError>::last_error(&mut Memory).
+            Err(_) => return Err(io::Error::new(ErrorKind::Other, "Failed to read from memory"))
+        };
+
+        Ok(data.read_all(buf))
+    }
+}
+
+impl<'a> Seek for MemoryCursor<'a> {
+    /// ```
+    /// // TODO; Test
+    /// ```
+    fn seek(&mut self, pos: SeekFrom) -> std::io::Result<u64> {
+        match pos {
+            SeekFrom::Start(start) => self.read_head = start,
+            SeekFrom::End(end) => self.read_head = (self.memory.bytes.len() as i64 - end) as u64,
+            SeekFrom::Current(curr) => self.read_head = (self.read_head as i64 + curr) as u64
+        }
+
+        Ok(self.read_head)
+    }
+}
+// endregion
 
 /// Error caused from setting data in memory.
 pub enum SetError {
@@ -251,14 +322,14 @@ impl Memory {
     ///
     /// // region: Basic non virtual addressing.
     /// let mut memory = Memory::from(Vec::from([ 0, 0, 0, 0 ]));
-    /// assert_eq!(memory.get(&Frame { address: 0, size: Size::Dual }).unwrap(), Data::Dual(0));
+    /// assert_eq!(memory.get(&Frame { address: 0, size: Size::Dual, r#virtual: false }).unwrap(), Data::Dual(0));
     ///
     /// let mut memory = Memory::from(Vec::from([ 255, 255, 255, 255, 0, 0, 0, 0 ]));
-    /// assert_eq!(memory.get(&Frame { address: 0, size: Size::Quad }).unwrap(), Data::Quad(u32::MAX as u64));
+    /// assert_eq!(memory.get(&Frame { address: 0, size: Size::Quad, r#virtual: false }).unwrap(), Data::Quad(u32::MAX as u64));
     ///
     /// let mut memory = Memory::from(Vec::from(1001u64.to_le_bytes()));
-    /// assert_eq!(memory.get(&Frame { address: 0, size: Size::Quad }).unwrap(), Data::Quad(1001));
-    /// assert_eq!(memory.get(&Frame { address: 1, size: Size::Byte }).unwrap(), Data::Byte(3));
+    /// assert_eq!(memory.get(&Frame { address: 0, size: Size::Quad, r#virtual: false }).unwrap(), Data::Quad(1001));
+    /// assert_eq!(memory.get(&Frame { address: 1, size: Size::Byte, r#virtual: false }).unwrap(), Data::Byte(3));
     /// // endregion
     /// 
     /// // region: Test virtual memory. This is very address specific and everything must work perfectly.
@@ -283,111 +354,58 @@ impl Memory {
     /// memory.pages.insert(0, 1);
     ///
     /// // Test.
-    /// assert_eq!(memory.get(&Frame { address: 0, size: Size::Byte }).unwrap(), Data::Byte(255));
-    /// assert_eq!(memory.get(&Frame { address: 0, size: Size::Word }).unwrap(), Data::Word(511));
-    /// assert_eq!(memory.get(&Frame { address: 4, size: Size::Word }).unwrap(), Data::Word(256));
+    /// assert_eq!(memory.get(&Frame { address: 0, size: Size::Byte, r#virtual: true }).unwrap(), Data::Byte(255));
+    /// assert_eq!(memory.get(&Frame { address: 0, size: Size::Word, r#virtual: true }).unwrap(), Data::Word(511));
+    /// assert_eq!(memory.get(&Frame { address: 4, size: Size::Word, r#virtual: true }).unwrap(), Data::Word(256));
     /// // endregion
     /// ```
     pub fn get(&mut self, frame: &Frame) -> Result<number::Data, GetError> {
-        dbg!(frame.address);
-
-        fn inner(memory: &Memory, frame: &Frame) -> Result<number::Data, GetError> {
-            // region: Addressing
-            // TODO: Make this a separate function with its own tests.
-            let mut address_start = frame.address;
-            // TODO: Add translation signal.
-            if false {
-                address_start = match memory.translate_virtual(frame.address) {
-                    Some(value) => value,
-                    None => return Err(GetError::PageFault)
-                };
-            }
-
-            // New frame with potential for translated address.
-            let mut frame = frame.clone();
-            frame.address = address_start;
-
-            // Make sure the frame bounds lies in the memory size range.
-            if let Some(max_address) = memory.max_address && frame.max_address() > max_address
-            { return Err(GetError::OutOfBounds) }
-            // Ensure the frame is aligned to emulate hardware limitations.
-            if !frame.is_aligned() { return Err(GetError::UnalignedFrame) }
-            // endregion
-
-            let mut max_buffer = [0u8; QUAD_SIZE];
-            Ok(match frame.size {
-                Size::Byte => {
-                    let buffer = &mut max_buffer[0..BYTE_SIZE];
-                    if read_vec_into_buffer(&memory.bytes, address_start as usize, buffer) != buffer.len() { return Err(GetError::OutOfBounds) }
-                    number::Data::Byte(buffer[0])
-                },
-                Size::Word => {
-                    let buffer = &mut max_buffer[0..WORD_SIZE];
-                    if read_vec_into_buffer(&memory.bytes, address_start as usize, buffer) != buffer.len() { return Err(GetError::OutOfBounds) }
-                    number::Data::Word(u16::from_le_bytes([ buffer[0], buffer[1] ]))
-                },
-                Size::Dual => {
-                    let buffer = &mut max_buffer[0..DUAL_SIZE];
-                    if read_vec_into_buffer(&memory.bytes, address_start as usize, buffer) != buffer.len() { return Err(GetError::OutOfBounds) }
-                    number::Data::Dual(u32::from_le_bytes([ buffer[0], buffer[1], buffer[2], buffer[3] ]))
-                },
-                Size::Quad => {
-                    let buffer = &mut max_buffer[0..QUAD_SIZE];
-                    if read_vec_into_buffer(&memory.bytes, address_start as usize, buffer) != buffer.len() { return Err(GetError::OutOfBounds) }
-                    number::Data::Quad(u64::from_le_bytes([ buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7] ]))
-                }
-            })
+        // region: Addressing
+        // TODO: Make this a separate function with its own tests.
+        let mut address_start = frame.address;
+        // TODO: Add translation signal.
+        if frame.r#virtual {
+            address_start = match self.translate_virtual(frame.address) {
+                Some(value) => value,
+                None => return Err(GetError::PageFault)
+            };
         }
 
-        match inner(self, frame) {
-            Ok(value) => {
-                self.get_error = None;
-                Ok(value)
+        // New frame with potential for translated address.
+        let mut frame = frame.clone();
+        frame.address = address_start;
+
+        // Make sure the frame bounds lies in the memory size range.
+        if let Some(max_address) = self.max_address && frame.max_address() > max_address
+        { return Err(GetError::OutOfBounds) }
+        // Ensure the frame is aligned to emulate hardware limitations.
+        if !frame.is_aligned() { return Err(GetError::UnalignedFrame) }
+        // endregion
+
+        let mut max_buffer = [0u8; QUAD_SIZE];
+        Ok(match frame.size {
+            Size::Byte => {
+                let buffer = &mut max_buffer[0..BYTE_SIZE];
+                if read_vec_into_buffer(&self.bytes, address_start as usize, buffer) != buffer.len() { return Err(GetError::OutOfBounds) }
+                number::Data::Byte(buffer[0])
             },
-            Err(error) => {
-                self.get_error = Some(error.clone());
-                Err(error)
+            Size::Word => {
+                let buffer = &mut max_buffer[0..WORD_SIZE];
+                if read_vec_into_buffer(&self.bytes, address_start as usize, buffer) != buffer.len() { return Err(GetError::OutOfBounds) }
+                number::Data::Word(u16::from_le_bytes([ buffer[0], buffer[1] ]))
+            },
+            Size::Dual => {
+                let buffer = &mut max_buffer[0..DUAL_SIZE];
+                if read_vec_into_buffer(&self.bytes, address_start as usize, buffer) != buffer.len() { return Err(GetError::OutOfBounds) }
+                number::Data::Dual(u32::from_le_bytes([ buffer[0], buffer[1], buffer[2], buffer[3] ]))
+            },
+            Size::Quad => {
+                let buffer = &mut max_buffer[0..QUAD_SIZE];
+                if read_vec_into_buffer(&self.bytes, address_start as usize, buffer) != buffer.len() { return Err(GetError::OutOfBounds) }
+                number::Data::Quad(u64::from_le_bytes([ buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7] ]))
             }
-        }
-    }
-}
-
-impl LastError<GetError> for Memory {
-    fn last_error(&mut self) -> &Option<GetError> {
-        &self.get_error
-    }
-}
-
-impl Read for Memory {
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        let size = match Size::from_size(buf.len()) {
-            Some(value) => value,
-            None => return Err(io::Error::new(ErrorKind::Other, "Invalid buffer length"))
-        };
+        })
         
-        let mut data = match self.get(&Frame { address: self.read_head, size }) {
-            Ok(result) => result,
-            // Memory errors can be accessed after this function by executing
-            // LastError<GetError>::last_error(&mut Memory).
-            Err(_) => return Err(io::Error::new(ErrorKind::Other, "Failed to read from memory"))
-        };
-
-        Ok(data.read_all(buf))
-    }
-}
-
-impl Seek for Memory {
-    /// ```
-    /// // TODO; Test
-    /// ```
-    fn seek(&mut self, pos: SeekFrom) -> std::io::Result<u64> {
-        match pos {
-            SeekFrom::Start(start) => self.read_head = start,
-            SeekFrom::End(end) => self.read_head = (self.bytes.len() as i64 - end) as u64,
-            SeekFrom::Current(curr) => self.read_head = (self.read_head as i64 + curr) as u64
-        }
-        
-        Ok(self.read_head)
     }
 }
 
@@ -398,9 +416,7 @@ impl From<Vec<u8>> for Memory {
             max_address: Some(value.len() as u64),
             page_size: 0,
             bytes: value,
-            pages: HashMap::new(),
-            read_head: 0,
-            get_error: None
+            pages: HashMap::new()
         }
     }
 }
