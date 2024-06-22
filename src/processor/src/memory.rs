@@ -80,11 +80,6 @@ impl Frame {
     }
 }
 
-/// A page remapping utility.
-pub trait Page {
-    fn with_virtual(&self, r#virtual: u64) -> u64;
-}
-
 /// Read a vector like a stream. Read buffer.len() amount of bytes from the vector and into the buffer. This will return
 /// the number of bytes read.
 /// ```
@@ -103,21 +98,81 @@ pub fn read_vec_into_buffer(vec: &Vec<u8>, start: usize, buffer: &mut [u8]) -> u
     
     bytes_read
 }
-impl Page for u64 {
-    /// Translate a virtual address into a physical address.
-    /// ```
-    /// use atln_processor::memory::Page;
+
+// region: Address utilities
+/// A utility containing methods for manipulating and reading addresses and their partitioned segments. The terminology
+/// here may be confusing, so refer to this module's documentation.
+pub trait Address {
+    /// Extract the virtual address item. This would be the right most bits. The number of bits is specified by the 
+    /// [PAGE_ITEM_BITS] constant. The item is the actual byte address in the page. This points to real data in memory.
+    /// This expects that this address is formatted as an address.
+    fn extract_item(&self) -> u64;
+    
+    /// Translate a virtual address into a physical address. This allows you to add a virtual address item address to a
+    /// page identifier code. This simply layers a physical page onto a virtual item address. In other words, this is 
+    /// setting the item bits of an address.
+    fn set_item(&self, r#virtual: u64) -> u64;
+
+    /// Extract the virtual address page identifier code. These are the left most bits and correspond to the page of 
+    /// memory the byte address lies in. This function is to be used on full addresses with the page encoded in the
+    /// correct section.
+    fn extract_page(&self) -> u64;
+    
+    /// Set the page bits of this address. These are the left most bits.
+    fn set_page(&self, page: u64) -> u64;
+    
+    /// Offset the page code to have the page identifier bits in the correct segment of the address. This is for numbers
+    /// that contain the page code without being partitioned. This function will simply move the bits to the left, so 
+    /// it can be operated on with or and a virtual address suffix.
     /// 
-    /// // TODO: Exhaustive testing potentially required.
-    /// assert_eq!(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000.with_virtual(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_11111111), 0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_11111111);
-    /// assert_eq!(0b00000000_00000000_00000000_00000000_00000000_00000000_00100000_00000000.with_virtual(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000011), 0b00000000_00000000_00000000_00000000_00000000_00000000_00100000_00000011);
-    /// assert_eq!(0b11111111_00000000_00000000_00000000_00000000_00000000_00000000_00000000.with_virtual(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00001010), 0b11111111_00000000_00000000_00000000_00000000_00000000_00000000_00001010);
+    /// The result is used as a layer, needs to be shifted over to allow for it to layer on an item suffix. This also 
+    /// behaves as removing the items bits.
+    fn offset_page(&self) -> u64;
+}
+
+impl Address for u64 {
     /// ```
-    fn with_virtual(&self, r#virtual: u64) -> u64 {
+    /// // TODO: Test
+    /// ```
+    fn extract_item(&self) -> u64 {
+        PAGE_ITEM_MASK & self
+    }
+    
+    /// ```
+    /// use atln_processor::memory::Address;
+    ///
+    /// // TODO: Exhaustive testing potentially required.
+    /// assert_eq!(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000.set_item(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_11111111), 0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_11111111);
+    /// assert_eq!(0b00000000_00000000_00000000_00000000_00000000_00000000_00100000_00000000.set_item(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000011), 0b00000000_00000000_00000000_00000000_00000000_00000000_00100000_00000011);
+    /// assert_eq!(0b11111111_00000000_00000000_00000000_00000000_00000000_00000000_00000000.set_item(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00001010), 0b11111111_00000000_00000000_00000000_00000000_00000000_00000000_00001010);
+    /// ```
+    fn set_item(&self, r#virtual: u64) -> u64 {
         let page_item = r#virtual & PAGE_ITEM_MASK;
         (self & PAGE_IDENTIFIER_MASK) | page_item
     }
+
+    /// ```
+    /// // TODO: Test
+    /// ```
+    fn extract_page(&self) -> u64 {
+        (PAGE_IDENTIFIER_MASK & self) >> PAGE_ITEM_BITS
+    }
+
+    /// ```
+    /// // TODO: Test
+    /// ```
+    fn set_page(&self, page: u64) -> u64 {
+        todo!()
+    }
+
+    /// ```
+    /// // TODO
+    /// ```
+    fn offset_page(&self) -> u64 {
+        self << PAGE_ITEM_BITS
+    }
 }
+// endregion
 
 /// Memory addressing must be aligned. Rules must be followed for frame based operations on memory.
 /// - If the memory is size constrained, then ensure the frame is not reaching past the memory size limit.
@@ -179,25 +234,12 @@ impl Memory {
     /// assert!(matches!(memory.translate_virtual(0b000_00000000_00000000_00000000_00000000_00000000_00000000__00000_00001010), None));
     /// ```
     pub fn translate_virtual(&self, r#virtual: u64) -> Option<u64> {
-        // This is the page identifier of the virtual address. The virtual address space doesn't have pages on its
-        // own but this is used to find out what the page mapping is. Thus making it the prefix.
-        //
-        // Shift the bits right to allow for it to be treated as a real number.
-        let virtual_prefix = (PAGE_IDENTIFIER_MASK & r#virtual) >> PAGE_ITEM_BITS;
+        let virtual_page = r#virtual.extract_page();
+        // Find the mapping based on the virtual page.
+        let physical_page = self.pages.get(&virtual_page)?.offset_page();
+        let virtual_item = r#virtual.extract_item();
 
-        // Try to get the page mapping item itself. No match will cause a page fault. For safety, ensure that the page
-        // mapping identifier does not use more bits than is supported.
-        let physical_prefix = self.pages.get(&virtual_prefix)?
-            // Used as a mask, needs to be shifted over to allow for it to layer on an item suffix. This also behaves
-            // as removing the items bits.
-            << PAGE_ITEM_BITS;
-
-        // Remove the prefix bits. This will make sure nothing goes wrong when doing the "or" operation.
-        let virtual_suffix = PAGE_ITEM_MASK & r#virtual;
-
-        // use the virtual address suffix to select the individual byte and the physical prefix to select the page
-        // block.
-        Some(virtual_suffix | physical_prefix)
+        Some(physical_page.set_item(virtual_item))
     }
 
     /// Read and return the data targeted by the frame with safeguards and emulated hardware limitations. If the page
