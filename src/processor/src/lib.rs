@@ -1,4 +1,6 @@
 #![feature(let_chains)]
+#![forbid(clippy::result_unit_err)]
+#![forbid(clippy::question_mark)]
 
 use crate::instruction::{InstructionConstructError, Instruction};
 use crate::memory::{Memory};
