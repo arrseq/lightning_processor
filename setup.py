@@ -13,7 +13,7 @@ commands = [
     ("npm i", "./app/emulator")
 ]
 
-def run_command(command, directory):
+for command, directory in commands:
     try:
         os.chdir(os.path.join(root, directory))
         print(f"Running '{command}' in {directory}...")
@@ -21,6 +21,3 @@ def run_command(command, directory):
         print(result.stdout.decode('utf-8'))
     except subprocess.CalledProcessError as e:
         print(f"Error running '{command}' in {directory}: {e.stderr.decode('utf-8')}")
-
-for command, directory in commands:
-    run_command(command, directory)
