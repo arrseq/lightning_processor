@@ -41,9 +41,7 @@ pub trait LastError<E> {
 #[derive(Debug, Clone)]
 pub struct Frame {
     pub address: u64,
-    pub size: number::Size,
-    /// Whether this is a virtual address.
-    pub r#virtual: bool
+    pub size: number::Size
 }
 
 impl Frame {
@@ -54,16 +52,16 @@ impl Frame {
     /// use atln_processor::number::Size;
     ///
     /// // Aligned
-    /// assert!(Frame { address: 0, size: Size::Byte, r#virtual: true }.is_aligned());
-    /// assert!(Frame { address: 0, size: Size::Quad, r#virtual: true }.is_aligned());
-    /// assert!(Frame { address: 7, size: Size::Byte, r#virtual: false }.is_aligned());
+    /// assert!(Frame { address: 0, size: Size::Byte }.is_aligned());
+    /// assert!(Frame { address: 0, size: Size::Quad }.is_aligned());
+    /// assert!(Frame { address: 7, size: Size::Byte }.is_aligned());
     ///
-    /// assert!(Frame { address: 8, size: Size::Word, r#virtual: true }.is_aligned());
-    /// assert!(Frame { address: 8, size: Size::Quad, r#virtual: false }.is_aligned());
+    /// assert!(Frame { address: 8, size: Size::Word }.is_aligned());
+    /// assert!(Frame { address: 8, size: Size::Quad }.is_aligned());
     ///
     /// // Not aligned
-    /// assert!(!Frame { address: 7, size: Size::Word, r#virtual: false }.is_aligned());
-    /// assert!(!Frame { address: 1, size: Size::Quad, r#virtual: true }.is_aligned());
+    /// assert!(!Frame { address: 7, size: Size::Word }.is_aligned());
+    /// assert!(!Frame { address: 1, size: Size::Quad }.is_aligned());
     /// ```
     pub fn is_aligned(&self) -> bool {
         let masked = match self.size {
@@ -105,29 +103,29 @@ pub fn read_vec_into_buffer(vec: &Vec<u8>, start: usize, buffer: &mut [u8]) -> u
 /// A utility containing methods for manipulating and reading addresses and their partitioned segments. The terminology
 /// here may be confusing, so refer to this module's documentation.
 pub trait Address {
-    /// Extract the virtual address item. This would be the right most bits. The number of bits is specified by the 
+    /// Extract the virtual address item. This would be the right most bits. The number of bits is specified by the
     /// [PAGE_ITEM_BITS] constant. The item is the actual byte address in the page. This points to real data in memory.
     /// This expects that this address is formatted as an address.
     fn extract_item(&self) -> u64;
-    
+
     /// Translate a virtual address into a physical address. This allows you to add a virtual address item address to a
-    /// page identifier code. This simply layers a physical page onto a virtual item address. In other words, this is 
+    /// page identifier code. This simply layers a physical page onto a virtual item address. In other words, this is
     /// setting the item bits of an address.
     fn set_item(&self, r#virtual: u64) -> u64;
 
-    /// Extract the virtual address page identifier code. These are the left most bits and correspond to the page of 
+    /// Extract the virtual address page identifier code. These are the left most bits and correspond to the page of
     /// memory the byte address lies in. This function is to be used on full addresses with the page encoded in the
     /// correct section.
     fn extract_page(&self) -> u64;
-    
+
     /// Set the page bits of this address. These are the left most bits.
     fn set_page(&self, page: u64) -> u64;
-    
+
     /// Offset the page code to have the page identifier bits in the correct segment of the address. This is for numbers
-    /// that contain the page code without being partitioned. This function will simply move the bits to the left, so 
+    /// that contain the page code without being partitioned. This function will simply move the bits to the left, so
     /// it can be operated on with or and a virtual address suffix.
-    /// 
-    /// The result is used as a layer, needs to be shifted over to allow for it to layer on an item suffix. This also 
+    ///
+    /// The result is used as a layer, needs to be shifted over to allow for it to layer on an item suffix. This also
     /// behaves as removing the items bits.
     fn offset_page(&self) -> u64;
 }
@@ -139,7 +137,7 @@ impl Address for u64 {
     fn extract_item(&self) -> u64 {
         PAGE_ITEM_MASK & self
     }
-    
+
     /// ```
     /// use atln_processor::memory::Address;
     ///
@@ -198,7 +196,7 @@ pub struct MemoryCursor<'a> {
     /// Whether to translate the address of the read head.
     pub translate: bool,
     pub memory: &'a mut Memory,
-    /// The [GetError] produced by memory from the last fetch from memory. If no error was produced, then [None] is 
+    /// The [GetError] produced by memory from the last fetch from memory. If no error was produced, then [None] is
     /// stored.
     pub get_error: Option<GetError>
 }
@@ -313,6 +311,35 @@ impl Memory {
         Some(physical_page.set_item(virtual_item))
     }
 
+    /// Utility function to check for errors in an address frame when performing operations on memory and to handle
+    /// translating frame addresses.
+    ///
+    /// If the frame is marked as virtual through the [r#virtual] parameter, then the frame will have its address
+    /// translated. This also tests for the following errors:
+    /// - If the address is unaligned, then [Err(GetError::UnalignedFrame)] is returned.
+    /// - Otherwise, if a page fault occurred, then [Err(GetError::PageFault)] is returned.
+    /// - Finally, if the address is out of bounds, then [Err(GetError::OutOfBounds)] is returned.
+    /// ```
+    /// // TODO: Test
+    /// ```
+    fn process_test_frame(&self, frame: &mut Frame) -> Result<(), GetError> {
+        // Ensure the frame is aligned to emulate hardware limitations.
+        if !frame.is_aligned() { return Err(GetError::UnalignedFrame) }
+
+        if frame.r#virtual {
+            frame.address = match self.translate_virtual(frame.address) {
+                Some(value) => value,
+                None => return Err(GetError::PageFault)
+            };
+        }
+
+        // Make sure the frame bounds lies in the memory size range.
+        if let Some(max_address) = self.max_address && frame.max_address() > max_address
+        { return Err(GetError::OutOfBounds) }
+
+        Ok(())
+    }
+
     /// Read and return the data targeted by the frame with safeguards and emulated hardware limitations. If the page
     /// is not cached in this list, then a [GetError::PageFault] is caused.
     /// ```
@@ -322,14 +349,14 @@ impl Memory {
     ///
     /// // region: Basic non virtual addressing.
     /// let mut memory = Memory::from(Vec::from([ 0, 0, 0, 0 ]));
-    /// assert_eq!(memory.get(&Frame { address: 0, size: Size::Dual, r#virtual: false }).unwrap(), Data::Dual(0));
+    /// assert_eq!(memory.get(Frame { address: 0, size: Size::Dual }).unwrap(), Data::Dual(0));
     ///
     /// let mut memory = Memory::from(Vec::from([ 255, 255, 255, 255, 0, 0, 0, 0 ]));
-    /// assert_eq!(memory.get(&Frame { address: 0, size: Size::Quad, r#virtual: false }).unwrap(), Data::Quad(u32::MAX as u64));
+    /// assert_eq!(memory.get(Frame { address: 0, size: Size::Quad }).unwrap(), Data::Quad(u32::MAX as u64));
     ///
     /// let mut memory = Memory::from(Vec::from(1001u64.to_le_bytes()));
-    /// assert_eq!(memory.get(&Frame { address: 0, size: Size::Quad, r#virtual: false }).unwrap(), Data::Quad(1001));
-    /// assert_eq!(memory.get(&Frame { address: 1, size: Size::Byte, r#virtual: false }).unwrap(), Data::Byte(3));
+    /// assert_eq!(memory.get(Frame { address: 0, size: Size::Quad }).unwrap(), Data::Quad(1001));
+    /// assert_eq!(memory.get(Frame { address: 1, size: Size::Byte }).unwrap(), Data::Byte(3));
     /// // endregion
     /// 
     /// // region: Test virtual memory. This is very address specific and everything must work perfectly.
@@ -354,58 +381,37 @@ impl Memory {
     /// memory.pages.insert(0, 1);
     ///
     /// // Test.
-    /// assert_eq!(memory.get(&Frame { address: 0, size: Size::Byte, r#virtual: true }).unwrap(), Data::Byte(255));
-    /// assert_eq!(memory.get(&Frame { address: 0, size: Size::Word, r#virtual: true }).unwrap(), Data::Word(511));
-    /// assert_eq!(memory.get(&Frame { address: 4, size: Size::Word, r#virtual: true }).unwrap(), Data::Word(256));
+    /// assert_eq!(memory.get(Frame { address: 0, size: Size::Byte }).unwrap(), Data::Byte(255));
+    /// assert_eq!(memory.get(Frame { address: 0, size: Size::Word }).unwrap(), Data::Word(511));
+    /// assert_eq!(memory.get(Frame { address: 4, size: Size::Word }).unwrap(), Data::Word(256));
     /// // endregion
     /// ```
-    pub fn get(&mut self, frame: &Frame) -> Result<number::Data, GetError> {
-        // region: Addressing
-        // TODO: Make this a separate function with its own tests.
-        let mut address_start = frame.address;
-        // TODO: Add translation signal.
-        if frame.r#virtual {
-            address_start = match self.translate_virtual(frame.address) {
-                Some(value) => value,
-                None => return Err(GetError::PageFault)
-            };
-        }
-
-        // New frame with potential for translated address.
-        let mut frame = frame.clone();
-        frame.address = address_start;
-
-        // Make sure the frame bounds lies in the memory size range.
-        if let Some(max_address) = self.max_address && frame.max_address() > max_address
-        { return Err(GetError::OutOfBounds) }
-        // Ensure the frame is aligned to emulate hardware limitations.
-        if !frame.is_aligned() { return Err(GetError::UnalignedFrame) }
-        // endregion
-
+    pub fn get(&mut self, mut frame: Frame) -> Result<number::Data, GetError> {
+        self.process_test_frame(&mut frame)?;
         let mut max_buffer = [0u8; QUAD_SIZE];
+
         Ok(match frame.size {
             Size::Byte => {
                 let buffer = &mut max_buffer[0..BYTE_SIZE];
-                if read_vec_into_buffer(&self.bytes, address_start as usize, buffer) != buffer.len() { return Err(GetError::OutOfBounds) }
+                if read_vec_into_buffer(&self.bytes, frame.address as usize, buffer) != buffer.len() { return Err(GetError::OutOfBounds) }
                 number::Data::Byte(buffer[0])
             },
             Size::Word => {
                 let buffer = &mut max_buffer[0..WORD_SIZE];
-                if read_vec_into_buffer(&self.bytes, address_start as usize, buffer) != buffer.len() { return Err(GetError::OutOfBounds) }
+                if read_vec_into_buffer(&self.bytes, frame.address as usize, buffer) != buffer.len() { return Err(GetError::OutOfBounds) }
                 number::Data::Word(u16::from_le_bytes([ buffer[0], buffer[1] ]))
             },
             Size::Dual => {
                 let buffer = &mut max_buffer[0..DUAL_SIZE];
-                if read_vec_into_buffer(&self.bytes, address_start as usize, buffer) != buffer.len() { return Err(GetError::OutOfBounds) }
+                if read_vec_into_buffer(&self.bytes, frame.address as usize, buffer) != buffer.len() { return Err(GetError::OutOfBounds) }
                 number::Data::Dual(u32::from_le_bytes([ buffer[0], buffer[1], buffer[2], buffer[3] ]))
             },
             Size::Quad => {
                 let buffer = &mut max_buffer[0..QUAD_SIZE];
-                if read_vec_into_buffer(&self.bytes, address_start as usize, buffer) != buffer.len() { return Err(GetError::OutOfBounds) }
+                if read_vec_into_buffer(&self.bytes, frame.address as usize, buffer) != buffer.len() { return Err(GetError::OutOfBounds) }
                 number::Data::Quad(u64::from_le_bytes([ buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7] ]))
             }
         })
-        
     }
 }
 

@@ -21,8 +21,7 @@ fn main() {
     // 
     // core.decode(&mut memory).expect("Failed to decode from instruction stream");
 
-    use std::collections::HashMap;
-    use atln_processor::memory::{Frame, Memory, PAGE_BYTES_COUNT, PAGE_ITEM_BITS};
+    use atln_processor::memory::{Frame, Memory, PAGE_BYTES_COUNT};
     use atln_processor::number::{Data, Size};
     
     let mut memory = Memory::from({
@@ -46,13 +45,9 @@ fn main() {
     write("C:/tmp/emu_mem.html", html).expect("Could not write mem dump. C:/tmp/emu_mem.html");
     //
     
-    let process_id = 4096;
-    // Map addresses from first virtual page boundary to the second hardware page. Hardware and virtual pages align 
+    // Map addresses from first virtual page boundary to the second hardware page. Hardware and virtual pages align
     // parallel.
-    memory.pages.insert(process_id, HashMap::from([ (0, 1) ]));
-    
-    // Enable virtual memory address remapping.
-    memory.context = Some(process_id);
+    memory.pages.insert(0, 1);
     
     // Test.
     assert_eq!(memory.get(&Frame { address: 0, size: Size::Byte }).unwrap(), Data::Byte(255));
