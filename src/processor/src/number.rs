@@ -4,7 +4,6 @@
 
 // Constants
 
-use std::io::Read;
 use crate::instruction::operand::{IMMEDIATE_EXPONENT_BYTE, IMMEDIATE_EXPONENT_DUAL, IMMEDIATE_EXPONENT_QUAD, IMMEDIATE_EXPONENT_WORD};
 use crate::memory::ReadAll;
 

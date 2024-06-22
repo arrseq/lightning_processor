@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 use std::io;
 use std::io::{ErrorKind, Read, Seek, SeekFrom};
-use std::iter::Map;
 use crate::number;
-use crate::number::{BYTE_SIZE, Data, DUAL_SIZE, QUAD_SIZE, Size, WORD_SIZE};
+use crate::number::{BYTE_SIZE, DUAL_SIZE, QUAD_SIZE, Size, WORD_SIZE};
 
 // region: Constants
 pub const DUAL_ALIGNED_MASK   : u64 = 0b1;

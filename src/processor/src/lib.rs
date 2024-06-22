@@ -1,10 +1,7 @@
 #![feature(let_chains)]
 
-use std::io::Read;
-use crate::instruction::{InstructionConstructError, Instruction, operation::Operation};
-use crate::instruction::operation::{Coded, OperationExecuteError};
-use crate::memory::{Frame, Memory};
-use crate::number::Size;
+use crate::instruction::{InstructionConstructError, Instruction};
+use crate::memory::{Memory};
 
 pub mod number;
 pub mod instruction;
@@ -28,7 +25,7 @@ pub struct Core {
 
 impl Core {
     /// Decode an instruction from memory based on the program counter.
-    pub fn decode(&mut self, memory: &mut Memory) -> Result<(), InstructionConstructError> {
+    pub fn decode(&mut self, _memory: &mut Memory) -> Result<(), InstructionConstructError> {
         todo!()
         // self.instruction = Instruction::new(memory);
     }
