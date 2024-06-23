@@ -2,7 +2,7 @@ name: Rust
 
 on:
     push:
-        branches: [ "master" ]
+        branches: [ "main" ]
 
 env:
     CARGO_TERM_COLOR: always
@@ -22,3 +22,7 @@ jobs:
               run: robocopy target/doc docs /s
             - name: Generate entry file.
               run: echo|set /p="<meta http-equiv="refresh" content="0; url=Processor/index.html">" > docs/index.html
+            - name: Upload artifact
+              uses: actions/upload-pages-artifact@v2
+              with:
+                  path: "target/docs"
