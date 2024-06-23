@@ -335,12 +335,14 @@ pub struct Registers {
 }
 
 impl Registers {
-    /// Create a new instance from an encoded form of the registers byte. TODO: finish
+    /// Create a new instance from an encoded form of the registers byte.
     /// ```
     /// use atln_processor::instruction::Registers;
     /// 
     /// // Test operands, ensure no mirroring occurs.
-    /// assert_eq!(Registers::new(0b00__000), 0);
+    /// assert_eq!(Registers::new(0b00__000_001), Registers { width: 1, x_static: 0, x_dynamic: 1 });
+    /// assert_eq!(Registers::new(0b11__011_111), Registers { width: 8, x_static: 3, x_dynamic: 7 });
+    /// assert_eq!(Registers::new(0b10__000_001), Registers { width: 4, x_static: 0, x_dynamic: 0 });
     /// ```
     pub fn new(encoded: u8) -> Self {
         Self {
@@ -350,8 +352,11 @@ impl Registers {
         }
     }
 
+    /// Encode this registers data structure into a registers byte which contains the properties of register targeting.
     /// ```
-    /// // TODO
+    /// assert_eq!(Registers { width: 1, x_static: 0, x_dynamic: 1 }, 0b00__000_001);
+    /// assert_eq!(Registers { width: 8, x_static: 3, x_dynamic: 7 }, 0b11__011_111);
+    /// assert_eq!(Registers { width: 4, x_static: 0, x_dynamic: 0 }, 0b10__000_001);
     /// ```
     pub fn encode(&self) -> u8 {
         let mut encoded = 0.set_width(self.width);
