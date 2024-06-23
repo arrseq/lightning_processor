@@ -340,9 +340,9 @@ impl Registers {
     /// use atln_processor::instruction::Registers;
     /// 
     /// // Test operands, ensure no mirroring occurs.
-    /// assert_eq!(Registers::new(0b00__000_001), Registers { width: 1, x_static: 0, x_dynamic: 1 });
-    /// assert_eq!(Registers::new(0b11__011_111), Registers { width: 8, x_static: 3, x_dynamic: 7 });
-    /// assert_eq!(Registers::new(0b10__000_001), Registers { width: 4, x_static: 0, x_dynamic: 0 });
+    /// assert_eq!(Registers::new(0b00__000_001), Registers { width: 0, x_static: 0, x_dynamic: 1 });
+    /// assert_eq!(Registers::new(0b11__011_111), Registers { width: 3, x_static: 3, x_dynamic: 7 });
+    /// assert_eq!(Registers::new(0b10__000_001), Registers { width: 2, x_static: 0, x_dynamic: 1 });
     /// ```
     pub fn new(encoded: u8) -> Self {
         Self {
@@ -354,9 +354,11 @@ impl Registers {
 
     /// Encode this registers data structure into a registers byte which contains the properties of register targeting.
     /// ```
-    /// assert_eq!(Registers { width: 1, x_static: 0, x_dynamic: 1 }, 0b00__000_001);
-    /// assert_eq!(Registers { width: 8, x_static: 3, x_dynamic: 7 }, 0b11__011_111);
-    /// assert_eq!(Registers { width: 4, x_static: 0, x_dynamic: 0 }, 0b10__000_001);
+    /// use atln_processor::instruction::Registers;
+    ///
+    /// assert_eq!(Registers { width: 0, x_static: 0, x_dynamic: 1 }.encode(), 0b00__000_001);
+    /// assert_eq!(Registers { width: 3, x_static: 3, x_dynamic: 7 }.encode(), 0b11__011_111);
+    /// assert_eq!(Registers { width: 2, x_static: 0, x_dynamic: 1 }.encode(), 0b10__000_001);
     /// ```
     pub fn encode(&self) -> u8 {
         let mut encoded = 0.set_width(self.width);
@@ -366,50 +368,78 @@ impl Registers {
 }
 
 // region: Uint traits
-// TODO: ADD TESTS
 pub trait RegistersEncoding {
+    /// Extract the width exponent.
     fn extract_width(self) -> u8;
 
-    /// Only first 2 bits are used.
+    /// Set the width exponent.
     fn set_width(self, width: u8) -> u8;
 
     fn extract_static(self) -> u8;
 
-    /// Only first 3 bits are used.
     fn set_static(self, x_static: u8) -> u8;
 
     fn extract_dynamic(self) -> u8;
 
-    /// Only first 3 bits are used.
     fn set_dynamic(self, dynamic: u8) -> u8;
 }
 
 impl RegistersEncoding for u8 {
+    /// ```
+    /// use atln_processor::instruction::RegistersEncoding;
+    ///
+    /// assert_eq!(0b00_000_000.extract_width(), 0b00);
+    /// assert_eq!(0b11_011_110.extract_width(), 0b11);
+    /// assert_eq!(0b10_001_010.extract_width(), 0b10);
+    /// assert_eq!(0b01_000_111.extract_width(), 0b01);
+    /// ```
     fn extract_width(self) -> u8 {
         (REGISTERS_WIDTH_MASK & self) >> 6
     }
 
     /// Only first 2 bits are used.
+    /// ```
+    /// use atln_processor::instruction::RegistersEncoding;
+    ///
+    /// assert_eq!(0b00_000_000.set_width(0b00), 0b00_000_000);
+    /// assert_eq!(0b00_011_110.set_width(0b11), 0b11_011_110);
+    /// assert_eq!(0b11_001_010.set_width(0b00), 0b00_001_010);
+    /// assert_eq!(0b10_000_111.set_width(0b11), 0b11_000_111);
+    /// ```
     fn set_width(self, width: u8) -> u8 {
         let layer = (0b000000_11 & width) << 6;
         (!REGISTERS_WIDTH_MASK & self) | layer
     }
 
+    // TODO: Continue
+
+    /// ```
+    ///
+    /// ```
     fn extract_static(self) -> u8 {
         (REGISTERS_STATIC_OPERAND_MASK & self) >> 3
     }
 
     /// Only first 3 bits are used.
+    /// ```
+    ///
+    /// ```
     fn set_static(self, x_static: u8) -> u8 {
         let layer = (0b00000_111 & x_static) << 3;
         (!REGISTERS_STATIC_OPERAND_MASK & self) | layer
     }
 
+    /// ```
+    ///
+    /// ```
     fn extract_dynamic(self) -> u8 {
         REGISTERS_DYNAMIC_OPERAND_MASK & self
     }
 
     /// Only first 3 bits are used.
+    /// ```
+    ///
+    /// ```
     fn set_dynamic(self, dynamic: u8) -> u8 {
         let layer = 0b00000_111 & dynamic;
         (!REGISTERS_DYNAMIC_OPERAND_MASK & self) | layer
