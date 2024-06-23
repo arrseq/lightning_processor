@@ -11,7 +11,7 @@ env:
 
 jobs:
     build-ubuntu:
-        runs-on: ubuntu-latest | windows-latest
+        runs-on: ubuntu-latest, windows-latest
         steps:
             - uses: actions/checkout@v4
             - name: Install Rust
