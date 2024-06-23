@@ -420,10 +420,11 @@ pub struct Data {
     /// The name of the operand to store the result of the computation in, if the computation produces a result. There
     /// is always a destination even if the instruction does not compute and store anything.
     pub destination: Destination,
-    pub synchronise: bool,
+    pub synchronous: bool,
     pub operands: Operands
 }
 
+#[derive(Debug)]
 pub enum DataConstructError {
     /// Error caused when reading from stream.
     StreamRead(io::Error),
@@ -452,13 +453,14 @@ impl<'a> Data {
     /// use atln_processor::instruction::{Data, Driver};
     /// use atln_processor::instruction::operation::arithmetic::Arithmetic;
     /// use atln_processor::instruction::operation::{Coded, Extension};
+    /// use atln_processor::instruction::operand::Destination;
     ///
     /// let mut extension = Extension::Arithmetic(Arithmetic::Add);
     /// let extension_code = extension.code();
-    /// 
+    ///
     /// let operation = extension.operation();
     /// let operation_code = operation.code();
-    /// 
+    ///
     /// let data = Data::new(
     ///     &mut Cursor::new([ 00_000_000 ]),
     ///     operation,
@@ -470,9 +472,10 @@ impl<'a> Data {
     ///         immediate_exponent: 0,
     ///         synchronise: false
     ///     }
-    /// );
+    /// )
+    ///     .unwrap();
     ///
-    /// // TODO: Complete
+    /// assert_eq!(data.destination, Destination::Static);
     /// ```
     pub fn new(stream: &mut impl Read, operation: &mut impl Operation<'a>, driver: &Driver) -> Result<Self, DataConstructError> {
         // If there is no requirement for operands then there is nothing to decode.
@@ -504,7 +507,7 @@ impl<'a> Data {
         Ok(Data {
             width: number::Size::from_exponent(registers.width).unwrap(),
             destination,
-            synchronise: driver.synchronise,
+            synchronous: driver.synchronise,
             operands
         })
     }
@@ -639,7 +642,7 @@ impl Instruction {
         let mut immediate: Option<number::Data> = None;
 
         if let Some(data) = &self.data {
-            synchronise = data.synchronise;
+            synchronise = data.synchronous;
             dynamic_destination = match data.destination {
                 Destination::Dynamic => true,
                 Destination::Static => false
@@ -692,7 +695,7 @@ impl Instruction {
     ///     data: Some(Data {
     ///         width: number::Size::Byte,
     ///         destination: Destination::Static,
-    ///         synchronise: false,
+    ///         synchronous: false,
     ///         operands: Operands::AllPresent(AllPresent {
     ///             x_static: 0,
     ///             x_dynamic: Dynamic::Register(1)
@@ -705,7 +708,7 @@ impl Instruction {
     ///     data: Some(Data {
     ///         width: number::Size::Byte,
     ///         destination: Destination::Dynamic,
-    ///         synchronise: false,
+    ///         synchronous: false,
     ///         operands: Operands::AllPresent(AllPresent {
     ///             x_static: 0,
     ///             x_dynamic: Dynamic::Register(1)

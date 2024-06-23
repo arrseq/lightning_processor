@@ -1,6 +1,9 @@
 use crate::ExecutionContext;
-use crate::instruction::Data;
-use crate::instruction::operation::{Coded, Operation, OperationExecuteError};
+use crate::instruction::{Data, Instruction};
+use crate::instruction::operand::{Destination, Dynamic, Operands, Static};
+use crate::instruction::operand::AllPresent;
+use crate::instruction::operation::{Coded, Extension, Operation, OperationExecuteError};
+use crate::number::Size;
 
 // region: Constants
 pub const ADD_CODE     : u8 = 0;
