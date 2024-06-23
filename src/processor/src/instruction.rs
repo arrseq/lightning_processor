@@ -388,10 +388,10 @@ impl RegistersEncoding for u8 {
     /// ```
     /// use atln_processor::instruction::RegistersEncoding;
     ///
-    /// assert_eq!(0b00_000_000.extract_width(), 0b00);
-    /// assert_eq!(0b11_011_110.extract_width(), 0b11);
-    /// assert_eq!(0b10_001_010.extract_width(), 0b10);
-    /// assert_eq!(0b01_000_111.extract_width(), 0b01);
+    /// assert_eq!(0b00_000_000.extract_width(), 0b00_000_00);
+    /// assert_eq!(0b11_011_110.extract_width(), 0b00_000_11);
+    /// assert_eq!(0b10_001_010.extract_width(), 0b00_000_10);
+    /// assert_eq!(0b01_000_111.extract_width(), 0b00_000_01);
     /// ```
     fn extract_width(self) -> u8 {
         (REGISTERS_WIDTH_MASK & self) >> 6
@@ -416,10 +416,10 @@ impl RegistersEncoding for u8 {
     /// ```
     /// use atln_processor::instruction::RegistersEncoding;
     /// 
-    /// assert_eq!(0b10_111_111.extract_static(), 0b111);
-    /// assert_eq!(0b11_101_100.extract_static(), 0b101);
-    /// assert_eq!(0b00_101_010.extract_static(), 0b101);
-    /// assert_eq!(0b01_000_011.extract_static(), 0b000);
+    /// assert_eq!(0b10_111_111.extract_static(), 0b00_000_111);
+    /// assert_eq!(0b11_101_100.extract_static(), 0b00_000_101);
+    /// assert_eq!(0b00_101_010.extract_static(), 0b00_000_101);
+    /// assert_eq!(0b01_000_011.extract_static(), 0b00_000_000);
     /// ```
     fn extract_static(self) -> u8 {
         (REGISTERS_STATIC_OPERAND_MASK & self) >> 3
@@ -440,7 +440,12 @@ impl RegistersEncoding for u8 {
     }
 
     /// ```
+    /// use atln_processor::instruction::RegistersEncoding;
     ///
+    /// assert_eq!(0b10_111_111.extract_dynamic(), 0b00_000_111);
+    /// assert_eq!(0b11_100_101.extract_dynamic(), 0b00_000_101);
+    /// assert_eq!(0b00_010_101.extract_dynamic(), 0b00_000_101);
+    /// assert_eq!(0b01_011_000.extract_dynamic(), 0b00_000_000);
     /// ```
     fn extract_dynamic(self) -> u8 {
         REGISTERS_DYNAMIC_OPERAND_MASK & self
@@ -448,7 +453,12 @@ impl RegistersEncoding for u8 {
 
     /// Only first 3 bits are used.
     /// ```
+    /// use atln_processor::instruction::RegistersEncoding;
     ///
+    /// assert_eq!(0b10_111_011.set_dynamic(0b111), 0b10_111_111);
+    /// assert_eq!(0b11_100_011.set_dynamic(0b101), 0b11_100_101);
+    /// assert_eq!(0b00_010_010.set_dynamic(0b101), 0b00_010_101);
+    /// assert_eq!(0b01_011_000.set_dynamic(0b000), 0b01_011_000);
     /// ```
     fn set_dynamic(self, dynamic: u8) -> u8 {
         let layer = 0b00000_111 & dynamic;
