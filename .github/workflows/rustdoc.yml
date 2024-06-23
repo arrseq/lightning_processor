@@ -1,34 +1,24 @@
-name: rustdoc
+name: Rust
+
 on:
-  push:
-    branches:
-      - main
+    push:
+        branches: [ "master" ]
 
 env:
-  CARGO_INCREMENTAL: 0
-  CARGO_NET_RETRY: 10
-  RUSTFLAGS: "-D warnings -W unreachable-pub"
-  RUSTUP_MAX_RETRIES: 10
+    CARGO_TERM_COLOR: always
 
 jobs:
-  rustdoc:
-    if: github.repository == 'tfe-exr/Processor'
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install Rust toolchain
-        run: rustup update --no-self-update stable
-
-      - name: Build Documentation
-        run: cargo doc --all --no-deps
-
-      - name: Deploy Docs
-        uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e # v4.0.0
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: gh-pages
-          publish_dir: ./target/doc
-          force_orphan: true
+    docs:
+        runs-on: windows-latest
+        steps:
+            - uses: actions/checkout@v4
+            - name: Install Rust
+              run: rustup update ${{ matrix.toolchain }} && rustup default nightly ${{ matrix.toolchain }}
+            - name: Generate documentation
+              run: cargo doc --no-deps
+            - name: Remove pre-existing folder.
+              run: rmdir /s ./docs
+            - name: Move docs to root.
+              run: robocopy target/doc docs /s
+            - name: Generate entry file.
+              run: echo|set /p="<meta http-equiv="refresh" content="0; url=Processor/index.html">" > docs/index.html
