@@ -454,14 +454,17 @@ impl<'a> Data {
     /// use atln_processor::instruction::operation::{Coded, Extension};
     ///
     /// let mut extension = Extension::Arithmetic(Arithmetic::Add);
-    /// let operation = &mut extension.operation();
-    ///
+    /// let extension_code = extension.code();
+    /// 
+    /// let operation = extension.operation();
+    /// let operation_code = operation.code();
+    /// 
     /// let data = Data::new(
     ///     &mut Cursor::new([ 00_000_000 ]),
     ///     operation,
     ///     &Driver {
-    ///         extension: extension.code(),
-    ///         operation: operation.code(),
+    ///         extension: extension_code,
+    ///         operation: operation_code,
     ///         addressing: 0,
     ///         dynamic_destination: false,
     ///         immediate_exponent: 0,
