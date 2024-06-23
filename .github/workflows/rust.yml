@@ -10,8 +10,8 @@ env:
     CARGO_TERM_COLOR: always
 
 jobs:
-    build-ubuntu:
-        runs-on: ubuntu-latest, windows-latest
+    test:
+        runs-on: [ubuntu-latest, windows-latest]
         steps:
             - uses: actions/checkout@v4
             - name: Install Rust
