@@ -16,8 +16,6 @@ jobs:
               run: rustup update ${{ matrix.toolchain }} && rustup default nightly ${{ matrix.toolchain }}
             - name: Generate documentation
               run: cargo doc --no-deps
-            - name: Remove pre-existing folder.
-              run: Remove-Item -Recurse -Force docs
             - name: Move docs to root.
               run: robocopy target/doc docs /s
             - name: Generate entry file.
