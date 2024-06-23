@@ -414,7 +414,12 @@ impl RegistersEncoding for u8 {
     // TODO: Continue
 
     /// ```
-    ///
+    /// use atln_processor::instruction::RegistersEncoding;
+    /// 
+    /// assert_eq!(0b10_111_111.extract_static(), 0b111);
+    /// assert_eq!(0b11_101_100.extract_static(), 0b101);
+    /// assert_eq!(0b00_101_010.extract_static(), 0b101);
+    /// assert_eq!(0b01_000_011.extract_static(), 0b000);
     /// ```
     fn extract_static(self) -> u8 {
         (REGISTERS_STATIC_OPERAND_MASK & self) >> 3
@@ -422,7 +427,12 @@ impl RegistersEncoding for u8 {
 
     /// Only first 3 bits are used.
     /// ```
+    /// use atln_processor::instruction::RegistersEncoding;
     ///
+    /// assert_eq!(0b10_011_111.set_static(0b111), 0b10_111_111);
+    /// assert_eq!(0b11_011_100.set_static(0b101), 0b11_101_100);
+    /// assert_eq!(0b00_010_010.set_static(0b101), 0b00_101_010);
+    /// assert_eq!(0b01_000_011.set_static(0b000), 0b01_000_011);
     /// ```
     fn set_static(self, x_static: u8) -> u8 {
         let layer = (0b00000_111 & x_static) << 3;
