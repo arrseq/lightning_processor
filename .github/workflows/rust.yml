@@ -15,7 +15,7 @@ jobs:
         steps:
             - uses: actions/checkout@v4
             - name: Install Rust
-              run: rustup update ${{ matrix.toolchain }} && rustup nightly ${{ matrix.toolchain }}
+              run: rustup update ${{ matrix.toolchain }} && rustup default nightly ${{ matrix.toolchain }}
             - name: Build
               run: cargo build --verbose
             - name: Run tests
