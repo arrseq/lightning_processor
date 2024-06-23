@@ -83,7 +83,7 @@ impl Frame {
 /// Read a vector like a stream. Read buffer.len() amount of bytes from the vector and into the buffer. This will return
 /// the number of bytes read.
 /// ```
-/// // TODO: Test
+/// assert!(false); // TODO: Test
 /// ```
 pub fn read_vec_into_buffer(vec: &Vec<u8>, start: usize, buffer: &mut [u8]) -> usize {
     let mut bytes_read = 0;
@@ -132,7 +132,7 @@ pub trait Address {
 
 impl Address for u64 {
     /// ```
-    /// // TODO: Test
+    /// assert!(false); // TODO: Test
     /// ```
     fn extract_item(&self) -> u64 {
         PAGE_ITEM_MASK & self
@@ -152,14 +152,14 @@ impl Address for u64 {
     }
 
     /// ```
-    /// // TODO: Test
+    /// assert!(false); // TODO: Test
     /// ```
     fn extract_page(&self) -> u64 {
         (PAGE_IDENTIFIER_MASK & self) >> PAGE_ITEM_BITS
     }
 
     /// ```
-    /// // TODO: Test
+    /// assert!(false); // TODO: Test
     /// ```
     fn set_page(&self, page: u64) -> u64 {
         todo!()
@@ -203,7 +203,7 @@ pub struct MemoryCursor<'a> {
 
 impl<'a> From<&'a mut Memory> for MemoryCursor<'a> {
     /// ```
-    /// // TODO: Test
+    /// assert!(false); // TODO: Test
     /// ```
     fn from(value: &'a mut Memory) -> Self {
         Self {
@@ -225,7 +225,7 @@ impl<'a> LastError<GetError> for MemoryCursor<'a> {
 
 impl<'a> Read for MemoryCursor<'a> {
     /// ```
-    /// // TODO: Test
+    /// assert!(false); // TODO: Test
     /// ```
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         let size = match Size::from_size(buf.len()) {
@@ -320,7 +320,7 @@ impl Memory {
     /// - Otherwise, if a page fault occurred, then [Err(GetError::PageFault)] is returned.
     /// - Finally, if the address is out of bounds, then [Err(GetError::OutOfBounds)] is returned.
     /// ```
-    /// // TODO: Test
+    /// assert!(false); // TODO: Test
     /// ```
     fn process_test_frame(&self, frame: &mut Frame, translate: bool) -> Result<(), GetError> {
         // Ensure the frame is aligned to emulate hardware limitations.

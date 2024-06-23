@@ -50,8 +50,8 @@ fn main() {
     memory.pages.insert(0, 1);
     
     // Test.
-    assert_eq!(memory.get(&Frame { address: 0, size: Size::Byte }).unwrap(), Data::Byte(255));
-    assert_eq!(memory.get(&Frame { address: 0, size: Size::Word }).unwrap(), Data::Word(511));
-    assert_eq!(memory.get(&Frame { address: 4, size: Size::Word }).unwrap(), Data::Word(256));
+    assert_eq!(memory.get(Frame { address: 0, size: Size::Byte }, true).unwrap(), Data::Byte(255));
+    assert_eq!(memory.get(Frame { address: 0, size: Size::Word }, true).unwrap(), Data::Word(511));
+    assert_eq!(memory.get(Frame { address: 4, size: Size::Word }, true).unwrap(), Data::Word(256));
     // endregion
 }
