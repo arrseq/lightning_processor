@@ -1,3 +1,35 @@
+//! Memory and address utilities.
+//! 
+//! # Addresses
+//! There are 2 types of addresses and there are 2 parts of an address.
+//! - Physical. A real address that points to the same address every time in ram.
+//! - Virtual. An illusion address which appears to point to one address but in reality could point to an address that 
+//!   is completely different.
+//! 
+//! The 2 parts of an address are the
+//! - Page, which is the block of memory. The page is of the left most bits.
+//! - Item, which points to an actual byte that is part of a page. This is of the right most bits and near the least 
+//!   significant bit.
+//! 
+//! A virtual page and a physical page both refer to the same thing, but the difference is the type of address. For
+//! example, saying a virtual page would be the same as saying the page of the virtual address.
+//! This whole page and item system exists to create something called virtual memory. 
+//! 
+//! # Purpose
+//! The purpose of this is so programs can run in virtual memory address space and have a known upper and lower limit of
+//! memory and be able to address areas of memory in between those two extremes as the program runs. These areas are 
+//! filled in through declaring pages.  
+//! 
+//! This also allows for programs to use variable amounts of memory by growing or shrinking their usage. More programs 
+//! can also use up memory that one program returned back to the system. 
+//! 
+//! Finally, it can protect memory owned by other processes and the real mode program such as an operating system from 
+//! a program running in virtual memory. 
+//! 
+//! # Translation
+//! Virtual addresses are meant to be translated before they can be used by the processor. Translation involves 
+//! injecting a different page into the address and then using that new address. The item remains the same.
+
 use std::collections::HashMap;
 use std::io;
 use std::io::{ErrorKind, Read, Seek, SeekFrom};
