@@ -16,6 +16,7 @@
       <sourceFolder url="file://$MODULE_DIR$/src/app/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/server/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/emulator/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/emulator/src-tauri/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
