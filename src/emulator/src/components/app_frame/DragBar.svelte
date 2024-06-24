@@ -10,6 +10,7 @@
     const dispatch = createEventDispatcher();
 
     function drag_start(event: MouseEvent) {
+        event.preventDefault();
         origin = [event.clientX, event.clientY];
         dragging_busy = true;
 
@@ -17,6 +18,7 @@
     }
 
     function window_mouse_move(event: MouseEvent) {
+        event.preventDefault();
         mouse_pos = [event.clientX, event.clientY];
         dispatch("from_v", origin[1] - mouse_pos[1]);
         dispatch("from_h", origin[0] - mouse_pos[0]);
