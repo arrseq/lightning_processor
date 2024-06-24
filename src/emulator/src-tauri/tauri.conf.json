@@ -6,7 +6,7 @@
     "distDir": "../build"
   },
   "package": {
-    "productName": "emulator",
+    "productName": "atom_line.processor.emulator",
     "version": "0.0.0"
   },
   "tauri": {
@@ -19,9 +19,9 @@
     },
     "windows": [
       {
-        "title": "emulator",
-        "width": 800,
-        "height": 600
+        "title": "Atom Line: Processor Emulator",
+        "width": 1500,
+        "height": 800
       }
     ],
     "security": {
@@ -30,7 +30,7 @@
     "bundle": {
       "active": true,
       "targets": "all",
-      "identifier": "com.tauri.dev",
+      "identifier": "atom-line.processor.emulator",
       "icon": [
         "icons/32x32.png",
         "icons/128x128.png",
