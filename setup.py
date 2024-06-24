@@ -3,14 +3,7 @@ import os
 
 root = os.getcwd()
 commands = [
-    ("cargo build", "./"),
-
-    # Bindings
-    ("npm i", "./app/emulator/rust"),
-
-    # Projects
-    ("npm i", "./app/kit"),
-    ("npm i", "./app/emulator")
+    ("cargo build", "./")
 ]
 
 for command, directory in commands:

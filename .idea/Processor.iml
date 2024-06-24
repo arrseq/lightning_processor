@@ -13,6 +13,9 @@
       <sourceFolder url="file://$MODULE_DIR$/src/processor/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/assembler/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/app/emulator/rust/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/app/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/server/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/emulator/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>

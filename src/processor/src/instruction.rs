@@ -411,8 +411,6 @@ impl RegistersEncoding for u8 {
         (!REGISTERS_WIDTH_MASK & self) | layer
     }
 
-    // TODO: Continue
-
     /// ```
     /// use atln_processor::instruction::RegistersEncoding;
     /// 
@@ -682,11 +680,7 @@ impl Instruction {
     ///
     /// let target = [ 0b000000_1_0, 0b0000_10_00, 0b00_001_000, 0b00001010 ];
     ///
-    /// assert_eq!(
-    ///     Instruction::encode_driver_registers_immediate(&driver, Some(&registers), Some(&number::Data::Byte(10))
-    ///     ).unwrap(),
-    ///     target
-    /// );
+    /// assert_eq!(Instruction::encode_driver_registers_immediate(&driver, Some(&registers), Some(&number::Data::Byte(10))).unwrap(), target);
     /// ```
     pub fn encode(&mut self) -> Vec<u8> {
         let mut synchronise = false;
