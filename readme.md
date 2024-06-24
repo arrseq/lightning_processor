@@ -1,6 +1,8 @@
 # Processor
 Execute instructions, manage memory, run programs. Provides hardware, compiler, and assembler.
 
+![image](https://github.com/tfe-exr/Processor/assets/163682431/b50ffeb9-3125-4285-bcdd-c1681266fe38)
+
 # Specifications
 - 64-bit data bus with the ability to downsize to 32 bits. 
 - Complex instruction set (CISC)
