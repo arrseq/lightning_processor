@@ -1,12 +1,12 @@
 <script lang="ts">
-    import { invoke } from "@tauri-apps/api/tauri";
+    import { invoke } from "@tauri-apps/api/core";
     import AppFrame from "../components/AppFrame.svelte";
 
     let name = "";
     let greetMsg = "";
 
     async function greet() {
-        greetMsg = await invoke("read_memory_byte", { address: 9, translate: false });
+        // greetMsg = await invoke("read_memory_byte", { address: 9, translate: false });
     }
 
     let d = true;

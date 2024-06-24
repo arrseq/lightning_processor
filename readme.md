@@ -19,3 +19,7 @@ Execute instructions, manage memory, run programs. Provides hardware, compiler, 
 - [x] Assembler 
 - [ ] Syntax parser 
 - [ ] Compiler
+
+# x54 Protocol
+Emulation server protocol used for interfacing with an emulation core with hardware extensions built in.
+- Uses address 127.0.0.1:15147 and is unprotected.

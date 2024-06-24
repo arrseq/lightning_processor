@@ -4,6 +4,7 @@
 
     // Set the canvas resolution to its width and height automatically.
     export let match_resolution = true;
+    export let resolution: [number, number] = [0, 0];
 
     let self: HTMLDivElement | null = null;
     let observer: ResizeObserver | null = null;
@@ -17,13 +18,21 @@
     const dispatch = createEventDispatcher();
 
     function on_resize() {
-        if (!msg || !self || !match_resolution || !canvas) return;
+        if (!msg || !self || !canvas) return;
 
-        let rect = self.getBoundingClientRect();
-        canvas.width = rect.width;
-        canvas.height = rect.height; 
+        canvas.width = resolution[0];
+        canvas.height = resolution[1];
 
-        message_data = `Canvas: Sized updated to ${canvas.width} by ${canvas.height} pixels. ${canvas.width * canvas.height} pixels stored.`;
+        if (match_resolution) {
+            let rect = self.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height; 
+        }
+
+        dispatch("resize", { width: canvas.width, height: canvas.height });
+
+        let px_count = new ImageData(canvas.width, canvas.height).data.length;
+        message_data = `Canvas: Sized updated to ${canvas.width} by ${canvas.height} pixels. ${canvas.width * canvas.height * 4} pixels stored. Image buffer reports ${px_count} pixels`;
         msg.classList.remove("hidden");
 
         clearTimeout(msg_timeout);
@@ -53,6 +62,8 @@
 
         observer = new ResizeObserver(on_resize);
         observer.observe(self);
+
+        dispatch("resize", { width: canvas.width, height: canvas.height });
     });
 
     onDestroy(() => {

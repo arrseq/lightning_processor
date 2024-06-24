@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { invoke } from "@tauri-apps/api/core";
     import Button from "./Button.svelte";
     import CanvasXt3 from "./CanvasXT3.svelte";
     import Label from "./Label.svelte";
@@ -16,12 +17,12 @@
     let rt = false;
     let xrt = 100;
 
-    function render(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
+    async function render(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
         let buf = ctx.createImageData(canvas.width, canvas.height);
-        
-        buf.data.forEach((sp, index) => {
-            buf.data[index] = Math.random() * 255 * (index % 3 == 2 ? 1 : 0);
-        });
+        let r_buf = await invoke("get_red_noise", { width: canvas.width, height: canvas.height }) as number[];
+        let r_u8_buf = new Uint8Array(r_buf);
+
+        buf.data.set(r_u8_buf);
 
         ctx.putImageData(buf, 0, 0);
     } 
@@ -50,7 +51,9 @@
                     { label: "Unnamed Emulation", description: "This emulator panicked!", disabled: true },
                     { label: "My Emulation", description: "", disabled: false }
                 ]}>
-                    <CanvasXt3 slot="focus" on:open_render={(xt3) => render(xt3.detail.context, xt3.detail.canvas)} />
+                    <CanvasXt3 slot="focus" on:open_render={async (xt3) => await render(xt3.detail.context, xt3.detail.canvas)} on:resize={async (s) => {
+                        // await invoke("set_buffer_size", { width: 10, height: 10 })
+                    }} match_resolution={true} resolution={[1000, 100]} />
                 </Frame>
             </div>
             <DragBar vertical  on:from_h={(offset) => end_width += offset.detail} />
