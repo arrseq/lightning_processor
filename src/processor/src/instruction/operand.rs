@@ -248,7 +248,7 @@ impl<'a> Operands {
 
         // Do not allow the processor to be synchronous and use the register or constant addressing mode in the same
         // core.
-        if let Some(value) = &x_dynamic && let Dynamic::Register(_) = value && driver.synchronise { return Err(OperandsConstructError::SynchronousAddressing) }
+        if let Some(value) = &x_dynamic { if let Dynamic::Register(_) = value { if driver.synchronise { return Err(OperandsConstructError::SynchronousAddressing) }}}
 
         // Construct operand field.
         Ok(if operation.expects_all() {

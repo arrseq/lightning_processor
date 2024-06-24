@@ -8,7 +8,6 @@
 //! - Real mode is a state of the processor that allows addressing to be as is rather than being translated. An 
 //!   operating system kernel would run in real mode.
 
-#![feature(let_chains)]
 #![forbid(clippy::result_unit_err)]
 #![forbid(clippy::question_mark)]
 

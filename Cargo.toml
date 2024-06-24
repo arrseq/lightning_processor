@@ -1,5 +1,5 @@
 [workspace]
-members=[ "src/processor", "src/emulator"]
+members=[ "src/processor", "src/emulator/src-tauri"]
 
 [profile.release]
 opt-level = "s"

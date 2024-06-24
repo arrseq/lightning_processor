@@ -552,9 +552,9 @@ impl<'a> Data {
 
         // Prevent the invalid instruction configuration which involves pointing to a constant dynamic operand as the
         // destination operand.
-        if let Some(x_dynamic) = operands.x_dynamic() && let Destination::Dynamic = destination && let Dynamic::Constant(_) = x_dynamic {
+        if let Some(x_dynamic) = operands.x_dynamic() { if let Destination::Dynamic = destination { if let Dynamic::Constant(_) = x_dynamic {
             return Err(DataConstructError::Destination);
-        }
+        }}}
 
         // Construct data.
         Ok(Data {

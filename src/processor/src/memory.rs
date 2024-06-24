@@ -366,8 +366,7 @@ impl Memory {
         }
 
         // Make sure the frame bounds lies in the memory size range.
-        if let Some(max_address) = self.max_address && frame.max_address() > max_address
-        { return Err(GetError::OutOfBounds) }
+        if let Some(max_address) = self.max_address { if frame.max_address() > max_address { return Err(GetError::OutOfBounds) }}
 
         Ok(())
     }
