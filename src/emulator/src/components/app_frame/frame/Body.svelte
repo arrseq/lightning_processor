@@ -13,6 +13,9 @@
     .root {
         padding: $spacing__body;
         background: $surface__body;
-        height: 100%;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: $spacing__body;
     }
 </style>

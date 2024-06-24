@@ -7,9 +7,9 @@
     export let disabled = false;
 </script>
 
-<div class="root" class:disabled={disabled} title={description}>
+<div class="root" class:disabled={disabled}>
     <div class="label">
-        <Label secondary={disabled} highlight={description.length > 0}>{label}</Label>
+        <Label secondary={disabled} highlight={description}>{label}</Label>
     </div>
     <span />
     <More disabled={disabled} />

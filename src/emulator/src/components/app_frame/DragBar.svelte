@@ -52,6 +52,7 @@
 <style lang="scss">
     @import "../../conf/pixels.scss";
     @import "../../conf/text.scss";
+    @import "../../conf/anime.scss";
 
     .root {
         width: 100%;
@@ -79,10 +80,6 @@
                 height: 100%;
                 cursor: e-resize;
             }
-        }
-
-        &:hover {
-            background: $text__brand_color;
         }
     }
 </style>

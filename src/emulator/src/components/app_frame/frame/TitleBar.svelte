@@ -36,9 +36,10 @@
         overflow-x: auto;
         overflow-y: hidden;
         max-width: 100%;
+        padding: 0 4px;
 
         &.primary {
-            background: $surface__root;
+            background: $surface__body;
         }
 
         & > div {

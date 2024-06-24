@@ -1,11 +1,11 @@
 <script lang="ts">
     export let secondary = false;
     export let active = false;
-    export let highlight = false;
+    export let highlight = "";
     export let vertical = false;
 </script>
 
-<div class="root" class:secondary={secondary} class:active={active} class:highlight={highlight} class:vertical={vertical}>
+<div class="root" class:secondary={secondary} class:active={active} class:highlight={highlight.length > 0} class:vertical={vertical} title={highlight}>
     <slot />
 </div>
 
@@ -14,7 +14,7 @@
     @import "../conf/anime.scss";
 
     .root {
-        padding: 6px 14px;
+        padding: 4px 14px;
         color: $text__primary_color;
         font-family: $text__font_family;
         font-size: $text__primary_font_size;
@@ -47,7 +47,7 @@
         &.vertical {
             text-orientation: mixed;
             writing-mode: vertical-lr;
-            padding: 14px 6px;
+            padding: 14px 4px;
         }
     }
 </style>

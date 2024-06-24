@@ -13,10 +13,9 @@
     class="root" 
     class:primary={primary && !disabled} 
     class:disabled={disabled}
-    title={description}
     on:click={() => dispatch("trigger")}
 >
-    <Label active={primary && !disabled} highlight={description.length > 0}>
+    <Label active={primary && !disabled} highlight={description}>
         <slot />
     </Label>
 </button>
@@ -28,11 +27,11 @@
     @import "../conf/anime.scss";
 
     .root {
-        box-shadow: 0 0 0 $pixels__border_control $text__control_border_color inset;
+        // box-shadow: 0 0 0 $pixels__border_control $text__control_border_color inset;
         border: none;
         display: flex;
         align-self: flex-start;
-        border-radius: $pixels__radius;
+        // border-radius: $pixels__radius;
         background: $surface__control_secondary;
         transition: $anime__transition_out;
         min-width: 120px;
