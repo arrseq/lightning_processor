@@ -2,9 +2,10 @@
     export let secondary = false;
     export let active = false;
     export let highlight = false;
+    export let vertical = false;
 </script>
 
-<div class="root" class:secondary={secondary} class:active={active} class:highlight={highlight}>
+<div class="root" class:secondary={secondary} class:active={active} class:highlight={highlight} class:vertical={vertical}>
     <slot />
 </div>
 
@@ -13,11 +14,12 @@
     @import "../conf/anime.scss";
 
     .root {
-        padding: 4px 20px;
+        padding: 6px 14px;
         color: $text__primary_color;
         font-family: $text__font_family;
         font-size: $text__primary_font_size;
         user-select: none;
+        white-space: nowrap;
 
         // Force center.
         display: flex;
@@ -40,6 +42,12 @@
             &.active {
                 color: $text__brand_foreground;
             }
+        }
+
+        &.vertical {
+            text-orientation: mixed;
+            writing-mode: vertical-lr;
+            padding: 14px 6px;
         }
     }
 </style>

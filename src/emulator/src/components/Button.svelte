@@ -28,12 +28,16 @@
     @import "../conf/anime.scss";
 
     .root {
-        border: $pixels__border_control solid $text__control_border_color;
+        box-shadow: 0 0 0 $pixels__border_control $text__control_border_color inset;
+        border: none;
         display: flex;
         align-self: flex-start;
         border-radius: $pixels__radius;
         background: $surface__control_secondary;
         transition: $anime__transition_out;
+        min-width: 120px;
+        justify-content: center;
+        align-items: center;
 
         &.primary {
             background: $text__brand_color;

@@ -1,14 +1,16 @@
+* { box-sizing: border-box; }
+
 $text__primary_color: #D3D3D3;
 $text__secondary_color: #999999;
 
 $text__font_family: Segoe UI;
 $text__code_family: monospace;
 
-$text__primary_font_size: 11px;
-$text__secondary_font_size: 9px;
+$text__primary_font_size: 12px;
+$text__secondary_font_size: 12px;
 
 $text__frame_border_color: rgba(255, 255, 255, 50%);
-$text__control_border_color: rgba(255, 255, 255, 3%);
+$text__control_border_color: rgba(255, 255, 255, 5%);
 
 $text__active_color: #FFFFFF;
 $text__active_color_alt: #DFDFDF;

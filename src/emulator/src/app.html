@@ -5,7 +5,26 @@
         <link rel="icon" href="%sveltekit.assets%/favicon.png" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Atom Line: Processor Emulator</title>
-        <style>* { box-sizing: border-box; }</style>
+        <style>
+            * { box-sizing: border-box; }
+        
+            ::-webkit-scrollbar {
+                width: 2px;
+                height: 2px;
+            }
+
+            ::-webkit-scrollbar-track {
+                background: transparent;
+            }
+
+            ::-webkit-scrollbar-thumb {
+                background: #999999;
+            }
+
+            ::-webkit-scrollbar-thumb:hover {
+                background: #FFFFFF;
+            }
+        </style>
         %sveltekit.head%
     </head>
     <body data-sveltekit-preload-data="hover">

@@ -1,4 +1,9 @@
+* { box-sizing: border-box; }
+
+$surface__peek: #373737;
 $surface__root: #171717;
+$surface__body: #202020;
+$surface__titlebar: #3F3F3F;
 
 $surface__control_primary: rgba(255, 255, 255, 10%);
 $surface__control_secondary: rgba(255, 255, 255, 5%);
