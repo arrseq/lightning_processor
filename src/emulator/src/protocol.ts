@@ -1,6 +1,4 @@
-import type { Commands } from "./protocol/command";
-
-export * as command from "./protocol/command";
+import { U32_MAX, type Commands } from "./protocol/command";
 
 function bytes_to_u32(bytes: number[]): number {
     let value = 0;
@@ -11,7 +9,7 @@ function bytes_to_u32(bytes: number[]): number {
 }
 
 type QueueWaiter = {
-    [index: string]: () => void
+    [index: string]: (buf: ArrayBuffer) => void
 }
 
 // Websocket protocol interface for the x54 emulator backend system.
@@ -34,9 +32,14 @@ export default class Protocol {
         this.websocket.onmessage = (message) => {
             let buffer = message.data;
             let u8b = new Uint8Array(buffer);
-
             let id = bytes_to_u32([ u8b.at(0)!, u8b.at(1)!, u8b.at(2)!, u8b.at(3)! ]);
-            this.waiting_on[id]();
+
+            let result = new ArrayBuffer(u8b.byteLength - 4);
+            let result_u8 = new Uint8Array(result);
+
+            
+
+            this.waiting_on[id](result);
         }
     }
 
@@ -61,14 +64,27 @@ export default class Protocol {
             byte_buffer.set(new Uint8Array(c_buffer));
             byte_buffer.set(new Uint8Array(i_buffer), c_buffer.byteLength)
             byte_buffer.set(new Uint8Array(extension_bytes), c_buffer.byteLength + i_buffer.byteLength);
-    
-            this.waiting_on[id] = () => {
-                console.log("responded to " + id); 
-                res(null as any);
-            };
+
+            Object.defineProperty(this.waiting_on, id + "", {
+                value: (b: ArrayBuffer) => res(b),
+                writable: true
+            });
 
             this.send_raw(main_buffer);
         });
+    }
+
+    private idgen(prev: number = -1): number {
+        let pos_id = Math.abs(prev + 1 + Math.round(Math.random() * 25));
+        if (Object.keys(this.waiting_on).includes(pos_id + "")) {
+            return this.idgen(prev);
+        }
+
+        return pos_id;
+    }
+
+    public send_command(command: Commands, extension_bytes: ArrayBuffer = new ArrayBuffer(0)): Promise<ArrayBuffer> {
+        return this.send_raw_command(command, this.idgen(), extension_bytes);
     }
 
     public destroy() {
@@ -89,3 +105,6 @@ export default class Protocol {
         console.error(`[x54] Error in protocol raw websocket. Error.message=${error}`);
     }
 }
+
+export * as command from "./protocol/command";
+export * as memory from "./protocol/memory";

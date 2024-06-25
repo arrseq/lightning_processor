@@ -1,3 +1,5 @@
+import type Protocol from "../protocol";
+
 export let U32_MAX = Math.pow(2, 32)-1;
 
 export function mash(blocks: ArrayBuffer[]): ArrayBuffer {
@@ -78,4 +80,16 @@ export function read_l_result_sized(response: Uint8Array, size: number): number[
 
 export function read_l_result(response: Uint8Array, command: Commands): number[] {
     return read_l_result_sized(response, get_l_size(command));
+}
+
+export abstract class User {
+    private proto_inner: Protocol;
+    
+    public constructor(protocol: Protocol) {
+        this.proto_inner = protocol;
+    }
+    
+    protected get_protocol(): Protocol {
+        return this.proto_inner;
+    }
 }

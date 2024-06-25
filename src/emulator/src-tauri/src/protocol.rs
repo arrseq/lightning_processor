@@ -3,7 +3,7 @@ use std::{net::TcpListener, sync::{Arc, Mutex}, thread::{self, JoinHandle}};
 pub mod command;
 pub mod system;
 
-use atln_processor::{memory::Frame, number::Size};
+use atln_processor::{memory::Frame, number::{Data, Size}};
 use command::Memory__ReadByteFrame;
 use system::System;
 use tungstenite::{accept, Message};
@@ -138,10 +138,15 @@ impl Protocol {
                             println!("Address64({}) Boolean8({})", address.value, translate.value);
 
                             if command == Memory__ReadByteFrame {
-                                system.memory.lock().unwrap().get(Frame {
+                                let result = match system.memory.lock().unwrap().get(Frame {
                                     address: address.value,
                                     size: Size::Byte
-                                }, translate.value);
+                                }, translate.value) {
+                                    Ok(byte) => u8::from(byte),
+                                    Err(_) => 0
+                                };
+
+                                data_result.push(result);
                             }
 
                             // Callback return and end.
