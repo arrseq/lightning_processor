@@ -2,6 +2,7 @@
     import { invoke } from "@tauri-apps/api/core";
     import AppFrame from "../components/AppFrame.svelte";
     import Protocol, {command} from "../protocol";
+    import { U32_MAX, generate_u64 } from "../protocol/command";
 
     let name = "";
     let greetMsg = "";
@@ -16,7 +17,8 @@
         let pro = new Protocol();
 
         pro.on_open_listener = async () => {
-            let response = await pro.send_raw_command(command.Commands.Memory__ReadByteFrame);
+            let response = await pro.send_raw_command(command.Commands.Memory__ReadByteFrame, 0, generate_u64(U32_MAX, U32_MAX));
+            console.log("R", response)
         };
     }
 </script>
