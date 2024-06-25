@@ -37,8 +37,7 @@ export default class Protocol {
             let result = new ArrayBuffer(u8b.byteLength - 4);
             let result_u8 = new Uint8Array(result);
 
-            
-
+            result_u8.set(u8b.slice(4, u8b.length));
             this.waiting_on[id](result);
         }
     }

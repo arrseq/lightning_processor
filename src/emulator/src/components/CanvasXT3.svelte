@@ -32,7 +32,7 @@
         dispatch("resize", { width: canvas.width, height: canvas.height });
 
         let px_count = new ImageData(canvas.width, canvas.height).data.length;
-        message_data = `Canvas: Sized updated to ${canvas.width} by ${canvas.height} pixels. ${canvas.width * canvas.height * 4} pixels stored. Image buffer reports ${px_count} pixels`;
+        message_data = `Canvas: Sized updated to ${canvas.width} by ${canvas.height} pixels. Image buffer reports ${px_count} pixel cap`;
         msg.classList.remove("hidden");
 
         clearTimeout(msg_timeout);

@@ -9,7 +9,7 @@ pub struct System {
 impl System {
     pub fn new() -> Self {
         Self {
-            memory: Arc::new(Mutex::new(Memory::from(vec![0u8; 100])))
+            memory: Arc::new(Mutex::new(Memory::from(vec![100u8; 100])))
         }
     }
 }

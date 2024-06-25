@@ -4,7 +4,7 @@ pub mod command;
 pub mod system;
 
 use atln_processor::{memory::Frame, number::{Data, Size}};
-use command::Memory__ReadByteFrame;
+use command::{Memory__ReadByteFrame, Test__VideoRedNoise};
 use system::System;
 use tungstenite::{accept, Message};
 
@@ -131,13 +131,10 @@ impl Protocol {
 
                             let system = socket_system.lock().unwrap();
 
-
-                            let address = get_u64(&bin_dat, data_offset);
-                            let translate = get_bool(&bin_dat, address.next_index);
-
-                            println!("Address64({}) Boolean8({})", address.value, translate.value);
-
                             if command == Memory__ReadByteFrame {
+                                let address = get_u64(&bin_dat, data_offset);
+                                let translate = get_bool(&bin_dat, address.next_index);
+                                println!("Address64({}) Boolean8({})", address.value, translate.value);
                                 let result = match system.memory.lock().unwrap().get(Frame {
                                     address: address.value,
                                     size: Size::Byte
@@ -145,8 +142,12 @@ impl Protocol {
                                     Ok(byte) => u8::from(byte),
                                     Err(_) => 0
                                 };
-
                                 data_result.push(result);
+                            } else if command == Test__VideoRedNoise {
+                                let width = get_u64(&bin_dat, data_offset);
+                                let height = get_u64(&bin_dat, width.next_index);
+                                let pixels = vec![255u8; (width.value * height.value * 4) as usize];
+                                data_result.extend(pixels);
                             }
 
                             // Callback return and end.

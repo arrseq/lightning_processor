@@ -52,7 +52,10 @@ export enum Commands {
     Memory__ReadByteFrame,
     Memory__ReadWordFrame,
     Memory__ReadDualFrame,
-    Memory__ReadQuadFrame
+    Memory__ReadQuadFrame,
+
+    // Test System
+    Test__VideoRedNoise
 }
 
 export enum Errors {
@@ -71,6 +74,8 @@ export function get_l_size(command: Commands): number {
             return 4;
         case Commands.Memory__ReadQuadFrame:
             return 8;
+        case Commands.Test__VideoRedNoise:
+            return -0; // Very Large Array
     }
 }
 
@@ -78,6 +83,9 @@ export function read_l_result_sized(response: Uint8Array, size: number): number[
     return [];
 }
 
+/**
+ * @deprecated DO NOT USE. Size cannot always be known.
+ */
 export function read_l_result(response: Uint8Array, command: Commands): number[] {
     return read_l_result_sized(response, get_l_size(command));
 }

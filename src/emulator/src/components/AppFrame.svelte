@@ -10,7 +10,7 @@
     import Rail from "./app_frame/Rail.svelte";
     import Protocol from "../protocol";
     import { onDestroy, onMount } from "svelte";
-    import { Commands } from "../protocol/command";
+    import { Commands, generate_u64, mash } from "../protocol/command";
 
     let bottom_height = 320;
     let start_width = 320;
@@ -20,7 +20,58 @@
     let rt = false;
     let xrt = 100;
 
+    let protocol: Protocol | null;
+    let protocol_ready = false;
+    let protocol_queue: (() => void)[] = [];
+
+    function use_protocol(once_ready: (protocol: Protocol) => Promise<ArrayBuffer>): Promise<void> {
+        return new Promise((resolve) => {
+            let handle_logic = () => {
+                once_ready(protocol).then(() => resolve());
+            };
+
+            if (!protocol_ready) {
+                protocol_queue.push(handle_logic);
+                return;
+            }
+
+            handle_logic();
+        });
+    }
+
+    onMount(() => {
+        if (!protocol) {
+            protocol = new Protocol();
+
+            protocol.on_close_listener = () => {
+                protocol = null;
+                protocol_ready = false;
+            }
+
+            protocol.on_open_listener = () => {
+                protocol_ready = true;
+                protocol_queue.forEach((waiter) => waiter());
+            }
+        }
+    });
+
+    onDestroy(() => {
+        if (protocol) {
+            protocol.websocket.close();
+            protocol = null;
+            protocol_ready = false;
+        }
+    });
+
     async function render(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
+        use_protocol(async (p) => {
+            let buf = ctx.createImageData(canvas.width, canvas.height);
+            let r_buf = await p.send_command(Commands.Test__VideoRedNoise, mash([ generate_u64(0, canvas.width), generate_u64(0, canvas.height) ]));
+            let r_u8_buf = new Uint8Array(r_buf);
+            buf.data.set(r_u8_buf);
+            ctx.putImageData(buf, 0, 0);
+        });
+
         // let buf = ctx.createImageData(canvas.width, canvas.height);
         // let r_buf = await invoke("get_red_noise", { width: canvas.width, height: canvas.height }) as number[];
         // let r_u8_buf = new Uint8Array(r_buf);
@@ -54,9 +105,15 @@
                     { label: "Unnamed Emulation", description: "This emulator panicked!", disabled: true },
                     { label: "My Emulation", description: "", disabled: false }
                 ]}>
+
+
+
                     <CanvasXt3 slot="focus" on:open_render={async (xt3) => await render(xt3.detail.context, xt3.detail.canvas)} on:resize={async (s) => {
                         // await invoke("set_buffer_size", { width: 10, height: 10 })
-                    }} match_resolution={true} resolution={[1000, 100]} />
+                    }} match_resolution={true} resolution={[100, 100]} />
+
+
+
                 </Frame>
             </div>
             <DragBar vertical  on:from_h={(offset) => end_width += offset.detail} />
@@ -69,7 +126,7 @@
 
     <DragBar on:from_v={(offset) => bottom_height += offset.detail } />
 
-    <div style={`min-height: ${bottom_height}px; max-height: ${bottom_height}px;`}>
+    <div style={`flex: 0 0 ${bottom_height}px;`}>
         <Rail />
         <div class="main">
             <div class="box" style={`min-width: ${b_start_width}px; max-width: ${b_start_width}px;`}>
@@ -106,22 +163,25 @@
             gap: $pixels__border_control;
             width: 100%;
             flex: 1;
+            align-items: stretch;
             justify-content: space-between;
 
             .main {
                 display: flex;
                 flex: 1;
-                height: 100%;
+                align-items: stretch;
 
                 .span {
                     flex: 1;
                     display: flex;
                     height: 100%;
+                    overflow-y: auto;
                 }
 
                 .box {
                     display: flex;
-                    height: 100%;
+                    flex: 1;
+                    overflow-y: auto;
                 }
             }
         }

@@ -13,21 +13,6 @@
     }
 
     let d = true;
-
-    $: {
-        let pro = new Protocol();
-        let mem = new Memory(pro);
-
-        pro.on_open_listener = async () => {
-            let byte = await mem.read_byte_frame(generate_u64(0, 1), false);
-            console.log(await mem.read_byte_frame(generate_u64(0, 1), false));
-            console.log(await mem.read_byte_frame(generate_u64(0, 1), false));
-            console.log(await mem.read_byte_frame(generate_u64(0, 1), false));
-            console.log(await mem.read_byte_frame(generate_u64(0, 1), false));
-            console.log(await mem.read_byte_frame(generate_u64(0, 1), false));
-            console.log("B", byte);
-        };
-    }
 </script>
 
 <div class="root">    
