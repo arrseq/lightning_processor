@@ -3,7 +3,7 @@ use std::{net::TcpListener, sync::{Arc, Mutex}, thread::{self, JoinHandle}};
 pub mod command;
 pub mod system;
 
-use atln_processor::memory::Frame;
+use atln_processor::{memory::Frame, number::Size};
 use command::Memory__ReadByteFrame;
 use system::System;
 use tungstenite::{accept, Message};
@@ -23,7 +23,12 @@ pub struct Protocol {
     pub system: Arc<Mutex<System>>
 }
 
-pub fn get_u64(bin_dat: &Vec<u8>, offset: usize) -> u64 {
+struct Component<T> {
+    pub value: T,
+    pub next_index: usize
+}
+
+pub fn get_u64(bin_dat: &Vec<u8>, offset: usize) -> Component<u64> {
     let mut quad = [0u8; 8];
 
     for index in 0..8 {
@@ -33,7 +38,22 @@ pub fn get_u64(bin_dat: &Vec<u8>, offset: usize) -> u64 {
         }
     }
 
-    u64::from_be_bytes(quad)
+    Component {
+        value: u64::from_be_bytes(quad),
+        next_index: quad.len() + offset
+    }
+}
+
+pub fn get_bool(bin_dat: &Vec<u8>, offset: usize) -> Component<bool> {
+    let boolean = match bin_dat.get(offset) {
+        Some(byte_boolean) => *byte_boolean > 0,
+        None => false 
+    };
+
+    Component {
+        value: boolean,
+        next_index: offset + 1
+    }
 }
 
 impl Protocol {
@@ -107,18 +127,21 @@ impl Protocol {
                             };
 
                             let data_offset = 8;
-
                             let mut data_result: Vec<u8> = Vec::new();
 
                             let system = socket_system.lock().unwrap();
-                            let address = get_u64(&bin_dat, data_offset);
 
-                            println!("Address64({})", address);
+
+                            let address = get_u64(&bin_dat, data_offset);
+                            let translate = get_bool(&bin_dat, address.next_index);
+
+                            println!("Address64({}) Boolean8({})", address.value, translate.value);
 
                             if command == Memory__ReadByteFrame {
-                                // system.memory.get(Frame {
-
-                                // }, r#virtual)
+                                system.memory.lock().unwrap().get(Frame {
+                                    address: address.value,
+                                    size: Size::Byte
+                                }, translate.value);
                             }
 
                             // Callback return and end.

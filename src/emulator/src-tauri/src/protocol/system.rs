@@ -1,13 +1,15 @@
+use std::sync::{Arc, Mutex};
+
 use atln_processor::memory::Memory;
 
 pub struct System {
-    pub memory: Memory
+    pub memory: Arc<Mutex<Memory>>
 }
 
 impl System {
     pub fn new() -> Self {
         Self {
-            memory: Memory::from(vec![0u8; 100])
+            memory: Arc::new(Mutex::new(Memory::from(vec![0u8; 100])))
         }
     }
 }

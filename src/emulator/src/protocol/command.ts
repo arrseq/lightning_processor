@@ -1,5 +1,23 @@
 export let U32_MAX = Math.pow(2, 32)-1;
 
+export function mash(blocks: ArrayBuffer[]): ArrayBuffer {
+    let full_len = 0;
+    blocks.forEach((b) => full_len += b.byteLength);
+
+    let target = new ArrayBuffer(full_len);
+    let u8 = new Uint8Array(target);
+
+    let offset = 0;
+    blocks.forEach((block, index) => {
+        let b_u8 = new Uint8Array(block);
+        u8.set(b_u8, offset);
+
+        offset += b_u8.byteLength;
+    });
+
+    return target;
+}
+
 // Combine to u32's into a u64 array buffer.
 export function generate_u64_array(first: Uint8Array, second: Uint8Array): Uint8Array {
     let u64 = new Uint8Array(8);
@@ -18,6 +36,13 @@ export function generate_u64(first: number, second: number): Uint8Array {
     i_second.setUint32(0, second, false);
 
     return generate_u64_array(new Uint8Array(first_u8), new Uint8Array(second_u8));
+}
+
+export function generate_bool(state: boolean): Uint8Array {
+    let boolean = new ArrayBuffer(1);
+    let buffer = new DataView(boolean);
+    buffer.setUint8(0, state ? 1 : 0);
+    return new Uint8Array(boolean);
 }
 
 export enum Commands {
