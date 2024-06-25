@@ -263,3 +263,29 @@ pub enum ExtractError {
     /// The selection size is too large for the start.
     EndOutOfBounds
 }
+
+// region: Data to number conversion
+impl From<Data> for u8 {
+    fn from(value: Data) -> Self {
+        value.quad() as u8
+    }
+}
+
+impl From<Data> for u16 {
+    fn from(value: Data) -> Self {
+        value.quad() as u16
+    }
+}
+
+impl From<Data> for u32 {
+    fn from(value: Data) -> Self {
+        value.quad() as u32
+    }
+}
+
+impl From<Data> for u64 {
+    fn from(value: Data) -> Self {
+        value.quad() as u64
+    }
+}
+// endregion
