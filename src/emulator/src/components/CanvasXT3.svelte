@@ -102,7 +102,7 @@
             position: absolute;
             top: 0;
             left: 0;
-            transition: $anime__transition_out;
+            transition: $anime__transition_in;
             width: 100%;
             background: $surface__root;
             display: flex;
@@ -112,7 +112,7 @@
             &.hidden {
                 pointer-events: none;
                 opacity: 0;
-                transition: $anime__transition_in;
+                transition: $anime__transition_out;
             }
         }
 

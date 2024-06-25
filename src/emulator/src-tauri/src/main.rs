@@ -2,7 +2,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use protocol::Protocol;
-
 pub mod protocol;
 
 fn main() {
@@ -14,3 +13,4 @@ fn main() {
 
     protocol.join();
 }
+ 

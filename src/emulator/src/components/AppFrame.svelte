@@ -8,6 +8,9 @@
     import DragBar from "./app_frame/DragBar.svelte";
     import Frame from "./app_frame/Frame.svelte";
     import Rail from "./app_frame/Rail.svelte";
+    import Protocol from "../protocol";
+    import { onDestroy, onMount } from "svelte";
+    import { Commands } from "../protocol/command";
 
     let bottom_height = 320;
     let start_width = 320;
@@ -18,13 +21,13 @@
     let xrt = 100;
 
     async function render(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
-        let buf = ctx.createImageData(canvas.width, canvas.height);
-        let r_buf = await invoke("get_red_noise", { width: canvas.width, height: canvas.height }) as number[];
-        let r_u8_buf = new Uint8Array(r_buf);
+        // let buf = ctx.createImageData(canvas.width, canvas.height);
+        // let r_buf = await invoke("get_red_noise", { width: canvas.width, height: canvas.height }) as number[];
+        // let r_u8_buf = new Uint8Array(r_buf);
 
-        buf.data.set(r_u8_buf);
+        // buf.data.set(r_u8_buf);
 
-        ctx.putImageData(buf, 0, 0);
+        // ctx.putImageData(buf, 0, 0);
     } 
 </script>
 
