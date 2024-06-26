@@ -5,9 +5,9 @@
     export let horizontal = true;
     export let left_open = true;
     export let right_open = true;
-    export let left_input_size = 200;
-    export let snap_min = 300;
-    export let snap_max = 300;
+    export let left_input_size = 100;
+    export let snap_min = 100;
+    export let snap_max = 100;
 
     let left_commited_size = 0;
     let self: HTMLDivElement | null = null;
@@ -86,14 +86,19 @@
     });
 </script>
 
-<div class="root" bind:this={self}>
+<div class="root" bind:this={self} class:horizontal={horizontal}>
     <div class="box" style={`flex: 0 0 ${left_commited_size}px`}>
         <slot name="first" />
     </div>
 
     {#if left_open || right_open}
         <DragBar vertical={horizontal} on:from_h={(e) => {
+            if (!horizontal) return;
             left_input_size += e.detail;
+            process_input();
+        }} on:from_v={(e) => {
+            if (horizontal) return;
+            left_input_size -= e.detail;
             process_input();
         }} on:release={() => {
             if (!self) return;
@@ -117,9 +122,18 @@
     .root {
         display: flex;
         flex: 1;
-        flex-direction: row;
-        width: 100%;
         overflow: hidden;
+        flex-direction: column;
+
+        &.horizontal {
+            flex-direction: row;
+            flex: 1;
+            width: 100%;
+        }
+
+        &:not(&.horizontal) {
+            height: 100%;
+        }
 
         .box {
             display: flex;

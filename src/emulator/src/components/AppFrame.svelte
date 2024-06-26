@@ -14,6 +14,8 @@
     import Upper from "./app_frame/half/Upper.svelte";
     import Lower from "./app_frame/half/Lower.svelte";
     import StatusBar from "./app_frame/bar/StatusBar.svelte";
+    import Divider from "./app_frame/Divider.svelte";
+    import V from "./app_frame/V.svelte";
 
     let frames_window: HTMLDivElement | null = null;
 
@@ -110,14 +112,50 @@
 <div class="root" bind:this={app_frame}>
     <AppBar />
     <span class="hr"></span>
-    <div class="frames" bind:this={frames_window}>
-        <Upper />
-        <DragBar on:from_v={(e) => { lower_height += e.detail; fix_height(); }} on:release={() => fix_state_height()} />
-        <Lower height={lower_height_valid} bind:opened={lower_opened} />
-    </div>
-    {#if lower_opened}
-        <span class="hr"></span>
-    {/if}
+    <Divider horizontal={false}>
+        <div class="bisect" slot="first">
+            <Rail />
+            <V />
+
+            <Divider>
+                <Divider slot="first">
+                    <Frame slot="first">
+                        .
+                    </Frame>
+    
+                    <Frame slot="second" primary>
+                        <CanvasXt3 slot="focus" />
+                    </Frame>
+                </Divider>
+    
+                <Frame slot="second">
+                    .
+                </Frame>
+            </Divider>
+
+            <V />
+            <Rail />
+        </div>
+
+        <div class="bisect" slot="second">
+            <Rail />
+            <V />
+
+            <Divider>
+                <Frame slot="first">
+                    <Label>First Frame</Label>
+                </Frame>
+
+                <Frame slot="second">
+                    <Label>Second Frame</Label>
+                </Frame>
+            </Divider>
+
+            <V />
+            <Rail />
+        </div>
+    </Divider>
+    <span class="hr"></span>
     <StatusBar />
 </div>
 
@@ -143,6 +181,13 @@
             flex-direction: column;
             flex: 1;
             overflow: hidden;
+        }
+
+        .bisect {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            display: flex;
         }
     }
 </style>

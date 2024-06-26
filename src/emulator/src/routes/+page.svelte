@@ -19,17 +19,7 @@
 </script>
 
 <div class="root">    
-    <!-- <AppFrame /> -->
-
-    <Divider>
-        <Frame slot="first">
-            <Label>My Frame</Label>
-        </Frame>
-
-        <Frame slot="second">
-            <Label>My Frame</Label>
-        </Frame>
-    </Divider>
+    <AppFrame />
 </div>
 
 <style lang="scss">
