@@ -1,10 +1,12 @@
-use std::{net::TcpListener, sync::{Arc, Mutex}, thread::{self, JoinHandle}};
+use std::{net::TcpListener, sync::{Arc, Mutex, MutexGuard}, thread::{self, JoinHandle}};
 
 pub mod command;
 pub mod system;
 
 use atln_processor::{memory::Frame, number::{Data, Size}};
-use command::{Memory__ReadByteFrame, Test__VideoRedNoise};
+use command::{Memory__ReadByteFrame, Test__VideoRedNoise, Test__VideoRedNoise__SetDimension};
+use ocl::ProQue;
+use rand::{thread_rng, Rng};
 use system::System;
 use tungstenite::{accept, Message};
 
@@ -26,6 +28,20 @@ pub struct Protocol {
 struct Component<T> {
     pub value: T,
     pub next_index: usize
+}
+
+struct ThreadSafe<T>(pub Arc<Mutex<T>>);
+
+impl<T> ThreadSafe<T> {
+    pub fn new(instance: T) -> Self {
+        Self {
+            0: Arc::new(Mutex::new(instance))
+        }
+    }
+    
+    pub fn value(&self) -> MutexGuard<'_, T> {
+        self.0.lock().unwrap()
+    }
 }
 
 pub fn get_u64(bin_dat: &Vec<u8>, offset: usize) -> Component<u64> {
@@ -75,6 +91,17 @@ impl Protocol {
                     println!("Connection opened");
                     let mut websocket = accept(connection.unwrap())
                         .expect("Server couldnt catch the socket connection. Contact developers. Bugs could corrupt state.");
+                    let mut pixel_buffer = vec![250u8; (1000 * 100 * 4) as usize];
+
+                    let kernel_code = include_str!("./protocol/rednoise.cl");
+
+                    let mut pro_que = ProQue::builder()
+                        .src(kernel_code)
+                        .dims(pixel_buffer.len())  // Number of iterations per run / size of buffers
+                        .build().expect("Couldn't build processing queue!");
+
+                    // Create GPU buffer
+                    let mut buffer = pro_que.create_buffer::<u8>().expect("Couldn't create buffer!");
 
                     loop {
                         let message = match websocket.read() {
@@ -144,10 +171,39 @@ impl Protocol {
                                 };
                                 data_result.push(result);
                             } else if command == Test__VideoRedNoise {
+                                // for px in pixel_buffer.iter_mut() {
+                                //     *px = rand::thread_rng().gen::<u8>();
+                                // }
+
+                                // Create kernel instance on processing queue
+                                let kernel = pro_que.kernel_builder("fill")
+                                    .arg(&buffer)
+                                    .arg(rand::thread_rng().gen::<u8>())
+                                    .build().expect("Couldn't instantiate kernel!");
+
+                                // Execute kernel
+                                unsafe {
+                                    kernel.enq().expect("Couldn't enqueue kernel for execution!");
+                                }
+
+                                // Read buffer from GPU to CPU
+                                let mut data = vec![0u8; buffer.len()];
+                                buffer.read(&mut data).enq().expect("Couldn't enqueue buffer reading operation!");
+
+                                data_result.extend(data);
+                            } else if command == Test__VideoRedNoise__SetDimension {
                                 let width = get_u64(&bin_dat, data_offset);
                                 let height = get_u64(&bin_dat, width.next_index);
-                                let pixels = vec![255u8; (width.value * height.value * 4) as usize];
-                                data_result.extend(pixels);
+
+                                pro_que = ProQue::builder()
+                                .src(kernel_code)
+                                .dims((width.value * height.value * 4) as usize)  // Number of iterations per run / size of buffers
+                                .build().expect("Couldn't build processing queue!");
+        
+                                println!("Dimensions updated to {}, {}", width.value, height.value);
+
+                                // Create GPU buffer
+                                buffer = pro_que.create_buffer::<u8>().expect("Couldn't create buffer!");
                             }
 
                             // Callback return and end.
@@ -156,8 +212,7 @@ impl Protocol {
                             result.extend(id.to_be_bytes());
                             result.extend(data_result);
 
-                            websocket.send(tungstenite::Message::Binary(result))
-                                .expect("Response failed. If connection died, maybe the desktop app died. Killing to prevent orphan");
+                            websocket.send(tungstenite::Message::Binary(result));
 
                             continue;
                         }

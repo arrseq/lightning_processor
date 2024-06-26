@@ -63,7 +63,7 @@
         observer = new ResizeObserver(on_resize);
         observer.observe(self);
 
-        dispatch("resize", { width: canvas.width, height: canvas.height });
+        dispatch("resize", { width: canvas.width, height: canvas.height, canvas });
     });
 
     onDestroy(() => {

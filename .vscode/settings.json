@@ -13,5 +13,8 @@
         "qwrd",
         "repr",
         "stpr"
-    ]
+    ],
+    "files.associations": {
+        "*.cl": "c"
+    }
 }

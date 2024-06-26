@@ -1,15 +1,15 @@
 <script lang="ts">
-    import Label from "../Label.svelte";
+    import Label from "../../Label.svelte";
 
 
 </script>
 
-<div class="root" data-tauri-drag-region>
-    <Label>Atom Line: Processor Emulator</Label>
+<div class="root">
+    <Label>No Actions Avaliable</Label>
 </div>
 
 <style lang="scss">
-    @import "../../conf/surface.scss";
+    @import "../../../conf/surface.scss";
 
     .root {
         width: 100%;

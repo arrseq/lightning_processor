@@ -4,30 +4,31 @@
     import CanvasXt3 from "./CanvasXT3.svelte";
     import Label from "./Label.svelte";
     import TextField from "./TextField.svelte";
-    import AppBar from "./app_frame/AppBar.svelte";
+    import AppBar from "./app_frame/bar/AppBar.svelte";
     import DragBar from "./app_frame/DragBar.svelte";
     import Frame from "./app_frame/Frame.svelte";
     import Rail from "./app_frame/Rail.svelte";
     import Protocol from "../protocol";
     import { onDestroy, onMount } from "svelte";
     import { Commands, generate_u64, mash } from "../protocol/command";
+    import Upper from "./app_frame/half/Upper.svelte";
+    import Lower from "./app_frame/half/Lower.svelte";
+    import StatusBar from "./app_frame/bar/StatusBar.svelte";
 
-    let bottom_height = 320;
-    let start_width = 320;
-    let end_width = 320;
-    let b_start_width = 320;
+    let frames_window: HTMLDivElement | null = null;
 
-    let rt = false;
-    let xrt = 100;
+    let lower_height = 100;
+    let lower_height_valid = 0;
+    let lower_opened = false;
 
     let protocol: Protocol | null;
     let protocol_ready = false;
     let protocol_queue: (() => void)[] = [];
 
-    function use_protocol(once_ready: (protocol: Protocol) => Promise<ArrayBuffer>): Promise<void> {
+    function use_protocol(once_ready: (protocol: Protocol) => void): Promise<void> {
         return new Promise((resolve) => {
             let handle_logic = () => {
-                once_ready(protocol).then(() => resolve());
+                once_ready(protocol as any).then(() => resolve());
             };
 
             if (!protocol_ready) {
@@ -37,6 +38,33 @@
 
             handle_logic();
         });
+    }
+
+    function max_lower_height(frames_window: HTMLDivElement) {
+        return Math.min(frames_window.getBoundingClientRect().height, lower_height);
+    }
+
+    function fix_height() {
+        if (!frames_window) return;
+        lower_height_valid = max_lower_height(frames_window);
+    }
+
+    function fix_state_height() {
+        if (!frames_window) return;
+        lower_height = max_lower_height(frames_window);
+    }
+
+    let app_frame: HTMLDivElement | null = null;
+    let resize_observer: ResizeObserver | null = null;
+
+    function app_frame_resize() {
+        console.log("Win resize");
+        fix_state_height();
+        fix_height();
+    }
+
+    $: {
+        fix_height();
     }
 
     onMount(() => {
@@ -53,6 +81,16 @@
                 protocol_queue.forEach((waiter) => waiter());
             }
         }
+
+        if (app_frame) {
+            if (resize_observer) {
+                resize_observer.disconnect();
+                resize_observer = null;
+            }
+
+            resize_observer = new ResizeObserver(app_frame_resize);
+            resize_observer.observe(app_frame);
+        }
     });
 
     onDestroy(() => {
@@ -61,84 +99,26 @@
             protocol = null;
             protocol_ready = false;
         }
+
+        if (resize_observer) {
+            resize_observer.disconnect();
+            resize_observer = null;
+        }
     });
-
-    async function render(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
-        use_protocol(async (p) => {
-            let buf = ctx.createImageData(canvas.width, canvas.height);
-            let r_buf = await p.send_command(Commands.Test__VideoRedNoise, mash([ generate_u64(0, canvas.width), generate_u64(0, canvas.height) ]));
-            let r_u8_buf = new Uint8Array(r_buf);
-            buf.data.set(r_u8_buf);
-            ctx.putImageData(buf, 0, 0);
-        });
-
-        // let buf = ctx.createImageData(canvas.width, canvas.height);
-        // let r_buf = await invoke("get_red_noise", { width: canvas.width, height: canvas.height }) as number[];
-        // let r_u8_buf = new Uint8Array(r_buf);
-
-        // buf.data.set(r_u8_buf);
-
-        // ctx.putImageData(buf, 0, 0);
-    } 
 </script>
 
-<div class="root">
+<div class="root" bind:this={app_frame}>
     <AppBar />
     <span class="hr"></span>
-    <div>
-        <Rail />
-        <div class="main">
-            <div class="box" style={`min-width: ${start_width}px; max-width: ${start_width}px;`}>
-                <Frame title="Main Area">
-                    <Label>CanvasXT3 Renderer.</Label>
-                    <Label secondary>Warning: Canvas rendering may reduce performance.</Label>
-                    <br />
-                    <Label secondary highlight="Enter a number. The number to square to generate the red square in the rendering region.">Area Factor</Label>
-                    <TextField bind:xrt={xrt} />
-                    <TextField bind:xrt={xrt} disabled />
-                    <Button primary={rt} on:trigger={() => rt = !rt}>Real Time Update</Button>
-                </Frame>
-            </div>
-            <DragBar vertical on:from_h={(offset) => start_width -= offset.detail} />
-            <div class="span">
-                <Frame title="Main Area" primary tabs={[
-                    { label: "Unnamed Emulation", description: "This emulator panicked!", disabled: true },
-                    { label: "My Emulation", description: "", disabled: false }
-                ]}>
-
-
-
-                    <CanvasXt3 slot="focus" on:open_render={async (xt3) => await render(xt3.detail.context, xt3.detail.canvas)} on:resize={async (s) => {
-                        // await invoke("set_buffer_size", { width: 10, height: 10 })
-                    }} match_resolution={true} resolution={[100, 100]} />
-
-
-
-                </Frame>
-            </div>
-            <DragBar vertical  on:from_h={(offset) => end_width += offset.detail} />
-            <div class="box" style={`min-width: ${end_width}px; max-width: ${end_width}px;`}>
-                <Frame title="Main Area">A</Frame>
-            </div>
-        </div>
-        <Rail />
+    <div class="frames" bind:this={frames_window}>
+        <Upper />
+        <DragBar on:from_v={(e) => { lower_height += e.detail; fix_height(); }} on:release={() => fix_state_height()} />
+        <Lower height={lower_height_valid} bind:opened={lower_opened} />
     </div>
-
-    <DragBar on:from_v={(offset) => bottom_height += offset.detail } />
-
-    <div style={`flex: 0 0 ${bottom_height}px;`}>
-        <Rail />
-        <div class="main">
-            <div class="box" style={`min-width: ${b_start_width}px; max-width: ${b_start_width}px;`}>
-                <Frame title="Main Area">A</Frame>
-            </div>
-            <DragBar vertical on:from_h={(offset) => b_start_width -= offset.detail} />
-            <div class="span">
-                <Frame title="Main Area">A</Frame>
-            </div>
-        </div>
-        <Rail />
-    </div>
+    {#if lower_opened}
+        <span class="hr"></span>
+    {/if}
+    <StatusBar />
 </div>
 
 <style lang="scss">
@@ -158,32 +138,11 @@
             height: $pixels__border_control;
         }
 
-        & > div {
+        .frames {
             display: flex;
-            gap: $pixels__border_control;
-            width: 100%;
+            flex-direction: column;
             flex: 1;
-            align-items: stretch;
-            justify-content: space-between;
-
-            .main {
-                display: flex;
-                flex: 1;
-                align-items: stretch;
-
-                .span {
-                    flex: 1;
-                    display: flex;
-                    height: 100%;
-                    overflow-y: auto;
-                }
-
-                .box {
-                    display: flex;
-                    flex: 1;
-                    overflow-y: auto;
-                }
-            }
+            overflow: hidden;
         }
     }
 </style>

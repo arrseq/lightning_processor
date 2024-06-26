@@ -4,3 +4,4 @@ pub const Memory__ReadDualFrame: u32 = 2;
 pub const Memory__ReadQuadFrame: u32 = 3;
 
 pub const Test__VideoRedNoise: u32 = 4;
+pub const Test__VideoRedNoise__SetDimension: u32 = 5;

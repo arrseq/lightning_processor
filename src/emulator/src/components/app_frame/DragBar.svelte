@@ -32,6 +32,7 @@
 
     function window_on_mouse_up() {
         remove_mouse_listener();
+        dispatch("release");
     }
 
     onMount(() => {

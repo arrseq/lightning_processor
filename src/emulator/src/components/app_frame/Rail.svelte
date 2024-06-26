@@ -16,5 +16,10 @@
     
     .root {
         background: $surface__body;
+        display: flex;
+        height: 100%;
+        flex-direction: column;
+        align-self: flex-start;
+        overflow: auto;
     }
 </style>

@@ -55,29 +55,30 @@ export enum Commands {
     Memory__ReadQuadFrame,
 
     // Test System
-    Test__VideoRedNoise
+    Test__VideoRedNoise,
+    Test__VideoRedNoise__SetDimension
 }
 
 export enum Errors {
     Memory__InvalidAddress,
-    Memory__PageFault
+    Memory__PageFault,
 }
 
 // How many bytes is the L result.
-export function get_l_size(command: Commands): number {
-    switch (command) {
-        case Commands.Memory__ReadByteFrame:
-            return 1;
-        case Commands.Memory__ReadDualFrame:
-            return 2;
-        case Commands.Memory__ReadWordFrame:
-            return 4;
-        case Commands.Memory__ReadQuadFrame:
-            return 8;
-        case Commands.Test__VideoRedNoise:
-            return -0; // Very Large Array
-    }
-}
+// export function get_l_size(command: Commands): number {
+//     switch (command) {
+//         case Commands.Memory__ReadByteFrame:
+//             return 1;
+//         case Commands.Memory__ReadDualFrame:
+//             return 2;
+//         case Commands.Memory__ReadWordFrame:
+//             return 4;
+//         case Commands.Memory__ReadQuadFrame:
+//             return 8;
+//         case Commands.Test__VideoRedNoise:
+//             return -0; // Very Large Array
+//     }
+// }
 
 export function read_l_result_sized(response: Uint8Array, size: number): number[] {
     return [];
@@ -86,9 +87,9 @@ export function read_l_result_sized(response: Uint8Array, size: number): number[
 /**
  * @deprecated DO NOT USE. Size cannot always be known.
  */
-export function read_l_result(response: Uint8Array, command: Commands): number[] {
-    return read_l_result_sized(response, get_l_size(command));
-}
+// export function read_l_result(response: Uint8Array, command: Commands): number[] {
+//     return read_l_result_sized(response, get_l_size(command));
+// }
 
 export abstract class User {
     private proto_inner: Protocol;
