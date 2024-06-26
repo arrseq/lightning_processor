@@ -4,6 +4,9 @@
     import Protocol, {command} from "../protocol";
     import { U32_MAX, generate_bool, generate_u64, mash } from "../protocol/command";
     import Memory from "../protocol/memory";
+    import Divider from "../components/app_frame/Divider.svelte";
+    import Label from "../components/Label.svelte";
+    import Frame from "../components/app_frame/Frame.svelte";
 
     let name = "";
     let greetMsg = "";
@@ -16,7 +19,17 @@
 </script>
 
 <div class="root">    
-    <AppFrame />
+    <!-- <AppFrame /> -->
+
+    <Divider>
+        <Frame slot="first">
+            <Label>My Frame</Label>
+        </Frame>
+
+        <Frame slot="second">
+            <Label>My Frame</Label>
+        </Frame>
+    </Divider>
 </div>
 
 <style lang="scss">

@@ -21,7 +21,7 @@
         event.preventDefault();
         mouse_pos = [event.clientX, event.clientY];
         dispatch("from_v", origin[1] - mouse_pos[1]);
-        dispatch("from_h", origin[0] - mouse_pos[0]);
+        dispatch("from_h", -(origin[0] - mouse_pos[0]));
         origin = mouse_pos;
     }
 

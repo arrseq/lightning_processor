@@ -94,7 +94,6 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        align-self: flex-start;
         flex: 1;
         position: relative;
 
