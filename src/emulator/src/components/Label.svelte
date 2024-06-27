@@ -25,7 +25,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        align-self: flex-start;
+        flex: 0;
 
         &.active {
             color: $text__brand_foreground;
@@ -46,7 +46,7 @@
 
         &.vertical {
             text-orientation: mixed;
-            writing-mode: vertical-lr;
+            writing-mode: vertical-rl;
             padding: 14px 4px;
         }
     }

@@ -17,14 +17,20 @@
 
     let d = true;
 
+    let window_keys = [
+        { key: "memory_view", rail: "ss" },
+        { key: "network_view", rail: "ss" },
+        { key: "settings", rail: "sf" },
+        { key: "program_information", rail: "sf" }
+    ]
+
     let windows = $state([
-        { key: "memory_view", rail: "ff" },
-        { key: "network_view", rail: "sf" }
+        ...window_keys
     ])
 </script>
 
 <div class="root">    
-    <AppFrame items={windows} >
+    <AppFrame items={windows} keys={window_keys} >
         {#snippet memory_view()}
             <Frame title="Memory View">
                 <Label>Memory Viewer is not ready.</Label>
@@ -34,6 +40,18 @@
         {#snippet network_view()}
             <Frame title="Network View">
                 <Label>Network Viewer is not ready.</Label>
+            </Frame>
+        {/snippet}
+
+        {#snippet settings()}
+            <Frame title="Settings">
+                <Label>Wait.</Label>
+            </Frame>
+        {/snippet}
+
+        {#snippet program_information()}
+            <Frame title="Program Fnformation">
+                <Label>Developed by Atom Line.</Label>
             </Frame>
         {/snippet}
     </AppFrame>

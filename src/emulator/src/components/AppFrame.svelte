@@ -17,6 +17,7 @@
     import Divider from "./app_frame/Divider.svelte";
     import V from "./app_frame/V.svelte";
     import RenderSides, { render_mode_str, should_show, VSide, vside_str } from "./app_frame/divider/divider";
+    import NoPanel from "./app_frame/half/NoPanel.svelte";
 
     let frames_window: HTMLDivElement | null = null;
 
@@ -69,7 +70,7 @@
 
     let lower_v_sides = $state(RenderSides.Both);
 
-    let { items, ...slotProps } = $props();
+    let { items, keys = [] as any[], ...slotProps } = $props();
 </script>
 
 <div class="root">
@@ -77,31 +78,25 @@
     <span class="hr"></span>
     <Divider horizontal={false} right_input_size={0}>
         <div class="bisect" slot="first">
-            <Rail />
+            <Rail keys={keys.filter(key => key.rail == "ff").map(key => key.key)} />
             <!-- {#if should_show(VSide.First, )}<V />{/if} -->
 
             <Divider right_input_size={0}>
                 <Divider slot="first" left_input_size={0}>
-                    <Frame slot="first">
-                        .
-                    </Frame>
+                    <NoPanel slot="first" />
     
-                    <Frame slot="second" primary>
-                        <CanvasXt3 slot="focus" />
-                    </Frame>
+                    <NoPanel slot="second" />
                 </Divider>
     
-                <Frame slot="second">
-                    .
-                </Frame>
+                <NoPanel slot="second" />
             </Divider>
 
             <V />
-            <Rail />
+            <Rail keys={keys.filter(key => key.rail == "fs").map(key => key.key)} />
         </div>
 
         <div class="bisect" slot="second">
-            <Lower bind:v_sides={lower_v_sides} items={items} {...slotProps} />
+            <Lower bind:v_sides={lower_v_sides} items={items} {...slotProps} keys={keys} />
         </div>
     </Divider>
     <span class="hr"></span>

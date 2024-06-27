@@ -58,7 +58,12 @@
         left_open = left_commited_size > 0;
         right_open = left_commited_size <= upper_snap_start;
 
+        if (!left_open) { dispatch("left_closed"); }
+        if (!right_open) { dispatch("right_closed"); }
+
         emit_v();
+
+        // TODO; Do not allow both to be closed.
     }
 
     let resize_observer: ResizeObserver | null;
