@@ -1,7 +1,7 @@
 # Processor
 Execute instructions, manage memory, run programs. Provides hardware, compiler, and assembler.
 
-![image](https://github.com/tfe-exr/Processor/assets/163682431/112307bf-006c-43b3-9885-eb91f11164a7)
+![image](https://github.com/tfe-exr/Processor/assets/163682431/6c68452f-4fdf-4cf1-bc2c-18b1f40e3f2e)
 
 # Specifications
 - 64-bit data bus with the ability to downsize to 32 bits. 
