@@ -59,6 +59,8 @@
         width: 100%;
         height: $pixels__border_control;
         position: relative;
+        flex: 0 0 $pixels__border_control;
+        z-index: 1000000000;
 
         &::after {
             content: "";

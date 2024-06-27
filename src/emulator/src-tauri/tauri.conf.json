@@ -17,7 +17,9 @@
         "height": 600,
         "resizable": true,
         "title": "Atom Line: Processor Emulator",
-        "width": 1200
+        "width": 1200,
+        "minWidth": 400,
+        "minHeight": 250
       }
     ]
   },

@@ -1,20 +1,24 @@
 <script lang="ts">
-    import { onDestroy, onMount } from "svelte";
+    import { createEventDispatcher, onDestroy, onMount } from "svelte";
     import DragBar from "./DragBar.svelte";
+    import RenderSides from "./divider/divider";
 
     export let horizontal = true;
     export let left_open = true;
     export let right_open = true;
-    export let left_input_size = 100;
+    export let left_input_size = 300;
     export let snap_min = 100;
     export let snap_max = 100;
 
+    export let right_input_size: number | null = null;
+
     let left_commited_size = 0;
     let self: HTMLDivElement | null = null;
+    let dispatch = createEventDispatcher();
 
     function get_size(self: HTMLDivElement) {
         let bound = self.getBoundingClientRect();
-        if (horizontal) { return bound.width; }
+        if (horizontal) { return bound.width; }  
         return bound.height;
     }
 
@@ -26,6 +30,12 @@
     // Process the input size. This is data that came from the drag trigger.
     function process_input() {
         if (!self) return;
+
+        if (right_input_size !== null) {
+            left_input_size = get_size(self) - right_input_size;
+            right_input_size = null;
+        }
+
         // Make sure size doesn't exit window. Constrain it to the window dimensions.
         left_commited_size = get_max_bound(self);
 
@@ -45,8 +55,10 @@
 
         // If its either equal or larger than 0. The equality part allows for the window to snap start if the window is
         // not large enough.
-        left_open = left_commited_size >= 0;
-        right_open = left_commited_size < upper_snap_start;
+        left_open = left_commited_size > 0;
+        right_open = left_commited_size <= upper_snap_start;
+
+        emit_v();
     }
 
     let resize_observer: ResizeObserver | null;
@@ -57,6 +69,7 @@
         // of this divider. If the width of the divider is less, then the left window must collapse.
         left_input_size = Math.min(left_commited_size, get_size(self));
         process_input();
+        emit_v();
     }
 
     function destroy_resize() {
@@ -79,11 +92,27 @@
     onMount(() => {
         process_input();
         create_resize();
+
+        emit_v();
     });
 
     onDestroy(() => {
         destroy_resize();
     });
+
+    function emit_v() {
+        if ((left_open && right_open) || (!left_open && !right_open)) {
+            dispatch("v_set", RenderSides.Both);    
+        } else if (left_open && !right_open) {
+            dispatch("v_set", RenderSides.First);
+        } else if (right_open && !left_open) {
+            dispatch("v_set", RenderSides.Second);
+        }
+    }
+
+    $: {
+        emit_v();
+    }
 </script>
 
 <div class="root" bind:this={self} class:horizontal={horizontal}>

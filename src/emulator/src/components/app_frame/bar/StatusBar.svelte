@@ -1,11 +1,12 @@
 <script lang="ts">
     import Label from "../../Label.svelte";
 
+    export let note = "";
 
 </script>
 
 <div class="root">
-    <Label>No events</Label>
+    <Label>{note}</Label>
 </div>
 
 <style lang="scss">

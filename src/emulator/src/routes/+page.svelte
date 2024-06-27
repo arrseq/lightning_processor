@@ -16,10 +16,27 @@
     }
 
     let d = true;
+
+    let windows = $state([
+        { key: "memory_view", rail: "ff" },
+        { key: "network_view", rail: "sf" }
+    ])
 </script>
 
 <div class="root">    
-    <AppFrame />
+    <AppFrame items={windows} >
+        {#snippet memory_view()}
+            <Frame title="Memory View">
+                <Label>Memory Viewer is not ready.</Label>
+            </Frame>
+        {/snippet}
+
+        {#snippet network_view()}
+            <Frame title="Network View">
+                <Label>Network Viewer is not ready.</Label>
+            </Frame>
+        {/snippet}
+    </AppFrame>
 </div>
 
 <style lang="scss">

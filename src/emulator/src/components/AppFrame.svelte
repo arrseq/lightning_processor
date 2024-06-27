@@ -16,6 +16,7 @@
     import StatusBar from "./app_frame/bar/StatusBar.svelte";
     import Divider from "./app_frame/Divider.svelte";
     import V from "./app_frame/V.svelte";
+    import RenderSides, { render_mode_str, should_show, VSide, vside_str } from "./app_frame/divider/divider";
 
     let frames_window: HTMLDivElement | null = null;
 
@@ -42,33 +43,6 @@
         });
     }
 
-    function max_lower_height(frames_window: HTMLDivElement) {
-        return Math.min(frames_window.getBoundingClientRect().height, lower_height);
-    }
-
-    function fix_height() {
-        if (!frames_window) return;
-        lower_height_valid = max_lower_height(frames_window);
-    }
-
-    function fix_state_height() {
-        if (!frames_window) return;
-        lower_height = max_lower_height(frames_window);
-    }
-
-    let app_frame: HTMLDivElement | null = null;
-    let resize_observer: ResizeObserver | null = null;
-
-    function app_frame_resize() {
-        console.log("Win resize");
-        fix_state_height();
-        fix_height();
-    }
-
-    $: {
-        fix_height();
-    }
-
     onMount(() => {
         if (!protocol) {
             protocol = new Protocol();
@@ -83,16 +57,6 @@
                 protocol_queue.forEach((waiter) => waiter());
             }
         }
-
-        if (app_frame) {
-            if (resize_observer) {
-                resize_observer.disconnect();
-                resize_observer = null;
-            }
-
-            resize_observer = new ResizeObserver(app_frame_resize);
-            resize_observer.observe(app_frame);
-        }
     });
 
     onDestroy(() => {
@@ -101,24 +65,23 @@
             protocol = null;
             protocol_ready = false;
         }
-
-        if (resize_observer) {
-            resize_observer.disconnect();
-            resize_observer = null;
-        }
     });
+
+    let lower_v_sides = $state(RenderSides.Both);
+
+    let { items, ...slotProps } = $props();
 </script>
 
-<div class="root" bind:this={app_frame}>
+<div class="root">
     <AppBar />
     <span class="hr"></span>
-    <Divider horizontal={false}>
+    <Divider horizontal={false} right_input_size={0}>
         <div class="bisect" slot="first">
             <Rail />
-            <V />
+            <!-- {#if should_show(VSide.First, )}<V />{/if} -->
 
-            <Divider>
-                <Divider slot="first">
+            <Divider right_input_size={0}>
+                <Divider slot="first" left_input_size={0}>
                     <Frame slot="first">
                         .
                     </Frame>
@@ -138,25 +101,11 @@
         </div>
 
         <div class="bisect" slot="second">
-            <Rail />
-            <V />
-
-            <Divider>
-                <Frame slot="first">
-                    <Label>First Frame</Label>
-                </Frame>
-
-                <Frame slot="second">
-                    <Label>Second Frame</Label>
-                </Frame>
-            </Divider>
-
-            <V />
-            <Rail />
+            <Lower bind:v_sides={lower_v_sides} items={items} {...slotProps} />
         </div>
     </Divider>
     <span class="hr"></span>
-    <StatusBar />
+    <StatusBar note={`Second: ${vside_str(VSide.Second)}; Method: ${render_mode_str(lower_v_sides)}`} />
 </div>
 
 <style lang="scss">
