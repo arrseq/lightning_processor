@@ -569,7 +569,7 @@ impl<'a> Data {
 #[derive(Debug, Default)]
 pub struct Instruction {
     pub extension: Extension,
-    pub data: Option<Data>
+    data: Option<Data>
 }
 
 #[derive(Debug)]

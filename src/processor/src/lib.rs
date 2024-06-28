@@ -14,9 +14,10 @@
 use crate::instruction::{InstructionConstructError, Instruction};
 use crate::memory::{Memory};
 
-pub mod number;
+pub mod graphics;
 pub mod instruction;
 pub mod memory;
+pub mod number;
 pub mod processor;
 pub mod utility;
 
