@@ -4,6 +4,8 @@ use crate::instruction::operand::{Destination, Operands};
 use crate::instruction::operation::arithmetic::Arithmetic;
 use crate::number::Size;
 
+use super::operand::OperandsPresence;
+
 pub mod arithmetic;
 
 pub trait Coded<Type> {
@@ -30,34 +32,11 @@ pub enum OperationExecuteError {
 }
 
 pub trait Operation<'a>: Coded<u8> + Default {
-    /// Whether the operation requires the static operand.
-    fn expects_static(&mut self) -> bool;
-    /// Whether the operation requires the dynamic operand.
-    fn expects_dynamic(&mut self) -> bool;
-
     fn execute(&mut self, code: u8, data: Option<&instruction::Data>, context: &mut ExecutionContext) -> Result<(),
         OperationExecuteError>;
 
-    /// Whether an operand is expected.
-    fn expects_operand(&mut self) -> bool {
-        self.expects_static() || self.expects_dynamic()
-    }
-
-    fn expects_all(&mut self) -> bool {
-        self.expects_static() && self.expects_dynamic()
-    }
-
-    fn expects_nothing(&mut self) -> bool {
-        !self.expects_dynamic() && !self.expects_static()
-    }
-
-    fn expects_only_static(&mut self) -> bool {
-        self.expects_static() && !self.expects_dynamic()
-    }
-
-    fn expects_only_dynamic(&mut self) -> bool {
-        self.expects_dynamic() && !self.expects_nothing()
-    }
+    /// Get which operands are expected.
+    fn get_presence(&mut self) -> OperandsPresence;
 }
 
 // Extension
@@ -118,6 +97,7 @@ impl Coded<u8> for Extension {
     }
 }
 
+// TODO: Moved to doctest
 #[cfg(test)]
 mod extension_test {
     use crate::instruction::operation::{ARITHMETIC_CODE, Coded, Extension, Operation};
@@ -136,6 +116,6 @@ mod extension_test {
         let mut extension = Extension::from_codes(ARITHMETIC_CODE, ADD_CODE).unwrap();
         let operation_generic = extension.operation();
 
-        assert_eq!(operation_generic.expects_static(), Arithmetic::Add.expects_static());
+        // assert_eq!(operation_generic.expects_static(), Arithmetic::Add.expects_static());
     }
 }

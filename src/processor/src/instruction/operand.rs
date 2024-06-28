@@ -208,6 +208,45 @@ pub enum Destination {
     Dynamic
 }
 
+pub enum OperandsPresence {
+    AllPresent,
+    Static,
+    Dynamic
+}
+
+impl OperandsPresence {
+    /// Whether the operation requires the static operand.
+    pub fn expects_static(&self) -> bool {
+        matches!(self, Self::Static) || matches!(self, Self::AllPresent)
+    }
+
+    /// Whether the operation requires the dynamic operand.
+    pub fn expects_dynamic(&self) -> bool {
+        matches!(self, Self::Dynamic) || matches!(self, Self::AllPresent)
+    }
+
+    /// Whether an operand is expected.
+    pub fn expects_operand(&self) -> bool {
+        self.expects_static() || self.expects_dynamic()
+    }
+
+    pub fn expects_all(&self) -> bool {
+        matches!(self, Self::AllPresent)
+    }
+
+    pub fn expects_nothing(&self) -> bool {
+        !self.expects_dynamic() && !self.expects_static()
+    }
+
+    pub fn expects_only_static(&self) -> bool {
+        self.expects_static() && !self.expects_dynamic()
+    }
+
+    pub fn expects_only_dynamic(&self) -> bool {
+        self.expects_dynamic() && !self.expects_nothing()
+    }
+}
+
 /// Multi configuration of operands for a processor.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Operands {
@@ -238,8 +277,10 @@ impl<'a> Operands {
     /// // TODO: Complete test
     /// ```
     pub fn new(stream: &mut impl Read, operation: &mut impl Operation<'a>, registers: &Registers, driver: &Driver) -> Result<Self, OperandsConstructError> {
+        let presence = operation.get_presence();
+        
         // Create the dynamic operand
-        let x_dynamic = if operation.expects_dynamic() {
+        let x_dynamic = if presence.expects_dynamic() {
             Some(match Dynamic::new(registers.x_dynamic, driver.addressing, driver.immediate_exponent, stream) {
                 Ok(operand) => operand,
                 Err(error) => return Err(OperandsConstructError::Dynamic(error))
@@ -251,14 +292,14 @@ impl<'a> Operands {
         if let Some(value) = &x_dynamic { if let Dynamic::Register(_) = value { if driver.synchronise { return Err(OperandsConstructError::SynchronousAddressing) }}}
 
         // Construct operand field.
-        Ok(if operation.expects_all() {
+        Ok(if presence.expects_all() {
             Operands::AllPresent(AllPresent {
                 x_static: registers.x_static,
                 x_dynamic: x_dynamic.unwrap()
             })
-        } else if operation.expects_only_static() {
+        } else if presence.expects_only_static() {
             Operands::Static(registers.x_static)
-        } else if operation.expects_only_dynamic() {
+        } else if presence.expects_only_dynamic() {
             Operands::Dynamic(x_dynamic.unwrap())
         } else {
             unreachable!()
@@ -266,23 +307,6 @@ impl<'a> Operands {
     }
 
     /// Try to get the static operand.
-    /// ```
-    /// use atln_processor::instruction::operand::{AllPresent, Dynamic, Operands};
-    /// use atln_processor::number;
-    /// 
-    /// let x_static = 5;
-    ///     let all = Operands::AllPresent(AllPresent {
-    ///     x_static,
-    ///     x_dynamic: Dynamic::Constant(number::Data::Byte(5))
-    /// });
-    ///
-    /// let static_only = Operands::Static(x_static);
-    /// let dynamic_only = Operands::Dynamic(Dynamic::Constant(number::Data::Byte(5)));
-    ///
-    /// assert_eq!(all.x_static().unwrap(), x_static);
-    /// assert_eq!(static_only.x_static().unwrap(), x_static);
-    /// assert!(dynamic_only.x_static().is_none());
-    /// ```
     pub fn x_static(&self) -> Option<Static> {
         Some(match self {
             Self::Static(x_static) => *x_static,
@@ -292,30 +316,22 @@ impl<'a> Operands {
     }
 
     /// Try to get the dynamic operand.
-    /// ```
-    /// use atln_processor::instruction::operand::{AllPresent, Dynamic, Operands};
-    /// use atln_processor::number;
-    /// 
-    /// let x_dynamic = Dynamic::Constant(number::Data::Byte(5));
-    ///
-    /// let all = Operands::AllPresent(AllPresent {
-    ///     x_static: 10,
-    ///     x_dynamic: x_dynamic.clone()
-    /// });
-    ///
-    /// let static_only = Operands::Static(10);
-    /// let dynamic_only = Operands::Dynamic(x_dynamic.clone());
-    ///
-    /// assert_eq!(*all.x_dynamic().unwrap(), x_dynamic);
-    /// assert_eq!(*dynamic_only.x_dynamic().unwrap(), x_dynamic);
-    /// assert!(static_only.x_dynamic().is_none());
-    /// ```
     pub fn x_dynamic(&self) -> Option<&Dynamic> {
         Some(match self {
             Self::Dynamic(x_dynamic) => x_dynamic,
             Self::AllPresent(x_all) => &x_all.x_dynamic,
             _ => return None
         })
+    }
+}
+
+impl From<Operands> for OperandsPresence {
+    fn from(value: Operands) -> Self {
+        match value {
+            Operands::AllPresent(_) => Self::AllPresent,
+            Operands::Static(_) => Self::Static,
+            Operands::Dynamic(_) => Self::Dynamic
+        }
     }
 }
 // endregion

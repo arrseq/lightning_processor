@@ -532,7 +532,7 @@ impl<'a> Data {
     /// ```
     pub fn new(stream: &mut impl Read, operation: &mut impl Operation<'a>, driver: &Driver) -> Result<Self, DataConstructError> {
         // If there is no requirement for operands then there is nothing to decode.
-        if !operation.expects_operand() { return Err(DataConstructError::NoOperands) }
+        if !operation.get_presence().expects_operand() { return Err(DataConstructError::NoOperands) }
 
         // Decode registers byte.
         let mut data_encoded = [0u8; 1];

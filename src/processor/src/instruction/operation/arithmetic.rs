@@ -1,6 +1,6 @@
 use crate::ExecutionContext;
 use crate::instruction::{Data, Instruction};
-use crate::instruction::operand::{Destination, Dynamic, Operands, Static};
+use crate::instruction::operand::{Destination, Dynamic, Operands, OperandsPresence, Static};
 use crate::instruction::operand::AllPresent;
 use crate::instruction::operation::{Coded, Extension, Operation, OperationExecuteError};
 use crate::number::Size;
@@ -18,13 +18,14 @@ pub enum Arithmetic {
 }
 
 impl<'a> Operation<'a> for Arithmetic {
-    fn expects_static(&mut self) -> bool { true }
-    fn expects_dynamic(&mut self) -> bool { true }
-
     fn execute(&mut self, _code: u8, _data: Option<&Data>, context: &mut ExecutionContext) -> Result<(),
         OperationExecuteError> {
         context.accumulator = 100;
         Ok(())
+    }
+
+    fn get_presence(&mut self) -> crate::instruction::operand::OperandsPresence {
+        OperandsPresence::AllPresent
     }
 }
 
