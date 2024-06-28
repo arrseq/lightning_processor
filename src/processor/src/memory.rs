@@ -35,6 +35,7 @@ use std::io;
 use std::io::{ErrorKind, Read, Seek, SeekFrom};
 use crate::number;
 use crate::number::{BYTE_SIZE, DUAL_SIZE, QUAD_SIZE, Size, WORD_SIZE};
+use crate::utility::read_vec_into_buffer;
 
 // region: Constants
 pub const DUAL_ALIGNED_MASK   : u64 = 0b1;
@@ -110,25 +111,6 @@ impl Frame {
     pub fn max_address(&self) -> u64 {
         self.address + self.size.size() as u64
     }
-}
-
-/// Read a vector like a stream. Read buffer.len() amount of bytes from the vector and into the buffer. This will return
-/// the number of bytes read.
-/// ```
-/// assert!(false); // TODO: Test
-/// ```
-pub fn read_vec_into_buffer(vec: &Vec<u8>, start: usize, buffer: &mut [u8]) -> usize {
-    let mut bytes_read = 0;
-    for index in 0..buffer.len() {
-        match vec.get(start + index) {
-            Some(value) => buffer[index] = *value,
-            None => return bytes_read
-        }
-        
-        bytes_read += 1;
-    }
-    
-    bytes_read
 }
 
 // region: Address utilities

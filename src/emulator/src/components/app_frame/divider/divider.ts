@@ -27,4 +27,10 @@ export function should_show(self_side: VSide, render_mode: RenderSides): boolean
     return false;
 }
 
+export interface Api {
+    open_half(): void;
+    open_left(): void;
+    open_right(): void;
+}
+
 export default RenderSides;

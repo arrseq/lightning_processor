@@ -77,27 +77,39 @@
     <AppBar />
     <span class="hr"></span>
     <Divider horizontal={false} right_input_size={0}>
-        <div class="bisect" slot="first">
-            <Rail keys={keys.filter(key => key.rail == "ff").map(key => key.key)} />
-            <!-- {#if should_show(VSide.First, )}<V />{/if} -->
+        {#snippet first()}
+            <div class="bisect">
+                <Rail keys={keys.filter(key => key.rail == "ff").map(key => key.key)} />
+                <!-- {#if should_show(VSide.First, )}<V />{/if} -->
 
-            <Divider right_input_size={0}>
-                <Divider slot="first" left_input_size={0}>
-                    <NoPanel slot="first" />
-    
-                    <NoPanel slot="second" />
+                <Divider right_input_size={0}>
+                    {#snippet first()}
+                        <Divider left_input_size={0}>
+                            {#snippet first()}
+                                <NoPanel />
+                            {/snippet}
+
+                            {#snippet second()}
+                                <NoPanel />
+                            {/snippet}
+                        </Divider>
+                    {/snippet}
+        
+                    {#snippet second()}
+                        <NoPanel />
+                    {/snippet}
                 </Divider>
-    
-                <NoPanel slot="second" />
-            </Divider>
 
-            <V />
-            <Rail keys={keys.filter(key => key.rail == "fs").map(key => key.key)} />
-        </div>
+                <V />
+                <Rail keys={keys.filter(key => key.rail == "fs").map(key => key.key)} />
+            </div>
+        {/snippet}
 
-        <div class="bisect" slot="second">
-            <Lower bind:v_sides={lower_v_sides} items={items} {...slotProps} keys={keys} />
-        </div>
+        {#snippet second()}
+            <div class="bisect">
+                <Lower bind:v_sides={lower_v_sides} items={items} {...slotProps} keys={keys} />
+            </div>
+        {/snippet}
     </Divider>
     <span class="hr"></span>
     <StatusBar note={`Second: ${vside_str(VSide.Second)}; Method: ${render_mode_str(lower_v_sides)}`} />

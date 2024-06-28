@@ -17,6 +17,8 @@ use crate::memory::{Memory};
 pub mod number;
 pub mod instruction;
 pub mod memory;
+pub mod processor;
+pub mod utility;
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct ExecutionContext {

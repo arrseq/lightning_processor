@@ -1,16 +1,28 @@
 <script lang="ts">
     import { createEventDispatcher, onDestroy, onMount } from "svelte";
     import DragBar from "./DragBar.svelte";
-    import RenderSides from "./divider/divider";
+    import RenderSides, { type Api } from "./divider/divider";
 
-    export let horizontal = true;
-    export let left_open = true;
-    export let right_open = true;
-    export let left_input_size = 300;
-    export let snap_min = 100;
-    export let snap_max = 100;
+    // export let horizontal = true;
+    // export let left_open = true;
+    // export let right_open = true;
+    // export let left_input_size = 300;
+    // export let snap_min = 100;
+    // export let snap_max = 100;
 
-    export let right_input_size: number | null = null;
+    // export let right_input_size: number | null = null;
+
+    let {
+        x = $bindable(null as any as Api),
+        horizontal       = $bindable(true) as boolean      ,
+        left_open        = $bindable(true) as boolean      ,
+        right_open       = $bindable(true) as boolean      ,
+        left_input_size  = $bindable(300)  as number       ,
+        snap_min         = $bindable(100)  as number       ,
+        snap_max         = $bindable(100)  as number       ,
+        right_input_size = $bindable(null) as number | null,
+        ...slotProps
+    } = $props();
 
     let left_commited_size = 0;
     let self: HTMLDivElement | null = null;
@@ -64,6 +76,9 @@
         emit_v();
 
         // TODO; Do not allow both to be closed.
+
+        if (!left_box) return;
+        left_box.style.flex = `0 0 ${left_commited_size}px`;
     }
 
     let resize_observer: ResizeObserver | null;
@@ -115,16 +130,46 @@
         }
     }
 
-    $: {
-        emit_v();
+    function open_half() {
+        if (!self) return;
+        left_input_size = get_size(self) / 2;
+        process_input(); 
     }
+
+    function open_left() {
+        if (!self) return;
+        if (!left_open && right_open) {
+            open_half();
+        }
+
+        process_input();
+    }
+
+    function open_right() {
+        if (!self) return;
+        if (left_open && !right_open) {
+            open_half();
+        }
+    }
+
+    $effect(() => {
+        emit_v();
+
+        x = {
+            open_half,
+            open_left,
+            open_right
+        };
+    });
+
+    let left_box = null as null | HTMLDivElement;
 </script>
 
 <div class="root" bind:this={self} class:horizontal={horizontal}>
-    <div class="box" style={`flex: 0 0 ${left_commited_size}px`}>
-        <slot name="first" />
+    <div class="box" bind:this={left_box}>
+        {@render slotProps.first()}
     </div>
-
+    
     {#if left_open || right_open}
         <DragBar vertical={horizontal} on:from_h={(e) => {
             if (!horizontal) return;
@@ -148,7 +193,7 @@
     {/if}
 
     <div class="box">
-        <slot name="second" />
+        {@render slotProps.second()}
     </div>
 </div>
 
