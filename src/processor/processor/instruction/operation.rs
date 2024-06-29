@@ -1,7 +1,8 @@
-use crate::{ExecutionContext, instruction, processor};
-use crate::instruction::Data;
-use crate::instruction::operand::{Destination, Operands};
-use crate::instruction::operation::arithmetic::Arithmetic;
+use processor;
+use crate::{ExecutionContext, processor::processor::instruction};
+use crate::processor::processor::instruction::Data;
+use crate::processor::processor::instruction::operand::{Destination, Operands};
+use crate::processor::processor::instruction::operation::arithmetic::Arithmetic;
 use crate::number::Size;
 use crate::utility::Coded;
 
@@ -26,7 +27,7 @@ pub enum OperationExecuteError {
 }
 
 pub trait Operation<'a>: Coded<u8> + Default {
-    fn execute(&mut self, code: u8, data: Option<&instruction::Data>, context: &mut processor::Context) -> Result<(),
+    fn execute(&mut self, code: u8, data: Option<&instruction::Data>, context: &mut processor::processor::Context) -> Result<(),
         OperationExecuteError>;
 
     /// Get which operands are expected.
@@ -94,8 +95,8 @@ impl Coded<u8> for Extension {
 // TODO: Moved to doctest
 #[cfg(test)]
 mod extension_test {
-    use crate::instruction::operation::{ARITHMETIC_CODE, Coded, Extension, Operation};
-    use crate::instruction::operation::arithmetic::{ADD_CODE, Arithmetic, SUBTRACT_CODE};
+    use crate::processor::processor::instruction::operation::{ARITHMETIC_CODE, Coded, Extension, Operation};
+    use crate::processor::processor::instruction::operation::arithmetic::{ADD_CODE, Arithmetic, SUBTRACT_CODE};
 
     #[test]
     fn from_codes() {

@@ -10,12 +10,12 @@
 
 #![forbid(clippy::result_unit_err)]
 #![forbid(clippy::question_mark)]
+#![allow(clippy::module_inception)]
 
-use crate::instruction::{InstructionConstructError, Instruction};
+use crate::processor::processor::instruction::{InstructionConstructError, Instruction};
 use crate::memory::{Memory};
 
 pub mod graphics;
-pub mod instruction;
 pub mod memory;
 pub mod number;
 pub mod processor;

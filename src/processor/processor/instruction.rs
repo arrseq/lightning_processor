@@ -34,8 +34,8 @@ pub mod operation;
 use std::io;
 use std::io::Read;
 use crate::number;
-use crate::instruction::operand::{Destination, Dynamic, Operand, Operands, OperandsConstructError};
-use crate::instruction::operation::{Extension, ExtensionFromCodeInvalid, Operation};
+use crate::processor::processor::instruction::operand::{Destination, Dynamic, Operand, Operands, OperandsConstructError};
+use crate::processor::processor::instruction::operation::{Extension, ExtensionFromCodeInvalid, Operation};
 use crate::utility::{Coded, Encodable};
 
 // region: Binary processor bit masks

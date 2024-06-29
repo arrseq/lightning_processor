@@ -3,9 +3,9 @@
 //! The static operand is a simple and optional register field which can be used as the destination.
 
 use std::io::Read;
+use processor::processor::instruction::operation::Operation;
+use processor::processor::instruction::{Driver, Registers};
 use crate::{number};
-use crate::instruction::{Driver, Registers};
-use crate::instruction::operation::Operation;
 use crate::number::{BYTE_SIZE, DUAL_SIZE, QUAD_SIZE, WORD_SIZE};
 
 // region: Constants
@@ -73,7 +73,7 @@ impl Dynamic {
     ///
     /// ```
     /// use std::io::Cursor;
-    /// use atln_processor::instruction::operand::{Dynamic, IMMEDIATE_EXPONENT_BYTE, IMMEDIATE_EXPONENT_DUAL, IMMEDIATE_EXPONENT_QUAD, IMMEDIATE_EXPONENT_WORD};
+    /// use atln_processor::processor::processor::instruction::operand::{Dynamic, IMMEDIATE_EXPONENT_BYTE, IMMEDIATE_EXPONENT_DUAL, IMMEDIATE_EXPONENT_QUAD, IMMEDIATE_EXPONENT_WORD};
     /// use atln_processor::number;
     ///
     /// let word = 0b11110000_11111111u16;
@@ -115,7 +115,7 @@ impl Dynamic {
     /// ```
     /// use std::io::Cursor;
     /// use atln_processor::number;
-    /// use atln_processor::instruction::operand::{CONSTANT_ADDRESSING, Dynamic, IMMEDIATE_EXPONENT_BYTE, IMMEDIATE_EXPONENT_DUAL, IMMEDIATE_EXPONENT_QUAD, IMMEDIATE_EXPONENT_WORD, MEMORY_ADDRESSING, Offset, OFFSET_ADDRESSING, REGISTER_ADDRESSING};
+    /// use atln_processor::processor::processor::instruction::operand::{CONSTANT_ADDRESSING, Dynamic, IMMEDIATE_EXPONENT_BYTE, IMMEDIATE_EXPONENT_DUAL, IMMEDIATE_EXPONENT_QUAD, IMMEDIATE_EXPONENT_WORD, MEMORY_ADDRESSING, Offset, OFFSET_ADDRESSING, REGISTER_ADDRESSING};
     ///
     /// // Immediate is not used here.
     /// let register = Dynamic::new(5, REGISTER_ADDRESSING, 0, &mut Cursor::new([])).unwrap();
@@ -263,7 +263,9 @@ pub enum OperandsConstructError {
     /// The dynamic operand was set to register or constant which are not memory locations and therefor this cannot be
     /// permitted. This is incompatible as the registers are localized to each processor and synchronous instructions
     /// are meant to allow memory actions to be predictable between multiple processors.
-    SynchronousAddressing
+    SynchronousAddressing,
+    /// No operands are supported by the operation used.
+    Operands
 }
 
 impl<'a> Operands {
@@ -303,7 +305,8 @@ impl<'a> Operands {
         } else if presence.expects_only_dynamic() {
             Operands::Dynamic(x_dynamic.unwrap())
         } else {
-            unreachable!()
+            // No operands were expected by the operation.
+            return Err(OperandsConstructError::Operands);
         })
     }
 

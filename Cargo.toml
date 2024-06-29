@@ -1,2 +1,5 @@
+[package]
+name = "atln-processor"
+
 [workspace]
-members=[ "src/processor", "src/emulator/src-tauri"]
+members=["emulator/src-tauri"]

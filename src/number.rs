@@ -4,7 +4,7 @@
 
 // Constants
 
-use crate::instruction::operand::{IMMEDIATE_EXPONENT_BYTE, IMMEDIATE_EXPONENT_DUAL, IMMEDIATE_EXPONENT_QUAD, IMMEDIATE_EXPONENT_WORD};
+use crate::processor::processor::instruction::operand::{IMMEDIATE_EXPONENT_BYTE, IMMEDIATE_EXPONENT_DUAL, IMMEDIATE_EXPONENT_QUAD, IMMEDIATE_EXPONENT_WORD};
 use crate::memory::ReadAll;
 
 pub const BYTE_SIZE: usize = 1;
