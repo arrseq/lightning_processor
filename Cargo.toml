@@ -2,4 +2,4 @@
 name = "atln-processor"
 
 [workspace]
-members=["emulator/src-tauri"]
+members=["emulator/src-tauri", "server"]
