@@ -175,7 +175,7 @@ impl Address for u64 {
     /// ```
     /// assert!(false); // TODO: Test
     /// ```
-    fn set_page(&self, page: u64) -> u64 {
+    fn set_page(&self, _page: u64) -> u64 {
         todo!()
     }
 

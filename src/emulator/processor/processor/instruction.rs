@@ -34,8 +34,8 @@ pub mod operation;
 use std::io;
 use std::io::Read;
 use crate::number;
-use crate::processor::processor::instruction::operand::{Destination, Dynamic, Operand, Operands, OperandsConstructError};
-use crate::processor::processor::instruction::operation::{Extension, ExtensionFromCodeInvalid, Operation};
+use super::instruction::operand::{Destination, Dynamic, Operand, Operands, OperandsConstructError};
+use super::instruction::operation::{Extension, ExtensionFromCodeInvalid, Operation};
 use crate::utility::{Coded, Encodable};
 
 // region: Binary processor bit masks
@@ -69,7 +69,7 @@ pub struct Driver {
 impl Driver {
     /// Decode the driver bytes into an instance of a driver.
     /// ```
-    /// use atln_processor::instruction::Driver;
+    /// use atln_processor::emulator::processor::processor::instruction::Driver;
     ///
     /// let driver = Driver::new([0b001010_0_1, 0b1111_10_01]);
     ///
@@ -102,7 +102,7 @@ impl Encodable<[u8; 2]> for Driver {
     /// Encode the current [Driver] instance into a byte tuple which encodes all the driver information and can be
     /// lossless decoded.
     /// ```
-    /// use atln_processor::instruction::Driver;
+    /// use atln_processor::emulator::processor::processor::instruction::Driver;
     /// use atln_processor::utility::Encodable;
     ///
     /// let mut driver = Driver {
@@ -150,7 +150,7 @@ pub trait Driver0Encoding {
 
 impl Driver0Encoding for u8 {
     /// ```
-    /// use atln_processor::instruction::Driver0Encoding;
+    /// use atln_processor::emulator::processor::processor::instruction::Driver0Encoding;
     ///
     /// assert_eq!(0b001101_0_0_u8.extract_extension(), 0b00_001101);
     /// assert_eq!(0b101010_0_1_u8.extract_extension(), 0b00_101010);
@@ -161,7 +161,7 @@ impl Driver0Encoding for u8 {
 
     /// Only the first 6 bits of the extension is used.
     /// ```
-    /// use atln_processor::instruction::Driver0Encoding;
+    /// use atln_processor::emulator::processor::processor::instruction::Driver0Encoding;
     ///
     /// assert_eq!(0b000000_0_1_u8.set_extension(10), 0b001010_0_1);
     /// assert_eq!(0b101100_0_0_u8.set_extension(0b101100), 0b101100_0_0);
@@ -177,7 +177,7 @@ impl Driver0Encoding for u8 {
     }
 
     /// ```
-    /// use atln_processor::instruction::Driver0Encoding;
+    /// use atln_processor::emulator::processor::processor::instruction::Driver0Encoding;
     ///
     /// assert!(0b000000_1_0_u8.extract_synchronise());
     /// assert!(!0b000000_0_0_u8.extract_synchronise());
@@ -191,7 +191,8 @@ impl Driver0Encoding for u8 {
     }
 
     /// ```
-    /// use atln_processor::instruction::Driver0Encoding;
+    /// use atln_processor::emulator::processor::processor::instruction::Driver0Encoding;
+    /// 
     /// assert_eq!(0b000000_0_0_u8.set_synchronise(true), 0b000000_1_0);
     /// assert_eq!(0b000000_1_0_u8.set_synchronise(false), 0b000000_0_0);
     /// assert_eq!(0b000000_0_1_u8.set_synchronise(true), 0b000000_1_1);
@@ -203,7 +204,7 @@ impl Driver0Encoding for u8 {
     }
 
     /// ```
-    /// use atln_processor::instruction::Driver0Encoding;
+    /// use atln_processor::emulator::processor::processor::instruction::Driver0Encoding;
     ///
     /// assert!(0b000000_0_1_u8.extract_dynamic_destination());
     /// assert!(!0b000000_0_0_u8.extract_dynamic_destination());
@@ -216,7 +217,7 @@ impl Driver0Encoding for u8 {
     }
 
     /// ```
-    /// use atln_processor::instruction::Driver0Encoding;
+    /// use atln_processor::emulator::processor::processor::instruction::Driver0Encoding;
     ///
     /// assert_eq!(0b000000_0_0_u8.set_dynamic_destination(true), 0b000000_0_1);
     /// assert_eq!(0b000000_1_0_u8.set_dynamic_destination(true), 0b000000_1_1);
@@ -247,7 +248,7 @@ pub trait Driver1Encoding {
 
 impl Driver1Encoding for u8 {
     /// ```
-    /// use atln_processor::instruction::Driver1Encoding;
+    /// use atln_processor::emulator::processor::processor::instruction::Driver1Encoding;
     ///
     /// assert_eq!(0b1101_00_00_u8.extract_operation(), 0b0000_1101);
     /// assert_eq!(0b1010_01_10_u8.extract_operation(), 0b0000_1010);
@@ -258,7 +259,7 @@ impl Driver1Encoding for u8 {
 
     /// Only the first 4 bits of the operation is used.
     /// ```
-    /// use atln_processor::instruction::Driver1Encoding;
+    /// use atln_processor::emulator::processor::processor::instruction::Driver1Encoding;
     ///
     /// assert_eq!(0b0001_00_11_u8.set_operation(0b0000_1111), 0b1111_00_11);
     /// assert_eq!(0b1111_00_10_u8.set_operation(0b0000_1001), 0b1001_00_10);
@@ -274,7 +275,7 @@ impl Driver1Encoding for u8 {
     }
 
     /// ```
-    /// use atln_processor::instruction::Driver1Encoding;
+    /// use atln_processor::emulator::processor::processor::instruction::Driver1Encoding;
     ///
     /// assert_eq!(0b0011_10_00_u8.extract_addressing(), 0b000000_10);
     /// assert_eq!(0b1011_11_00_u8.extract_addressing(), 0b000000_11);
@@ -286,7 +287,7 @@ impl Driver1Encoding for u8 {
 
     /// Only the first 2 bits of the addressing is used.
     /// ```
-    /// use atln_processor::instruction::Driver1Encoding;
+    /// use atln_processor::emulator::processor::processor::instruction::Driver1Encoding;
     ///
     /// assert_eq!(0b0000_11_00_u8.set_addressing(0b000000_00), 0b0000_00_00);
     /// assert_eq!(0b0011_00_00_u8.set_addressing(0b000000_01), 0b0011_01_00);
@@ -302,7 +303,7 @@ impl Driver1Encoding for u8 {
     }
 
     /// ```
-    /// use atln_processor::instruction::Driver1Encoding;
+    /// use atln_processor::emulator::processor::processor::instruction::Driver1Encoding;
     ///
     /// assert_eq!(0b0000_00_11_u8.extract_immediate_exponent(), 0b000000_11);
     /// assert_eq!(0b1010_11_01_u8.extract_immediate_exponent(), 0b000000_01);
@@ -313,7 +314,7 @@ impl Driver1Encoding for u8 {
 
     /// Only the first 2 bits of the addressing is used.
     /// ```
-    /// use atln_processor::instruction::Driver1Encoding;
+    /// use atln_processor::emulator::processor::processor::instruction::Driver1Encoding;
     ///
     /// assert_eq!(0b0011_00_00_u8.set_immediate_exponent(0b000000_11), 0b0011_00_11);
     /// assert_eq!(0b0000_11_00_u8.set_immediate_exponent(0b000000_10), 0b0000_11_10);
@@ -341,7 +342,7 @@ pub struct Registers {
 impl Registers {
     /// Create a new instance from an encoded form of the registers byte.
     /// ```
-    /// use atln_processor::instruction::Registers;
+    /// use atln_processor::emulator::processor::processor::instruction::Registers;
     /// 
     /// // Test operands, ensure no mirroring occurs.
     /// assert_eq!(Registers::new(0b00__000_001), Registers { width: 0, x_static: 0, x_dynamic: 1 });
@@ -358,7 +359,7 @@ impl Registers {
 
     /// Encode this registers data structure into a registers byte which contains the properties of register targeting.
     /// ```
-    /// use atln_processor::instruction::Registers;
+    /// use atln_processor::emulator::processor::processor::instruction::Registers;
     ///
     /// assert_eq!(Registers { width: 0, x_static: 0, x_dynamic: 1 }.encode(), 0b00__000_001);
     /// assert_eq!(Registers { width: 3, x_static: 3, x_dynamic: 7 }.encode(), 0b11__011_111);
@@ -390,7 +391,7 @@ pub trait RegistersEncoding {
 
 impl RegistersEncoding for u8 {
     /// ```
-    /// use atln_processor::instruction::RegistersEncoding;
+    /// use atln_processor::emulator::processor::processor::instruction::RegistersEncoding;
     ///
     /// assert_eq!(0b00_000_000.extract_width(), 0b00_000_00);
     /// assert_eq!(0b11_011_110.extract_width(), 0b00_000_11);
@@ -403,7 +404,7 @@ impl RegistersEncoding for u8 {
 
     /// Only first 2 bits are used.
     /// ```
-    /// use atln_processor::instruction::RegistersEncoding;
+    /// use atln_processor::emulator::processor::processor::instruction::RegistersEncoding;
     ///
     /// assert_eq!(0b00_000_000.set_width(0b00), 0b00_000_000);
     /// assert_eq!(0b00_011_110.set_width(0b11), 0b11_011_110);
@@ -416,7 +417,7 @@ impl RegistersEncoding for u8 {
     }
 
     /// ```
-    /// use atln_processor::instruction::RegistersEncoding;
+    /// use atln_processor::emulator::processor::processor::instruction::RegistersEncoding;
     /// 
     /// assert_eq!(0b10_111_111.extract_static(), 0b00_000_111);
     /// assert_eq!(0b11_101_100.extract_static(), 0b00_000_101);
@@ -429,7 +430,7 @@ impl RegistersEncoding for u8 {
 
     /// Only first 3 bits are used.
     /// ```
-    /// use atln_processor::instruction::RegistersEncoding;
+    /// use atln_processor::emulator::processor::processor::instruction::RegistersEncoding;
     ///
     /// assert_eq!(0b10_011_111.set_static(0b111), 0b10_111_111);
     /// assert_eq!(0b11_011_100.set_static(0b101), 0b11_101_100);
@@ -442,7 +443,7 @@ impl RegistersEncoding for u8 {
     }
 
     /// ```
-    /// use atln_processor::instruction::RegistersEncoding;
+    /// use atln_processor::emulator::processor::processor::instruction::RegistersEncoding;
     ///
     /// assert_eq!(0b10_111_111.extract_dynamic(), 0b00_000_111);
     /// assert_eq!(0b11_100_101.extract_dynamic(), 0b00_000_101);
@@ -455,7 +456,7 @@ impl RegistersEncoding for u8 {
 
     /// Only first 3 bits are used.
     /// ```
-    /// use atln_processor::instruction::RegistersEncoding;
+    /// use atln_processor::emulator::processor::processor::instruction::RegistersEncoding;
     ///
     /// assert_eq!(0b10_111_011.set_dynamic(0b111), 0b10_111_111);
     /// assert_eq!(0b11_100_011.set_dynamic(0b101), 0b11_100_101);
@@ -507,10 +508,10 @@ impl<'a> Data {
     /// involves decoding the stream with [Registers].
     /// ```
     /// use std::io::Cursor;
-    /// use atln_processor::instruction::{Data, Driver};
-    /// use atln_processor::instruction::operation::arithmetic::Arithmetic;
-    /// use atln_processor::instruction::operation::{Coded, Extension};
-    /// use atln_processor::instruction::operand::Destination;
+    /// use atln_processor::emulator::processor::processor::instruction::{Data, Driver};
+    /// use atln_processor::emulator::processor::processor::instruction::operation::arithmetic::Arithmetic;
+    /// use atln_processor::emulator::processor::processor::instruction::operation::{Coded, Extension};
+    /// use atln_processor::emulator::processor::processor::instruction::operand::Destination;
     ///
     /// let mut extension = Extension::Arithmetic(Arithmetic::Add);
     /// let extension_code = extension.code();
@@ -661,10 +662,10 @@ impl Instruction {
     }
 
     /// ```
-    /// use atln_processor::instruction::{Driver, Instruction, Registers};
-    /// use atln_processor::instruction::operand::{CONSTANT_ADDRESSING, IMMEDIATE_EXPONENT_BYTE};
-    /// use atln_processor::instruction::operation::arithmetic::ADD_CODE;
-    /// use atln_processor::instruction::operation::ARITHMETIC_CODE;
+    /// use atln_processor::emulator::processor::processor::instruction::{Driver, Instruction, Registers};
+    /// use atln_processor::emulator::processor::processor::instruction::operand::{CONSTANT_ADDRESSING, IMMEDIATE_EXPONENT_BYTE};
+    /// use atln_processor::emulator::processor::processor::instruction::operation::arithmetic::ADD_CODE;
+    /// use atln_processor::emulator::processor::processor::instruction::operation::ARITHMETIC_CODE;
     /// use atln_processor::number;
     /// 
     /// let mut driver = Driver {
@@ -737,10 +738,10 @@ impl Instruction {
 
     /// Get the operand that the destination property corresponds to.
     /// ```
-    /// use atln_processor::instruction::{Data, Instruction, DestinationError};
-    /// use atln_processor::instruction::operand::{AllPresent, Dynamic, Operands, Operand, Destination};
-    /// use atln_processor::instruction::operation::arithmetic::Arithmetic;
-    /// use atln_processor::instruction::operation::Extension;
+    /// use atln_processor::emulator::processor::processor::instruction::{Data, Instruction, DestinationError};
+    /// use atln_processor::emulator::processor::processor::instruction::operand::{AllPresent, Dynamic, Operands, Operand, Destination};
+    /// use atln_processor::emulator::processor::processor::instruction::operation::arithmetic::Arithmetic;
+    /// use atln_processor::emulator::processor::processor::instruction::operation::Extension;
     /// use atln_processor::number;
     ///
     /// let x_static = Instruction {

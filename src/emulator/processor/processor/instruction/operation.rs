@@ -1,9 +1,6 @@
-use processor;
-use crate::{ExecutionContext, processor::processor::instruction};
-use crate::processor::processor::instruction::Data;
-use crate::processor::processor::instruction::operand::{Destination, Operands};
-use crate::processor::processor::instruction::operation::arithmetic::Arithmetic;
-use crate::number::Size;
+use emulator::processor;
+use crate::emulator::processor::processor::instruction;
+use crate::emulator::processor::processor::instruction::operation::arithmetic::Arithmetic;
 use crate::utility::Coded;
 
 use super::operand::OperandsPresence;
@@ -95,8 +92,8 @@ impl Coded<u8> for Extension {
 // TODO: Moved to doctest
 #[cfg(test)]
 mod extension_test {
-    use crate::processor::processor::instruction::operation::{ARITHMETIC_CODE, Coded, Extension, Operation};
-    use crate::processor::processor::instruction::operation::arithmetic::{ADD_CODE, Arithmetic, SUBTRACT_CODE};
+    use crate::emulator::processor::processor::instruction::operation::{ARITHMETIC_CODE, Coded, Extension, Operation};
+    use crate::emulator::processor::processor::instruction::operation::arithmetic::{ADD_CODE, Arithmetic, SUBTRACT_CODE};
 
     #[test]
     fn from_codes() {

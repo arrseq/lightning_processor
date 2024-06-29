@@ -1,10 +1,7 @@
-use processor;
-use crate::ExecutionContext;
-use crate::processor::processor::instruction::{Data, Instruction};
-use crate::processor::processor::instruction::operand::{Destination, Dynamic, Operands, OperandsPresence, Static};
-use crate::processor::processor::instruction::operand::AllPresent;
-use crate::processor::processor::instruction::operation::{Coded, Extension, Operation, OperationExecuteError};
-use crate::number::Size;
+use crate::emulator::processor;
+use crate::emulator::processor::processor::instruction::Data;
+use crate::emulator::processor::processor::instruction::operand::OperandsPresence;
+use crate::emulator::processor::processor::instruction::operation::{Coded, Operation, OperationExecuteError};
 
 // region: Constants
 pub const ADD_CODE     : u8 = 0;
@@ -19,8 +16,9 @@ pub enum Arithmetic {
 }
 
 impl<'a> Operation<'a> for Arithmetic {
-    fn execute(&mut self, _code: u8, _data: Option<&Data>, context: &mut processor::processor::Context) -> Result<(), OperationExecuteError> {
+    fn execute(&mut self, _code: u8, _data: Option<&Data>, _context: &mut processor::processor::Context) -> Result<(), OperationExecuteError> {
         // context.accumulator = 100;
+        // TODO
         Ok(())
     }
 

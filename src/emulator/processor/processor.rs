@@ -1,6 +1,6 @@
-use processor::processor::signal::Signal;
-use crate::{memory::Memory};
-use crate::processor::processor::instruction::Instruction;
+use emulator::memory::Memory;
+use emulator::processor::processor::signal::Signal;
+use super::processor::instruction::Instruction;
 
 pub mod array;
 pub mod signal;
