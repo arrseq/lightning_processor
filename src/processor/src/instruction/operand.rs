@@ -208,6 +208,7 @@ pub enum Destination {
     Dynamic
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum OperandsPresence {
     AllPresent,
     Static,

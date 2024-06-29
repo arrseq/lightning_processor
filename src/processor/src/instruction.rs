@@ -35,7 +35,8 @@ use std::io;
 use std::io::Read;
 use crate::number;
 use crate::instruction::operand::{Destination, Dynamic, Operand, Operands, OperandsConstructError};
-use crate::instruction::operation::{Coded, Extension, ExtensionFromCodeInvalid, Operation};
+use crate::instruction::operation::{Extension, ExtensionFromCodeInvalid, Operation};
+use crate::utility::{Coded, Encodable};
 
 // region: Binary processor bit masks
 pub const DRIVER0_EXTENSION_MASK           : u8 = 0b111111_0_0;
@@ -95,13 +96,16 @@ impl Driver {
             immediate_exponent: driver1.extract_immediate_exponent(),
         }
     }
+}
 
+impl Encodable<[u8; 2]> for Driver {
     /// Encode the current [Driver] instance into a byte tuple which encodes all the driver information and can be
     /// lossless decoded.
     /// ```
     /// use atln_processor::instruction::Driver;
+    /// use atln_processor::utility::Encodable;
     ///
-    /// let driver = Driver {
+    /// let mut driver = Driver {
     ///     operation: 0b1110,
     ///     extension: 0b1010,
     ///     synchronise: true,
@@ -115,7 +119,7 @@ impl Driver {
     /// assert_eq!(encoded[0], 0b001010_1_0);
     /// assert_eq!(encoded[1], 0b1110_11_10);
     /// ```
-    pub fn encode(&self) -> [u8; 2] {
+    fn encode(&mut self) -> [u8; 2] {
         let mut driver0 = 0.set_extension(self.extension);
         driver0 = driver0.set_synchronise(self.synchronise);
         driver0 = driver0.set_dynamic_destination(self.dynamic_destination);
@@ -569,7 +573,7 @@ impl<'a> Data {
 #[derive(Debug, Default)]
 pub struct Instruction {
     pub extension: Extension,
-    data: Option<Data>
+    pub data: Option<Data>
 }
 
 #[derive(Debug)]
@@ -601,7 +605,7 @@ impl Instruction {
     /// Use the driver, registers, and immediate to encode into a dynamic number of bytes. Encoding is variable
     /// length. The data is not validated here. To use an immediate, registers must be of the [Some] variant. If an
     /// immediate is [Some] and registers is [None] then [None] will also be returned.
-    pub fn encode_driver_registers_immediate(driver: &Driver, registers: Option<&Registers>, immediate: Option<&number::Data>) -> Option<Vec<u8>> {
+    pub fn encode_driver_registers_immediate(driver: &mut Driver, registers: Option<&Registers>, immediate: Option<&number::Data>) -> Option<Vec<u8>> {
         let mut encoded = Vec::new();
 
         encoded.extend(driver.encode());
@@ -663,7 +667,7 @@ impl Instruction {
     /// use atln_processor::instruction::operation::ARITHMETIC_CODE;
     /// use atln_processor::number;
     /// 
-    /// let driver = Driver {
+    /// let mut driver = Driver {
     ///     extension: ARITHMETIC_CODE,
     ///     operation: ADD_CODE,
     ///     synchronise: true,
@@ -680,7 +684,7 @@ impl Instruction {
     ///
     /// let target = [ 0b000000_1_0, 0b0000_10_00, 0b00_001_000, 0b00001010 ];
     ///
-    /// assert_eq!(Instruction::encode_driver_registers_immediate(&driver, Some(&registers), Some(&number::Data::Byte(10))).unwrap(), target);
+    /// assert_eq!(Instruction::encode_driver_registers_immediate(&mut driver, Some(&registers), Some(&number::Data::Byte(10))).unwrap(), target);
     /// ```
     pub fn encode(&mut self) -> Vec<u8> {
         let mut synchronise = false;
@@ -713,7 +717,7 @@ impl Instruction {
             });
         }
 
-        let driver = Driver {
+        let mut driver = Driver {
             extension: self.extension.code(),
             operation: self.extension.operation().code(),
             synchronise,
@@ -726,9 +730,9 @@ impl Instruction {
         // immediate being present with a lack of [Registers]. Output of [encode_driver_registers_immediate] can safely
         // be unwrapped.
         if let Some(registers) = registers {
-            if let Some(immediate) = immediate { Instruction::encode_driver_registers_immediate(&driver, Some(&registers), Some(&immediate)).unwrap() }
-            else { Instruction::encode_driver_registers_immediate(&driver, Some(&registers), None).unwrap() }
-        } else { Instruction::encode_driver_registers_immediate(&driver, None, None).unwrap() }
+            if let Some(immediate) = immediate { Instruction::encode_driver_registers_immediate(&mut driver, Some(&registers), Some(&immediate)).unwrap() }
+            else { Instruction::encode_driver_registers_immediate(&mut driver, Some(&registers), None).unwrap() }
+        } else { Instruction::encode_driver_registers_immediate(&mut driver, None, None).unwrap() }
     }
 
     /// Get the operand that the destination property corresponds to.

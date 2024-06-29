@@ -16,3 +16,12 @@ pub fn read_vec_into_buffer(vec: &Vec<u8>, start: usize, buffer: &mut [u8]) -> u
     
     bytes_read
 }
+
+/// Get an identifier code for an item.
+pub trait Coded<Type> {
+    fn code(&mut self) -> Type;
+}
+
+pub trait Encodable<Type> {
+    fn encode(&mut self) -> Type;
+}

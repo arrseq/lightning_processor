@@ -1,16 +1,13 @@
-use crate::{ExecutionContext, instruction};
+use crate::{ExecutionContext, instruction, processor};
 use crate::instruction::Data;
 use crate::instruction::operand::{Destination, Operands};
 use crate::instruction::operation::arithmetic::Arithmetic;
 use crate::number::Size;
+use crate::utility::Coded;
 
 use super::operand::OperandsPresence;
 
 pub mod arithmetic;
-
-pub trait Coded<Type> {
-    fn code(&mut self) -> Type;
-}
 
 // Extension identifier codes
 
@@ -21,18 +18,15 @@ pub const DATA_CODE      : u8 = 1;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum OperationExecuteError {
-    /// Not all operands were provided.
-    ExpectedAll,
-    /// Static operand was not provided.
-    ExpectedStatic,
-    /// Dynamic operand was not provided.
-    ExpectedDynamic,
-    /// No operands should have been provided.
-    ExpectedNone
+    /// The data parameter received the wrong value for the current operations. The boolean in the error contains
+    /// whether the data parameter was expected.
+    Data(bool),
+    /// The operand presence was incorrect. The expected operand presence is contained in this error.
+    Operand(OperandsPresence)
 }
 
 pub trait Operation<'a>: Coded<u8> + Default {
-    fn execute(&mut self, code: u8, data: Option<&instruction::Data>, context: &mut ExecutionContext) -> Result<(),
+    fn execute(&mut self, code: u8, data: Option<&instruction::Data>, context: &mut processor::Context) -> Result<(),
         OperationExecuteError>;
 
     /// Get which operands are expected.
