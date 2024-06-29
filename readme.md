@@ -3,23 +3,11 @@ Execute instructions, manage memory, run programs. Provides hardware, compiler, 
 
 ![image](https://github.com/tfe-exr/Processor/assets/163682431/6c68452f-4fdf-4cf1-bc2c-18b1f40e3f2e)
 
-# Specifications
-- 64-bit data bus with the ability to downsize to 32 bits. 
-- Complex instruction set (CISC)
-- Versatile instruction encoding and x86 translatable.
-
-# Required tools
-- Cargo and other Rust tools (Setup with Rustup)
-- Windows C++ build tools
-- Python
-
-# Started
-- [x] Instruction decoder
-- [x] Emulation 
-- [x] Assembler 
-- [ ] Syntax parser 
-- [ ] Compiler
-
-# x54 Protocol
-Emulation server protocol used for interfacing with an emulation core with hardware extensions built in.
-- Uses address 127.0.0.1:15147 and is unprotected.
+# Packages
+| Name         | Description                                                                                                                                           |
+|--------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| emulator     | Desktop application that allows you to run and pupet the emulator service. Contains tools for debugging, writing high level code, compiling and more. |
+| programming  | Tools for the programming language such as the compiler, parser, intellisence and more...                                                             |
+| protocol     | JavaScript library which allows you to communicate with the emulator service.                                                                         |
+| server       | The server for the emulator. Can be interfaced through the protocol library.                                                                          |
+| src          | The main Rust project containing the emulator, high level programming language compiler, assembler, debugger, and more.                               |
