@@ -7,6 +7,7 @@
     import Divider from "../components/app_frame/Divider.svelte";
     import Label from "../components/Label.svelte";
     import Frame from "../components/app_frame/Frame.svelte";
+    import CanvasXt3 from "../components/CanvasXT3.svelte";
 
     let name = "";
     let greetMsg = "";
@@ -33,7 +34,8 @@
     <AppFrame items={windows} keys={window_keys} >
         {#snippet memory_view()}
             <Frame title="Memory View">
-                <Label>Memory Viewer is not ready.</Label>
+                <Label>Tutorial information will be here soon.</Label>
+                <CanvasXt3 slot="focus" />
             </Frame>
         {/snippet}
 

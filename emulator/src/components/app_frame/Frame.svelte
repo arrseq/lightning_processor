@@ -3,13 +3,12 @@
     import Body from "./frame/Body.svelte";
     import type TabInfo from "./frame/tab_info";
     import DragBar from "./DragBar.svelte";
+    import Divider from "./Divider.svelte";
 
     export let title = "...";
     export let primary = false;
     export let tabs: TabInfo[] = [];
     export let row_mode = false;
-
-    export let focus_height = 100;
 
     const SLOTS = $$slots;
 
@@ -22,21 +21,30 @@
     <TitleBar primary={primary} title={title} tabs={tabs} />
     
     <div class="main" class:row_mode={row_mode}>
-        {#if SLOTS.default}
+        {#if SLOTS.default && !SLOTS.focus}
             <Body>
                 <slot />
             </Body>
         {/if}
 
         {#if SLOTS.default && SLOTS.focus}
-            <DragBar on:from_v={(offset) => {
-                if (row_mode) return;
-                focus_height += offset.detail;
-            }} />
+            <Divider horizontal={false}>
+                {#snippet first()}
+                    <Body>
+                        <slot />
+                    </Body>
+                {/snippet}
+
+                {#snippet second()}
+                    <div class="focus">
+                        <slot name="focus" />
+                    </div>
+                {/snippet}
+            </Divider>
         {/if}
 
-        {#if SLOTS.focus}
-            <div class="focus" style={`height: ${focus_height}px;`}>
+        {#if SLOTS.focus && !SLOTS.default}
+            <div class="focus">
                 <slot name="focus" />
             </div>
         {/if}
@@ -65,6 +73,8 @@
                 align-items: center;
                 justify-content: center;
                 flex-direction: column;
+                height: 100%;
+                width: 100%;
                 flex: 1;
             }
 

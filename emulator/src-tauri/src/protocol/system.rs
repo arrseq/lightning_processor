@@ -1,6 +1,5 @@
 use std::sync::{Arc, Mutex};
-
-use atln_processor::memory::Memory;
+use atln_processor::emulator::memory::Memory;
 
 pub struct System {
     pub memory: Arc<Mutex<Memory>>
