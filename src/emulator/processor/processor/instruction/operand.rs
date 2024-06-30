@@ -216,35 +216,26 @@ pub enum OperandsPresence {
 }
 
 impl OperandsPresence {
-    /// Whether the operation requires the static operand.
+    /// If the operation at least expects the static operand.
     pub fn expects_static(&self) -> bool {
         matches!(self, Self::Static) || matches!(self, Self::AllPresent)
     }
 
-    /// Whether the operation requires the dynamic operand.
+    /// If the operation at least expects the dynamic operand.
     pub fn expects_dynamic(&self) -> bool {
         matches!(self, Self::Dynamic) || matches!(self, Self::AllPresent)
-    }
-
-    /// Whether an operand is expected.
-    pub fn expects_operand(&self) -> bool {
-        self.expects_static() || self.expects_dynamic()
     }
 
     pub fn expects_all(&self) -> bool {
         matches!(self, Self::AllPresent)
     }
 
-    pub fn expects_nothing(&self) -> bool {
-        !self.expects_dynamic() && !self.expects_static()
-    }
-
     pub fn expects_only_static(&self) -> bool {
-        self.expects_static() && !self.expects_dynamic()
+        matches!(self, Self::Static)
     }
-
-    pub fn expects_only_dynamic(&self) -> bool {
-        self.expects_dynamic() && !self.expects_nothing()
+    
+    pub fn expects_only_dynamic(&self) -> bool { 
+        matches!(self, Self::Dynamic)
     }
 }
 
@@ -263,15 +254,13 @@ pub enum OperandsConstructError {
     /// The dynamic operand was set to register or constant which are not memory locations and therefor this cannot be
     /// permitted. This is incompatible as the registers are localized to each processor and synchronous instructions
     /// are meant to allow memory actions to be predictable between multiple processors.
-    SynchronousAddressing,
-    /// No operands are supported by the operation used.
-    Operands
+    SynchronousAddressing
 }
 
 impl<'a> Operands {
     /// Create a new operands set from
     /// - A stream which will be used to retrieve the immediate bytes if necessary.
-    /// - The operation which will be used to determine which operands are present.
+    /// - The operations presence information.
     /// - The decoded registers byte to get the register information.
     /// - The decoded driver byte to get `immediate_exponent`, `x_dynamic`, `addressing`, and `synchronise` ensure the
     ///   addressing rules are valid and construct the dynamic operand.
@@ -279,9 +268,7 @@ impl<'a> Operands {
     /// ```
     /// // TODO: Complete test
     /// ```
-    pub fn new(stream: &mut impl Read, operation: &mut impl Operation<'a>, registers: &Registers, driver: &Driver) -> Result<Self, OperandsConstructError> {
-        let presence = operation.get_presence();
-        
+    pub fn new(stream: &mut impl Read, presence: &OperandsPresence, registers: &Registers, driver: &Driver) -> Result<Self, OperandsConstructError> {
         // Create the dynamic operand
         let x_dynamic = if presence.expects_dynamic() {
             Some(match Dynamic::new(registers.x_dynamic, driver.addressing, driver.immediate_exponent, stream) {
@@ -295,18 +282,13 @@ impl<'a> Operands {
         if let Some(value) = &x_dynamic { if let Dynamic::Register(_) = value { if driver.synchronise { return Err(OperandsConstructError::SynchronousAddressing) }}}
 
         // Construct operand field.
-        Ok(if presence.expects_all() {
-            Operands::AllPresent(AllPresent {
+        Ok(match presence {
+            OperandsPresence::AllPresent => Operands::AllPresent(AllPresent {
                 x_static: registers.x_static,
                 x_dynamic: x_dynamic.unwrap()
-            })
-        } else if presence.expects_only_static() {
-            Operands::Static(registers.x_static)
-        } else if presence.expects_only_dynamic() {
-            Operands::Dynamic(x_dynamic.unwrap())
-        } else {
-            // No operands were expected by the operation.
-            return Err(OperandsConstructError::Operands);
+            }),
+            OperandsPresence::Static => Operands::Static(registers.x_static),
+            OperandsPresence::Dynamic => Operands::Dynamic(x_dynamic.unwrap())
         })
     }
 

@@ -33,6 +33,7 @@ pub mod operation;
 
 use std::io;
 use std::io::Read;
+use emulator::processor::processor::instruction::operand::OperandsPresence;
 use crate::number;
 use super::instruction::operand::{Destination, Dynamic, Operand, Operands, OperandsConstructError};
 use super::instruction::operation::{Extension, ExtensionFromCodeInvalid, Operation};
@@ -488,8 +489,6 @@ pub enum DataConstructError {
     StreamRead(io::Error),
     /// Stream did not contain enough bytes.
     Length,
-    /// The operation does not expect operands. There is nothing to decode.
-    NoOperands,
     /// Failed to construct the operands. This could be due to rule breaking or the operation trait is bad.
     Operands(OperandsConstructError),
     /// Invalid destination for the current addressing or operand modes. The current destination cannot be used. Reasons
@@ -502,7 +501,7 @@ pub enum DataConstructError {
     Destination
 }
 
-impl<'a> Data {
+impl Data {
     /// Try to construct a data field from data with an operation and driver. The data structure contains information
     /// operands and how they should be handled and dealt with as well as addressing information for x_dynamic. This
     /// involves decoding the stream with [Registers].
@@ -535,10 +534,7 @@ impl<'a> Data {
     ///
     /// assert_eq!(data.destination, Destination::Static);
     /// ```
-    pub fn new(stream: &mut impl Read, operation: &mut impl Operation<'a>, driver: &Driver) -> Result<Self, DataConstructError> {
-        // If there is no requirement for operands then there is nothing to decode.
-        if !operation.get_presence().expects_operand() { return Err(DataConstructError::NoOperands) }
-
+    pub fn new(stream: &mut impl Read, presence: &OperandsPresence, driver: &Driver) -> Result<Self, DataConstructError> {
         // Decode registers byte.
         let mut data_encoded = [0u8; 1];
         match stream.read(&mut data_encoded) {
@@ -550,7 +546,7 @@ impl<'a> Data {
         let destination = if driver.dynamic_destination { Destination::Dynamic } else { Destination::Static };
 
         // operands extracting here
-        let operands = match Operands::new(stream, operation, &registers, driver) {
+        let operands = match Operands::new(stream, presence, &registers, driver) {
             Ok(value) => value,
             Err(error) => return Err(DataConstructError::Operands(error))
         };
@@ -585,10 +581,8 @@ pub enum InstructionConstructError {
     Length,
     /// The extension and or operation are invalid.
     InvalidCode(ExtensionFromCodeInvalid),
-    /// Error when constructing operands.
-    Operands(OperandsConstructError),
-    /// Error information found in [DataConstructError::Destination].
-    Destination
+    /// Failed to construct the data field of the instruction.
+    Data(DataConstructError)
 }
 
 /// Caused by using a destination which corresponds to an operand that is not provided.
@@ -637,27 +631,23 @@ impl Instruction {
 
         // Decode data bytes.
         let operation = extension.operation();
-        let data: Option<Data> = match Data::new(stream, operation, &driver) {
-            Err(error) => {
-                // Handle every error manually to ensure that the now operands error doesn't make it out. If there are
-                // no operands then the data field of the instruction should be [None] without an error.
-                match error {
-                    DataConstructError::NoOperands => {},
-                    DataConstructError::StreamRead(error) => return Err(InstructionConstructError::StreamRead(error)),
-                    DataConstructError::Length => return Err(InstructionConstructError::Length),
-                    DataConstructError::Operands(error) => return Err(InstructionConstructError::Operands(error)),
-                    DataConstructError::Destination => return Err(InstructionConstructError::Destination)
-                }
+        
+        if let Some(presence) = operation.get_presence() {
+            let data: Option<Data> = match Data::new(stream, &presence, &driver) {
+                Ok(some) => Some(some),
+                Err(error) => return Err(InstructionConstructError::Data(error))
+            };
 
-                None
-            },
-            Ok(some) => Some(some)
-        };
-
-        // Construction
+            // Construction
+            return Ok(Self {
+                extension,
+                data
+            })
+        }
+        
         Ok(Self {
             extension,
-            data
+            data: None
         })
     }
 

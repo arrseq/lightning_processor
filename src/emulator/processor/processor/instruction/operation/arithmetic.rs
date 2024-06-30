@@ -22,8 +22,8 @@ impl<'a> Operation<'a> for Arithmetic {
         Ok(())
     }
 
-    fn get_presence(&mut self) -> OperandsPresence {
-        OperandsPresence::AllPresent
+    fn get_presence(&mut self) -> Option<OperandsPresence> {
+        Some(OperandsPresence::AllPresent)
     }
 }
 
