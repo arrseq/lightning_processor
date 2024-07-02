@@ -1,6 +1,7 @@
 use emulator::memory::Memory;
 use emulator::processor::processor::{Context, Ports, Registers};
 use emulator::processor::processor::instruction::operand::{Destination, Dynamic};
+use number;
 use crate::emulator::processor;
 use crate::emulator::processor::processor::instruction::Data;
 use crate::emulator::processor::processor::instruction::operand::OperandsPresence;
@@ -40,8 +41,10 @@ impl<'a> Operation<'a> for Arithmetic {
         
         match data.destination {
             Destination::Static => *context.registers.get_mut(all_operands.x_static as usize).unwrap() = result,
-            Destination::Dynamic => {}
-        }
+            Destination::Dynamic => all_operands
+                .x_dynamic.write(&data.width, memory, context.virtual_mode, &mut context.registers, number::Data::from_size_selecting(&data.width, result))
+                .map_err(OperationExecuteError::DynamicRead)?
+        };
         
         Ok(())
     }

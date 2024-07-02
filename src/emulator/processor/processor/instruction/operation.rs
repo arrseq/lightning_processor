@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 use std::fmt::Debug;
-use emulator::memory::Memory;
+use emulator::memory::{GetError, Memory};
 use emulator::processor;
 use emulator::processor::processor::instruction::Data;
 use emulator::processor::processor::instruction::operand::{Dynamic, DynamicReadError, Static};

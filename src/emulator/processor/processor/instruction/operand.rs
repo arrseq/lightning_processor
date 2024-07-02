@@ -75,12 +75,10 @@ pub enum DynamicReadError {
     Overflow,
     /// Failed to read the memory for the offset or memory addressing mode.
     Memory(memory::GetError),
-    InvalidRegisterIndex
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum DynamicWriteError {
-    
+    InvalidRegisterIndex,
+    /// Using the constant operand as a target is invalid. The data is in the instruction, which is an immutable area of
+    /// memory.
+    ConstantTargetInvalid
 }
 
 impl Dynamic {
@@ -208,7 +206,7 @@ impl Dynamic {
     /// ```
     pub fn read(&self, size: &Size, memory: &Memory, translate: bool, registers: &processor::Registers) -> Result<Cow<Data>, DynamicReadError> {
         Ok(match self {
-            Self::Register(register) => Cow::Owned(Data::from_size_selecting(size.clone(), *registers.get(*register as usize).ok_or(DynamicReadError::InvalidRegisterIndex)?)),
+            Self::Register(register) => Cow::Owned(Data::from_size_selecting(&size, *registers.get(*register as usize).ok_or(DynamicReadError::InvalidRegisterIndex)?)),
             Self::Offset(offset) => {
                 let register_dereferenced = *registers.get(offset.register as usize).ok_or(DynamicReadError::InvalidRegisterIndex)?;
                 let address = register_dereferenced.checked_add(offset.offset.quad()).ok_or(DynamicReadError::Overflow)?;
@@ -219,8 +217,19 @@ impl Dynamic {
         })
     }
     
-    pub fn write(&self, size: &Size, memory: &mut Memory, translate: bool, registers: &processor::Registers) -> Result<(), DynamicWriteError> {
-        todo!();
+    pub fn write(&self, size: &Size, memory: &mut Memory, translate: bool, registers: &mut processor::Registers, value: Data) -> Result<(), DynamicReadError> {
+        match self {
+            Self::Register(register) => *registers.get_mut(*register as usize).ok_or(DynamicReadError::InvalidRegisterIndex)? = value.quad(),
+            Self::Offset(offset) => {
+                let register_dereferenced = *registers.get(offset.register as usize).ok_or(DynamicReadError::InvalidRegisterIndex)?;
+                let address = register_dereferenced.checked_add(offset.offset.quad()).ok_or(DynamicReadError::Overflow)?;
+                memory.set(Frame { size: size.clone(), address }, translate, value).map_err(DynamicReadError::Memory)?;
+            },
+            Self::Constant(_) => return Err(DynamicReadError::ConstantTargetInvalid),
+            Self::Memory(address) => memory.set(Frame { size: size.clone(), address: address.quad() }, translate, value).map_err(DynamicReadError::Memory)?
+        };
+        
+        Ok(())
     }
 }
 
