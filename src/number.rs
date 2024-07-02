@@ -318,14 +318,62 @@ pub trait CheckedAdd: Sized {
     fn checked_add(self, factor: Data) -> Option<Data>;
 }
 
+pub trait CheckedSub: Sized {
+    fn checked_sub(self, factor: Data) -> Option<Data>;
+}
+
+pub trait CheckedMul: Sized {
+    fn checked_mul(self, factor: Data) -> Option<Data>;
+}
+
+pub trait CheckedDiv: Sized {
+    fn checked_div(self, factor: Data) -> Option<Data>;
+}
+
 impl CheckedAdd for Data {
     fn checked_add(self, factor: Data) -> Option<Data> {
-        if self.size() != factor.size() { panic!("Type error: Cannot do checked add when the data types are not equal"); }
+        if self.size() != factor.size() { return None; }
         Some(match self {
             Self::Byte(v) => Data::Byte(v.checked_add(u8::from(factor))?),
             Self::Word(v) => Data::Word(v.checked_add(u16::from(factor))?),
             Self::Dual(v) => Data::Dual(v.checked_add(u32::from(factor))?),
             Self::Quad(v) => Data::Quad(v.checked_add(u64::from(factor))?)
+        })
+    }
+}
+
+impl CheckedSub for Data {
+    fn checked_sub(self, factor: Data) -> Option<Data> {
+        if self.size() != factor.size() { return None; }
+        Some(match self {
+            Self::Byte(v) => Data::Byte(v.checked_sub(u8::from(factor))?),
+            Self::Word(v) => Data::Word(v.checked_sub(u16::from(factor))?),
+            Self::Dual(v) => Data::Dual(v.checked_sub(u32::from(factor))?),
+            Self::Quad(v) => Data::Quad(v.checked_sub(u64::from(factor))?)
+        })
+    }
+}
+
+impl CheckedMul for Data {
+    fn checked_mul(self, factor: Data) -> Option<Data> {
+        if self.size() != factor.size() { return None; }
+        Some(match self {
+            Self::Byte(v) => Data::Byte(v.checked_mul(u8::from(factor))?),
+            Self::Word(v) => Data::Word(v.checked_mul(u16::from(factor))?),
+            Self::Dual(v) => Data::Dual(v.checked_mul(u32::from(factor))?),
+            Self::Quad(v) => Data::Quad(v.checked_mul(u64::from(factor))?)
+        })
+    }
+}
+
+impl CheckedDiv for Data {
+    fn checked_div(self, factor: Data) -> Option<Data> {
+        if self.size() != factor.size() { return None; }
+        Some(match self {
+            Self::Byte(v) => Data::Byte(v.checked_div(u8::from(factor))?),
+            Self::Word(v) => Data::Word(v.checked_div(u16::from(factor))?),
+            Self::Dual(v) => Data::Dual(v.checked_div(u32::from(factor))?),
+            Self::Quad(v) => Data::Quad(v.checked_div(u64::from(factor))?)
         })
     }
 }
