@@ -22,7 +22,6 @@
         align-items: center;
         align-self: flex-start;
         border-radius: $pixels__radius;
-        border: 1px solid rgba(0, 0, 0, 14%);
 
         span.vr {
             width: $pixels__border_control;
@@ -34,7 +33,7 @@
             background: transparent;
             outline: none;
             border: none;
-            padding: 2px 14px;
+            padding: 3px 14px;
             color: $text__primary_color;
             font-size: $text__primary_font_size;
             font-family: $text__font_family;

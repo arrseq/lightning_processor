@@ -37,7 +37,6 @@
         min-width: 120px;
         justify-content: center;
         align-items: center;
-        border: 1px solid rgba(0, 0, 0, 14%);
 
         &.primary {
             background: $text__brand_color;

@@ -1,3 +1,4 @@
+use emulator::processor::processor::{Context, Ports};
 use crate::emulator::processor;
 use crate::emulator::processor::processor::instruction::Data;
 use crate::emulator::processor::processor::instruction::operand::OperandsPresence;
@@ -17,13 +18,17 @@ pub enum Arithmetic {
 
 impl<'a> Operation<'a> for Arithmetic {
     type CustomError = ();
-    fn execute(&self, _code: u8, _data: Option<&Data>, _context: &mut processor::processor::Context) -> Result<(), OperationExecuteError<Self::CustomError>> {
-        // context.accumulator = 100;
-        // TODO
-        Ok(())
+
+    fn execute(&self, data: Option<&Data>, context: &mut Context, ports: &mut Ports) -> Result<(), OperationExecuteError<Self::CustomError>> {
+        // match self {
+        //     Arithmetic::Add => {
+        //         
+        //     }
+        // }
+        todo!();
     }
 
-    fn get_presence(&self) -> Option<OperandsPresence> {
+    fn presence(&self) -> Option<OperandsPresence> {
         Some(OperandsPresence::AllPresent)
     }
 }

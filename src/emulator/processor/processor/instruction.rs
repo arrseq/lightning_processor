@@ -25,6 +25,17 @@
 //! | No       | Register  | Dynamic Operand     | 3 bits   | Dynamically addressable operand.                                |
 //!
 //! Immediate 0..8 quantized to 0, 1, 2, 4 and 8.
+//! 
+//! # Extension
+//! Groups which house an instruction set.
+//! 
+//! # Data
+//! Specifications and operands of an instruction for a particular operation inside an extension. 
+//! 
+//! **Incompatibility**
+//! 
+//! If the operand presence is not met for a specific operation or data requirements, then the extension and data are
+//! incompatible with each other.
 
 #![allow(clippy::unusual_byte_groupings)]
 
@@ -313,7 +324,7 @@ impl Driver1Encoding for u8 {
         DRIVER1_ADDRESSING_PARAMETER_MASK & self
     }
 
-    /// Only the first 2 bits of the addressing is used.
+    /// Only the first 2 bits of the addressing are used.
     /// ```
     /// use atln_processor::emulator::processor::processor::instruction::Driver1Encoding;
     ///
@@ -491,7 +502,7 @@ pub enum DataConstructError {
     Length,
     /// Failed to construct the operands. This could be due to rule breaking or the operation trait is bad.
     Operands(OperandsConstructError),
-    /// Invalid destination for the current addressing or operand modes. The current destination cannot be used. Reasons
+    /// Invalid destination for the current addressing or operand modes. The current destination can't be used. Reasons
     /// may include:
     /// - Dynamic destination was used with the constant addressing mode.
     /// - The dynamic operand is not expected, therefore there is no location to store the result at.
@@ -569,12 +580,12 @@ impl Data {
 
 #[derive(Debug, Default)]
 pub struct Instruction {
-    pub extension: Extension,
-    pub data: Option<Data>
+    extension: Extension,
+    data: Option<Data>
 }
 
 #[derive(Debug)]
-pub enum InstructionConstructError {
+pub enum DecodeError {
     /// Stream failed to read.
     StreamRead(io::Error),
     /// Not enough bytes.
@@ -613,29 +624,29 @@ impl Instruction {
     }
 
     // Decode an encoded binary stream into a processor instruction. TODO: Tests
-    pub fn new(stream: &mut impl Read) -> Result<Self, InstructionConstructError> {
+    pub fn decode(stream: &mut impl Read) -> Result<Self, DecodeError> {
         // Decode driver bytes.
         let mut encoded_driver = [0u8; 2];
 
         match stream.read(&mut encoded_driver) {
-            Ok(length) => if length != encoded_driver.len() { return Err(InstructionConstructError::Length) },
-            Err(error) => return Err(InstructionConstructError::StreamRead(error))
+            Ok(length) => if length != encoded_driver.len() { return Err(DecodeError::Length) },
+            Err(error) => return Err(DecodeError::StreamRead(error))
         };
 
         let driver = Driver::new(encoded_driver);
 
-        let mut extension =  match Extension::from_codes(driver.extension, driver.operation) {
+        let extension =  match Extension::from_codes(driver.extension, driver.operation) {
             Ok(operation) => operation,
-            Err(error) => return Err(InstructionConstructError::InvalidCode(error))
+            Err(error) => return Err(DecodeError::InvalidCode(error))
         };
 
         // Decode data bytes.
         let operation = extension.operation();
         
-        if let Some(presence) = operation.get_presence() {
+        if let Some(presence) = operation.presence() {
             let data: Option<Data> = match Data::new(stream, &presence, &driver) {
                 Ok(some) => Some(some),
-                Err(error) => return Err(InstructionConstructError::Data(error))
+                Err(error) => return Err(DecodeError::Data(error))
             };
 
             // Construction
@@ -649,81 +660,6 @@ impl Instruction {
             extension,
             data: None
         })
-    }
-
-    /// ```
-    /// use atln_processor::emulator::processor::processor::instruction::{Driver, Instruction, Registers};
-    /// use atln_processor::emulator::processor::processor::instruction::operand::{CONSTANT_ADDRESSING, IMMEDIATE_EXPONENT_BYTE};
-    /// use atln_processor::emulator::processor::processor::instruction::operation::arithmetic::ADD_CODE;
-    /// use atln_processor::emulator::processor::processor::instruction::operation::ARITHMETIC_CODE;
-    /// use atln_processor::number;
-    /// 
-    /// let mut driver = Driver {
-    ///     extension: ARITHMETIC_CODE,
-    ///     operation: ADD_CODE,
-    ///     synchronise: true,
-    ///     dynamic_destination: false,
-    ///     addressing: CONSTANT_ADDRESSING,
-    ///     immediate_exponent: IMMEDIATE_EXPONENT_BYTE
-    /// };
-    ///
-    /// let registers = Registers {
-    ///     width: IMMEDIATE_EXPONENT_BYTE,
-    ///     x_static: 1,
-    ///     x_dynamic: 0
-    /// };
-    ///
-    /// let target = [ 0b000000_1_0, 0b0000_10_00, 0b00_001_000, 0b00001010 ];
-    ///
-    /// assert_eq!(Instruction::encode_driver_registers_immediate(&mut driver, Some(&registers), Some(&number::Data::Byte(10))).unwrap(), target);
-    /// ```
-    pub fn encode(&mut self) -> Vec<u8> {
-        let mut synchronise = false;
-        let mut dynamic_destination = false;
-        let mut addressing = 0;
-        let mut immediate_exponent = 0;
-        let mut registers: Option<Registers> = None;
-        let mut immediate: Option<number::Data> = None;
-
-        if let Some(data) = &self.data {
-            synchronise = data.synchronous;
-            dynamic_destination = match data.destination {
-                Destination::Dynamic => true,
-                Destination::Static => false
-            };
-
-            let mut x_dynamic_code = 0;
-            if let Some(x_dynamic) = data.operands.x_dynamic() {
-                x_dynamic_code = x_dynamic.register().unwrap_or(0);
-                immediate = x_dynamic.immediate().cloned();
-
-                if let Some(immediate) = x_dynamic.immediate() { immediate_exponent = immediate.clone().exponent() }
-                addressing = x_dynamic.addressing();
-            }
-
-            registers = Some(Registers {
-                width: data.width.exponent(),
-                x_static: data.operands.x_static().unwrap_or(0),
-                x_dynamic: x_dynamic_code
-            });
-        }
-
-        let mut driver = Driver {
-            extension: self.extension.code(),
-            operation: self.extension.operation().code(),
-            synchronise,
-            dynamic_destination,
-            addressing,
-            immediate_exponent
-        };
-
-        // Unwrapping should not fail because the processor is a controlled environment. There is no risk of an
-        // immediate being present with a lack of [Registers]. Output of [encode_driver_registers_immediate] can safely
-        // be unwrapped.
-        if let Some(registers) = registers {
-            if let Some(immediate) = immediate { Instruction::encode_driver_registers_immediate(&mut driver, Some(&registers), Some(&immediate)).unwrap() }
-            else { Instruction::encode_driver_registers_immediate(&mut driver, Some(&registers), None).unwrap() }
-        } else { Instruction::encode_driver_registers_immediate(&mut driver, None, None).unwrap() }
     }
 
     /// Get the operand that the destination property corresponds to.
@@ -785,5 +721,101 @@ impl Instruction {
                 None => return Err(DestinationError::Dynamic)
             }
         })
+    }
+    
+    /// Construct a new instruction from the potentially incompatible extension and data. If the presence of the 
+    /// operation isn't equal to the presence of the data, then [None] is returned. Otherwise, the instruction in [Some]
+    /// is returned.
+    /// ```
+    /// // TODO: Test
+    /// ```
+    pub fn new(extension: Extension, data: Option<Data>) -> Option<Self> {
+        if !matches!(extension.operation().presence(), _data) { return None; }
+        Some(Self { extension, data })
+    }
+    
+    pub fn extension(&self) -> &Extension {
+        &self.extension
+    }
+    
+    pub fn data(&self) -> &Option<Data> {
+        &self.data
+    } 
+}
+
+impl Encodable<Vec<u8>> for Instruction {
+    /// ```
+    /// use atln_processor::emulator::processor::processor::instruction::{Driver, Instruction, Registers};
+    /// use atln_processor::emulator::processor::processor::instruction::operand::{CONSTANT_ADDRESSING, IMMEDIATE_EXPONENT_BYTE};
+    /// use atln_processor::emulator::processor::processor::instruction::operation::arithmetic::ADD_CODE;
+    /// use atln_processor::emulator::processor::processor::instruction::operation::ARITHMETIC_CODE;
+    /// use atln_processor::number;
+    ///
+    /// let mut driver = Driver {
+    ///     extension: ARITHMETIC_CODE,
+    ///     operation: ADD_CODE,
+    ///     synchronise: true,
+    ///     dynamic_destination: false,
+    ///     addressing: CONSTANT_ADDRESSING,
+    ///     immediate_exponent: IMMEDIATE_EXPONENT_BYTE
+    /// };
+    ///
+    /// let registers = Registers {
+    ///     width: IMMEDIATE_EXPONENT_BYTE,
+    ///     x_static: 1,
+    ///     x_dynamic: 0
+    /// };
+    ///
+    /// let target = [ 0b000000_1_0, 0b0000_10_00, 0b00_001_000, 0b00001010 ];
+    ///
+    /// assert_eq!(Instruction::encode_driver_registers_immediate(&mut driver, Some(&registers), Some(&number::Data::Byte(10))).unwrap(), target);
+    /// ```
+    fn encode(&self) -> Vec<u8> {
+        let mut synchronise = false;
+        let mut dynamic_destination = false;
+        let mut addressing = 0;
+        let mut immediate_exponent = 0;
+        let mut registers: Option<Registers> = None;
+        let mut immediate: Option<number::Data> = None;
+
+        if let Some(data) = &self.data {
+            synchronise = data.synchronous;
+            dynamic_destination = match data.destination {
+                Destination::Dynamic => true,
+                Destination::Static => false
+            };
+
+            let mut x_dynamic_code = 0;
+            if let Some(x_dynamic) = data.operands.x_dynamic() {
+                x_dynamic_code = x_dynamic.register().unwrap_or(0);
+                immediate = x_dynamic.immediate().cloned();
+
+                if let Some(immediate) = x_dynamic.immediate() { immediate_exponent = immediate.clone().exponent() }
+                addressing = x_dynamic.addressing();
+            }
+
+            registers = Some(Registers {
+                width: data.width.exponent(),
+                x_static: data.operands.x_static().unwrap_or(0),
+                x_dynamic: x_dynamic_code
+            });
+        }
+
+        let mut driver = Driver {
+            extension: self.extension.code(),
+            operation: self.extension.operation().code(),
+            synchronise,
+            dynamic_destination,
+            addressing,
+            immediate_exponent
+        };
+
+        // Unwrapping should not fail because the processor is a controlled environment. There is no risk of an
+        // immediate being present with a lack of [Registers]. Output of [encode_driver_registers_immediate] can safely
+        // be unwrapped.
+        if let Some(registers) = registers {
+            if let Some(immediate) = immediate { Instruction::encode_driver_registers_immediate(&mut driver, Some(&registers), Some(&immediate)).unwrap() }
+            else { Instruction::encode_driver_registers_immediate(&mut driver, Some(&registers), None).unwrap() }
+        } else { Instruction::encode_driver_registers_immediate(&mut driver, None, None).unwrap() }
     }
 }

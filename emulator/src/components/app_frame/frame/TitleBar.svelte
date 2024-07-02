@@ -27,6 +27,7 @@
 <style lang="scss">
     @import "../../../conf/surface.scss";
     @import "../../../conf/spacing.scss";
+    @import "../../../conf/text.scss";
 
     .root {
         background: $surface__titlebar;

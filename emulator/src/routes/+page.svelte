@@ -10,6 +10,7 @@
     import CanvasXt3 from "../components/CanvasXT3.svelte";
     import Button from "../components/Button.svelte";
     import TextField from "../components/TextField.svelte";
+    import Row from "../components/Row.svelte";
 
     let name = "";
     let greetMsg = "";
@@ -43,10 +44,25 @@
 
         {#snippet network_view()}
             <Frame title="Network View">
-                <Label>Network Viewer is not ready.</Label>
+                <Row>
+                    <Label slot="label">Account name</Label>
+                    <TextField />
+                </Row>
 
-                <Button>Text Actions</Button>
-                <TextField />
+                <Row>
+                    <Label slot="label">Account name</Label>
+                    <TextField />
+                </Row>
+
+                <Row>
+                    <Label slot="label">Account name</Label>
+                    <TextField />
+                </Row>
+
+                <Row>
+                    <Label slot="label">Account name</Label>
+                    <TextField />
+                </Row>
             </Frame>
         {/snippet}
 

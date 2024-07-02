@@ -1,4 +1,6 @@
+use std::fmt::Debug;
 use emulator::processor;
+use emulator::processor::processor::Ports;
 use crate::emulator::processor::processor::instruction;
 use crate::emulator::processor::processor::instruction::operation::arithmetic::Arithmetic;
 use crate::utility::Coded;
@@ -26,11 +28,11 @@ pub enum OperationExecuteError<CustomError> {
 }
 
 pub trait Operation<'a>: Coded<u8> + Default {
-    type CustomError;
-    fn execute(&self, code: u8, data: Option<&instruction::Data>, context: &mut processor::processor::Context) -> Result<(), OperationExecuteError<Self::CustomError>>;
+    type CustomError: Debug + Clone + PartialEq + Eq;
+    fn execute(&self, data: Option<&instruction::Data>, context: &mut processor::processor::Context, ports: &mut Ports) -> Result<(), OperationExecuteError<Self::CustomError>>;
 
     /// Get which operands are expected. [None] indicates that the operation does not expect any operands.
-    fn get_presence(&self) -> Option<OperandsPresence>;
+    fn presence(&self) -> Option<OperandsPresence>;
 }
 
 // Extension
@@ -76,7 +78,7 @@ impl Extension {
     }
 
     /// Retrieve the underlying operation trait.
-    pub fn operation(&mut self) -> &mut impl Operation {
+    pub fn operation(&self) -> &impl Operation {
         match self {
             Self::Arithmetic(arithmetic) => arithmetic
         }
