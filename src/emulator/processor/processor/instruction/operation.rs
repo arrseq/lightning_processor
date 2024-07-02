@@ -4,7 +4,7 @@ use emulator::memory::{GetError, Memory};
 use emulator::processor;
 use emulator::processor::processor::instruction::Data;
 use emulator::processor::processor::instruction::operand::{Dynamic, DynamicReadError, Static};
-use emulator::processor::processor::{Context, Ports, Registers};
+use emulator::processor::processor::{Context, ExternalContext, Ports, Registers};
 use number;
 use crate::emulator::processor::processor::instruction;
 use crate::emulator::processor::processor::instruction::operation::arithmetic::Arithmetic;
@@ -43,7 +43,7 @@ pub struct AllPresent<'a> {
 
 pub trait Operation<'a>: Coded<u8> + Default {
     type CustomError: Debug + Clone + PartialEq + Eq;
-    fn execute(&self, data: Option<&Data>, memory: &mut Memory, context: &mut Context, ports: &mut Ports) -> Result<(), OperationExecuteError<Self::CustomError>>;
+    fn execute(&self, data: Option<&Data>, context: &mut Context, external_context: &mut ExternalContext) -> Result<(), OperationExecuteError<Self::CustomError>>;
 
     /// Get which operands are expected. [None] indicates that the operation does not expect any operands.
     fn presence(&self) -> Option<OperandsPresence>;

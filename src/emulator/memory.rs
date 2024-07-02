@@ -186,22 +186,22 @@ pub struct Memory {
 // region: Memory cursor
 /// A tool used for interacting with memory through a [Read] and [Write] stream.
 #[derive(Debug)]
-pub struct MemoryCursor<'a> {
+pub struct MemoryCursor {
     /// The location to start reading from. This does not apply when doing direct reads.
     pub read_head: u64,
     /// Whether to translate the address of the read head.
     pub translate: bool,
-    pub memory: &'a mut Memory,
+    pub memory: Memory,
     /// The [GetError] produced by memory from the last fetch from memory. If no error was produced, then [None] is
     /// stored.
     pub get_error: Option<GetError>
 }
 
-impl<'a> From<&'a mut Memory> for MemoryCursor<'a> {
+impl From<Memory> for MemoryCursor {
     /// ```
     /// assert!(false); // TODO: Test
     /// ```
-    fn from(value: &'a mut Memory) -> Self {
+    fn from(value: Memory) -> Self {
         Self {
             read_head: 0,
             translate: false,
@@ -211,7 +211,7 @@ impl<'a> From<&'a mut Memory> for MemoryCursor<'a> {
     }
 }
 
-impl<'a> LastError<GetError> for MemoryCursor<'a> {
+impl LastError<GetError> for MemoryCursor {
     fn last_error(&self) -> &Option<GetError> {
         &self.get_error
     }
@@ -219,7 +219,7 @@ impl<'a> LastError<GetError> for MemoryCursor<'a> {
 
 // TODO: Implement write
 
-impl<'a> Read for MemoryCursor<'a> {
+impl Read for MemoryCursor {
     /// ```
     /// assert!(false); // TODO: Test
     /// ```
@@ -240,7 +240,7 @@ impl<'a> Read for MemoryCursor<'a> {
     }
 }
 
-impl<'a> Seek for MemoryCursor<'a> {
+impl Seek for MemoryCursor {
     /// ```
     /// // TODO; Test
     /// ```
