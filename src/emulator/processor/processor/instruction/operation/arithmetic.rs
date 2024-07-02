@@ -2,6 +2,7 @@ use emulator::memory::Memory;
 use emulator::processor::processor::{Context, Ports, Registers};
 use emulator::processor::processor::instruction::operand::{Destination, Dynamic};
 use number;
+use number::CheckedAdd;
 use crate::emulator::processor;
 use crate::emulator::processor::processor::instruction::Data;
 use crate::emulator::processor::processor::instruction::operand::OperandsPresence;
@@ -31,18 +32,19 @@ impl<'a> Operation<'a> for Arithmetic {
     fn execute(&self, data: Option<&Data>, memory: &mut Memory, context: &mut Context, ports: &mut Ports) -> Result<(), OperationExecuteError<Self::CustomError>> {
         let data = data.ok_or(OperationExecuteError::Data(true))?;
         let all_operands = data.operands.all().ok_or(OperationExecuteError::Operand(OperandsPresence::AllPresent))?;
-        let r#static = *context.registers.get(all_operands.x_static as usize).ok_or(OperationExecuteError::InvalidStaticRegister)?;
+        let r#static = number::Data::from_size_selecting(&data.width, *context.registers.get(all_operands.x_static as usize).ok_or(OperationExecuteError::InvalidStaticRegister)?);
         let dynamic = all_operands.x_dynamic.read(&data.width, memory, context.virtual_mode, &context.registers).map_err(OperationExecuteError::DynamicRead)?;
-        
+
         let result = match self {
-            Self::Add => r#static.checked_add(dynamic.quad()).ok_or(OperationExecuteError::Custom(ExecuteError::Overflow))?,
-            Self::Subtract => r#static.checked_sub(dynamic.quad()).ok_or(OperationExecuteError::Custom(ExecuteError::Overflow))?
+            Self::Add => r#static.checked_add(dynamic.into_owned()).ok_or(OperationExecuteError::Custom(ExecuteError::Overflow))?,
+            // Self::Subtract => r#static.checked_sub(dynamic.quad()).ok_or(OperationExecuteError::Custom(ExecuteError::Overflow))?
+            _ => todo!()
         };
         
         match data.destination {
-            Destination::Static => *context.registers.get_mut(all_operands.x_static as usize).unwrap() = result,
-            Destination::Dynamic => all_operands
-                .x_dynamic.write(&data.width, memory, context.virtual_mode, &mut context.registers, number::Data::from_size_selecting(&data.width, result))
+            Destination::Static => *context.registers.get_mut(all_operands.x_static as usize).unwrap() = result.quad(),
+            Destination::Dynamic => all_operands.x_dynamic
+                .write(&data.width, memory, context.virtual_mode, &mut context.registers, result)
                 .map_err(OperationExecuteError::DynamicRead)?
         };
         

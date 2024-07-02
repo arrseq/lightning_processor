@@ -25,49 +25,6 @@
     let lower_height_valid = 0;
     let lower_opened = false;
 
-    let protocol: Protocol | null;
-    let protocol_ready = false;
-    let protocol_queue: (() => void)[] = [];
-
-    function use_protocol(once_ready: (protocol: Protocol) => void): Promise<void> {
-        return new Promise((resolve) => {
-            let handle_logic = () => {
-                once_ready(protocol as any).then(() => resolve());
-            };
-
-            if (!protocol_ready) {
-                protocol_queue.push(handle_logic);
-                return;
-            }
-
-            handle_logic();
-        });
-    }
-
-    onMount(() => {
-        if (!protocol) {
-            protocol = new Protocol();
-
-            protocol.on_close_listener = () => {
-                protocol = null;
-                protocol_ready = false;
-            }
-
-            protocol.on_open_listener = () => {
-                protocol_ready = true;
-                protocol_queue.forEach((waiter) => waiter());
-            }
-        }
-    });
-
-    onDestroy(() => {
-        if (protocol) {
-            protocol.websocket.close();
-            protocol = null;
-            protocol_ready = false;
-        }
-    });
-
     let lower_v_sides = $state(RenderSides.Both);
 
     let { items, keys = [] as any[], ...slotProps } = $props();

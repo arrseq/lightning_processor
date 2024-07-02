@@ -313,3 +313,19 @@ impl From<Data> for u64 {
     }
 }
 // endregion
+
+pub trait CheckedAdd: Sized {
+    fn checked_add(self, factor: Data) -> Option<Data>;
+}
+
+impl CheckedAdd for Data {
+    fn checked_add(self, factor: Data) -> Option<Data> {
+        if self.size() != factor.size() { panic!("Type error: Cannot do checked add when the data types are not equal"); }
+        Some(match self {
+            Self::Byte(v) => Data::Byte(v.checked_add(u8::from(factor))?),
+            Self::Word(v) => Data::Word(v.checked_add(u16::from(factor))?),
+            Self::Dual(v) => Data::Dual(v.checked_add(u32::from(factor))?),
+            Self::Quad(v) => Data::Quad(v.checked_add(u64::from(factor))?)
+        })
+    }
+}

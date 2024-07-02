@@ -11,15 +11,51 @@
     import Button from "../components/Button.svelte";
     import TextField from "../components/TextField.svelte";
     import Row from "../components/Row.svelte";
+    import { onDestroy, onMount } from "svelte";
+    import Flame from "../components/graph/Flame.svelte";
 
-    let name = "";
-    let greetMsg = "";
+    let protocol: Protocol | null;
+    let protocol_ready = false;
+    let protocol_queue: (() => void)[] = [];
 
-    async function greet() {
-        // greetMsg = await invoke("read_memory_byte", { address: 9, translate: false });
+    function use_protocol(once_ready: (protocol: Protocol) => void): Promise<void> {
+        return new Promise((resolve) => {
+            let handle_logic = () => {
+                once_ready(protocol as any).then(() => resolve());
+            };
+
+            if (!protocol_ready) {
+                protocol_queue.push(handle_logic);
+                return;
+            }
+
+            handle_logic();
+        });
     }
 
-    let d = true;
+    onMount(() => {
+        if (!protocol) {
+            protocol = new Protocol();
+
+            protocol.on_close_listener = () => {
+                protocol = null;
+                protocol_ready = false;
+            }
+
+            protocol.on_open_listener = () => {
+                protocol_ready = true;
+                protocol_queue.forEach((waiter) => waiter());
+            }
+        }
+    });
+
+    onDestroy(() => {
+        if (protocol) {
+            protocol.websocket.close();
+            protocol = null;
+            protocol_ready = false;
+        }
+    });
 
     let window_keys = [
         { key: "memory_view", rail: "ss" },
@@ -36,10 +72,11 @@
 <div class="root">    
     <AppFrame items={windows} keys={window_keys} >
         {#snippet memory_view()}
-            <Frame title="Memory View">
-                <Label>Tutorial information will be here soon.</Label>
-                <CanvasXt3 slot="focus" />
-            </Frame>
+            {#if protocol}
+                <Frame title="Memory View">
+                    <Flame protocol={protocol} slot="focus" />
+                </Frame>
+            {/if}
         {/snippet}
 
         {#snippet network_view()}

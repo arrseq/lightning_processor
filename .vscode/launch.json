@@ -1,0 +1,305 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'emulator_lib'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=emulator"
+                ],
+                "filter": {
+                    "name": "emulator_lib",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'emulator'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=emulator",
+                    "--package=emulator"
+                ],
+                "filter": {
+                    "name": "emulator",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'emulator'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=emulator",
+                    "--package=emulator"
+                ],
+                "filter": {
+                    "name": "emulator",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'atln_processor'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=atln-processor"
+                ],
+                "filter": {
+                    "name": "atln_processor",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'arithmetic'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=arithmetic",
+                    "--package=atln-processor"
+                ],
+                "filter": {
+                    "name": "arithmetic",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'arithmetic'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=arithmetic",
+                    "--package=atln-processor"
+                ],
+                "filter": {
+                    "name": "arithmetic",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'bracket'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=bracket",
+                    "--package=atln-processor"
+                ],
+                "filter": {
+                    "name": "bracket",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'bracket'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=bracket",
+                    "--package=atln-processor"
+                ],
+                "filter": {
+                    "name": "bracket",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'decode'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=decode",
+                    "--package=atln-processor"
+                ],
+                "filter": {
+                    "name": "decode",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'decode'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=decode",
+                    "--package=atln-processor"
+                ],
+                "filter": {
+                    "name": "decode",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'mmset'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=mmset",
+                    "--package=atln-processor"
+                ],
+                "filter": {
+                    "name": "mmset",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'mmset'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=mmset",
+                    "--package=atln-processor"
+                ],
+                "filter": {
+                    "name": "mmset",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'overflow'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=overflow",
+                    "--package=atln-processor"
+                ],
+                "filter": {
+                    "name": "overflow",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'overflow'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=overflow",
+                    "--package=atln-processor"
+                ],
+                "filter": {
+                    "name": "overflow",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'signal'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=signal",
+                    "--package=atln-processor"
+                ],
+                "filter": {
+                    "name": "signal",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'signal'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=signal",
+                    "--package=atln-processor"
+                ],
+                "filter": {
+                    "name": "signal",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
