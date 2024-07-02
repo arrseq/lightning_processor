@@ -24,11 +24,10 @@ pub enum OperationExecuteError {
 }
 
 pub trait Operation<'a>: Coded<u8> + Default {
-    fn execute(&mut self, code: u8, data: Option<&instruction::Data>, context: &mut processor::processor::Context) -> Result<(),
-        OperationExecuteError>;
+    fn execute(&self, code: u8, data: Option<&instruction::Data>, context: &mut processor::processor::Context) -> Result<(), OperationExecuteError>;
 
     /// Get which operands are expected. [None] indicates that the operation does not expect any operands.
-    fn get_presence(&mut self) -> Option<OperandsPresence>;
+    fn get_presence(&self) -> Option<OperandsPresence>;
 }
 
 // Extension

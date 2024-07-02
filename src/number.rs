@@ -4,8 +4,8 @@
 
 // Constants
 
+use utility::ReadAll;
 use crate::emulator::processor::processor::instruction::operand::{IMMEDIATE_EXPONENT_BYTE, IMMEDIATE_EXPONENT_DUAL, IMMEDIATE_EXPONENT_QUAD, IMMEDIATE_EXPONENT_WORD};
-use crate::emulator::memory::ReadAll;
 
 pub const BYTE_SIZE: usize = 1;
 pub const WORD_SIZE: usize = 2;
@@ -216,8 +216,8 @@ impl PartialEq for Data {
 impl ReadAll<[u8]> for Data {
     /// Read bytes of the stored number type into a slice reference.
     /// ```
-    /// use atln_processor::memory::ReadAll;
     /// use atln_processor::number::Data;
+    /// use atln_processor::utility::ReadAll;
     ///
     /// let mut byte_buffer = [0u8; 1];
     ///

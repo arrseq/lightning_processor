@@ -33,6 +33,7 @@
 use std::collections::HashMap;
 use std::io;
 use std::io::{ErrorKind, Read, Seek, SeekFrom};
+use utility::LastError;
 use crate::number;
 use crate::number::{BYTE_SIZE, DUAL_SIZE, QUAD_SIZE, Size, WORD_SIZE};
 use crate::utility::read_vec_into_buffer;
@@ -47,27 +48,8 @@ pub const PAGE_IDENTIFIER_MASK: u64 = u64::MAX << PAGE_ITEM_BITS;
 pub const PAGE_ITEM_MASK      : u64 = u64::MAX >> (64 - PAGE_ITEM_BITS);
 pub const MAX_PAGES_COUNT     : u64 = u64::MAX & PAGE_IDENTIFIER_MASK;
 pub const PAGE_BYTES_COUNT    : u64 = (u64::MAX & PAGE_ITEM_MASK) + 1;
-
-// pub const PAGE_BYTES_COUNT    : u64 = 2u64.pow(PAGE_ITEM_BITS as u32);
-// endregion
-
-// region: Binary buffer
-/// Read all of a structure into another buffer of some sort. This is similar to [Read] with the difference being that
-/// all data is read into the buffer and any that don't fit are simply truncated.
-///
-/// Use this on things such as enums or things without structures. This is jank and not good, this trait is a retro fit
-/// due to poor early planing, things like [Data] are too deeply nested and implemented to be refactored into a
-/// structure to then be later used with Read.
-pub trait ReadAll<T> where
-    T: ?Sized {
-    /// Read some container and store the result inside a target somehow. This returns the number of bytes stored.
-    fn read_all(&mut self, target: &mut T) -> usize;
-}
-
-pub trait LastError<E> {
-    /// Get the last emitted error from a member of the parent object.
-    fn last_error(&mut self) -> &Option<E>;
-}
+// pub const PAGE_BYTES_COUNT    : u64 = 2u64.pow(PAGE_ITEM_BITS as u32); TODO: Whats the issue? This generates the 
+//                                                                        TODO: maximum index, not the count. 
 // endregion
 
 /// An address frame which includes a memory address and the frame size.
