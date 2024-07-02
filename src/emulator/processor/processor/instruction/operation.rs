@@ -1,6 +1,9 @@
 use std::fmt::Debug;
+use emulator::memory::Memory;
 use emulator::processor;
-use emulator::processor::processor::Ports;
+use emulator::processor::processor::instruction::Data;
+use emulator::processor::processor::instruction::operand::DynamicReadError;
+use emulator::processor::processor::{Context, Ports, Registers};
 use crate::emulator::processor::processor::instruction;
 use crate::emulator::processor::processor::instruction::operation::arithmetic::Arithmetic;
 use crate::utility::Coded;
@@ -23,13 +26,15 @@ pub enum OperationExecuteError<CustomError> {
     Data(bool),
     /// The operand presence was incorrect. The expected operand presence is contained in this error.
     Operand(OperandsPresence),
+    /// Caused from reading the dynamic error or dereferencing it.
+    DynamicRead(DynamicReadError),
     /// Error caused by the operation that is unique.
     Custom(CustomError)
 }
 
 pub trait Operation<'a>: Coded<u8> + Default {
     type CustomError: Debug + Clone + PartialEq + Eq;
-    fn execute(&self, data: Option<&instruction::Data>, context: &mut processor::processor::Context, ports: &mut Ports) -> Result<(), OperationExecuteError<Self::CustomError>>;
+    fn execute(&self, data: Option<&Data>, memory: &mut Memory, context: &mut Context, ports: &mut Ports) -> Result<(), OperationExecuteError<Self::CustomError>>;
 
     /// Get which operands are expected. [None] indicates that the operation does not expect any operands.
     fn presence(&self) -> Option<OperandsPresence>;

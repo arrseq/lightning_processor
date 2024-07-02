@@ -157,6 +157,16 @@ impl Data {
         })
     }
     
+    /// Turn u64 with the size into an instance of data.
+    pub fn from_size_selecting(size: Size, number: u64) -> Self {
+        match size {
+            Size::Byte => Self::Byte(number as u8),
+            Size::Word => Self::Word(number as u16),
+            Size::Dual => Self::Dual(number as u32),
+            Size::Quad => Self::Quad(number as u64),
+        }
+    }
+    
     /// Get the number of bytes that is stored in the variant associative data of the enum.
     /// 
     /// TODO: Test

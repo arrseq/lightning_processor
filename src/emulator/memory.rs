@@ -381,7 +381,7 @@ impl Memory {
     /// assert_eq!(memory.get(Frame { address: 4, size: Size::Word }, true).unwrap(), Data::Word(256));
     /// // endregion
     /// ```
-    pub fn get(&mut self, mut frame: Frame, r#virtual: bool) -> Result<number::Data, GetError> {
+    pub fn get(&self, mut frame: Frame, r#virtual: bool) -> Result<number::Data, GetError> {
         self.process_test_frame(&mut frame, r#virtual)?;
         let mut max_buffer = [0u8; QUAD_SIZE];
 

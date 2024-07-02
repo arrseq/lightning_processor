@@ -1,4 +1,6 @@
-use emulator::processor::processor::{Context, Ports};
+use emulator::memory::Memory;
+use emulator::processor::processor::{Context, Ports, Registers};
+use emulator::processor::processor::instruction::operand::Dynamic;
 use crate::emulator::processor;
 use crate::emulator::processor::processor::instruction::Data;
 use crate::emulator::processor::processor::instruction::operand::OperandsPresence;
@@ -19,12 +21,13 @@ pub enum Arithmetic {
 impl<'a> Operation<'a> for Arithmetic {
     type CustomError = ();
 
-    fn execute(&self, data: Option<&Data>, context: &mut Context, ports: &mut Ports) -> Result<(), OperationExecuteError<Self::CustomError>> {
-        // match self {
-        //     Arithmetic::Add => {
-        //         
-        //     }
-        // }
+    fn execute(&self, data: Option<&Data>, memory: &mut Memory, context: &mut Context, ports: &mut Ports) -> Result<(), OperationExecuteError<Self::CustomError>> {
+        let data = data.ok_or(OperationExecuteError::Data(true))?;
+        let all_operands = data.operands.all().ok_or(OperationExecuteError::Operand(OperandsPresence::AllPresent))?;
+        let dynamic = all_operands.x_dynamic.read(&data.width, memory, context.virtual_mode, &context.registers).map_err(OperationExecuteError::DynamicRead)?;
+        
+        dbg!(dynamic);
+
         todo!();
     }
 
