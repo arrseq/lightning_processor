@@ -2,7 +2,12 @@
 //! 
 //! The static operand is a simple and optional register field which can be used as the destination.
 
+use std::borrow::Cow;
 use std::io::Read;
+use emulator::memory;
+use emulator::memory::{Frame, Memory};
+use emulator::processor::processor;
+use number::{Data, Size};
 
 use crate::emulator::processor::processor::instruction::{Driver, Registers};
 use crate::number;
@@ -62,6 +67,15 @@ pub enum DynamicConstructError {
     Immediate(ReadImmediateError),
     /// The addressing mode does not exist.
     Addressing
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DynamicReadError {
+    /// The sum of the register value and offset caused an overflow.
+    Overflow,
+    /// Failed to read the memory for the offset or memory addressing mode.
+    Memory(memory::GetError),
+    InvalidRegisterIndex
 }
 
 impl Dynamic {
@@ -182,6 +196,40 @@ impl Dynamic {
             _ => return None
         })
     }
+
+    /// Try to read the value from the target of this operand.
+    /// ```
+    /// // TODO: Test
+    /// ```
+    pub fn read(&self, size: Size, memory: &Memory, translate: bool, registers: &processor::Registers) -> Result<Cow<Data>, DynamicReadError> {
+        Ok(match self {
+            Self::Register(register) => match registers.get(*register as usize) {
+                Some(dereferenced) => Cow::Owned(Data::from_size_selecting(size, *dereferenced)),
+                None => return Err(DynamicReadError::InvalidRegisterIndex)
+            },
+            Self::Offset(offset) => {
+                let register_dereferenced = match registers.get(offset.register as usize) {
+                    Some(dereferenced) => *dereferenced,
+                    None => return Err(DynamicReadError::InvalidRegisterIndex)
+                };
+                
+                let address = match register_dereferenced.checked_add(offset.offset.quad()) {
+                    Some(sum) => sum,
+                    None => return Err(DynamicReadError::Overflow)
+                };
+                
+                match memory.get(Frame { size, address }, translate) {
+                    Ok(dereferenced) => Cow::Owned(dereferenced),
+                    Err(error) => return Err(DynamicReadError::Memory(error))
+                }
+            },
+            Self::Constant(immediate) => Cow::Borrowed(immediate),
+            Self::Memory(address) => match memory.get(Frame { size, address: address.quad() }, translate) {
+                Ok(dereferenced) => Cow::Owned(dereferenced),
+                Err(error) => return Err(DynamicReadError::Memory(error))
+            }
+        })
+    }
 }
 
 /// Operands provide the operation the arguments necessary for computing, There are 2 types of operands, static and 
@@ -257,7 +305,7 @@ pub enum OperandsConstructError {
     SynchronousAddressing
 }
 
-impl<'a> Operands {
+impl Operands {
     /// Create a new operands set from
     /// - A stream which will be used to retrieve the immediate bytes if necessary.
     /// - The operations presence information.
