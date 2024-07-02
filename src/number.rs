@@ -93,6 +93,16 @@ impl Size {
             Self::Quad => IMMEDIATE_EXPONENT_QUAD
         }
     }
+
+    /// Generate an slice buffer with the correct number of bytes for this instance.
+    pub fn buffer<'a>(&self, source_buffer: &'a [u8; 8]) -> &'a [u8] {
+        match self {
+            Self::Byte => &source_buffer[0..1],
+            Self::Word => &source_buffer[0..2],
+            Self::Dual => &source_buffer[0..4],
+            Self::Quad => &source_buffer[0..8]
+        }
+    }
 }
 
 /// Variable absolute data type.
@@ -132,6 +142,10 @@ impl Data {
             Self::Dual(value) => value as u64,
             Self::Quad(value) => value
         }
+    }
+
+    pub fn quad_buffer(&self) -> [u8; 8] {
+        self.quad().to_le_bytes()
     }
 
     /// Fit a 64-bit number into the smallest division variant of this type.

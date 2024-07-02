@@ -19,6 +19,24 @@ pub fn read_vec_into_buffer(vec: &Vec<u8>, start: usize, buffer: &mut [u8]) -> u
     bytes_read
 }
 
+/// Write buffer.len() amount of bytes into the vector starting from the start index. This will return
+/// the number of bytes written.
+/// ```
+/// assert!(false); // TODO: Test
+/// ```
+pub fn write_buffer_into_vec(vec: &mut Vec<u8>, start: usize, buffer: &[u8]) -> usize {
+    let mut bytes_written = 0;
+    // Ensure the vector has enough space to accommodate the new data
+    if vec.len() < start + buffer.len() {
+        vec.resize(start + buffer.len(), 0);
+    }
+    for index in 0..buffer.len() {
+        vec[start + index] = buffer[index];
+        bytes_written += 1;
+    }
+    bytes_written
+}
+
 /// Get an identifier code for an item.
 pub trait Coded<Type> {
     fn code(&self) -> Type;

@@ -19,10 +19,12 @@ fn main() {
         width: Size::Byte,
         synchronous: false,
         operands: Operands::AllPresent(AllPresent {
-            x_static: 0,
+            x_static: 2,
             x_dynamic: Dynamic::Memory(number::Data::Byte(100))
         })
     })).unwrap();
 
     cpu0.execute(&instruction, &mut memory, &mut ports);
+    
+    dbg!(cpu0.context.registers);
 }

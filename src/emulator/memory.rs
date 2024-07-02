@@ -33,14 +33,14 @@
 use std::collections::HashMap;
 use std::io;
 use std::io::{ErrorKind, Read, Seek, SeekFrom};
-use utility::{LastError, ReadAll};
+use utility::{LastError, ReadAll, write_buffer_into_vec};
 use crate::number;
 use crate::number::{BYTE_SIZE, DUAL_SIZE, QUAD_SIZE, Size, WORD_SIZE};
 use crate::utility::read_vec_into_buffer;
 
 // region: Constants
-pub const DUAL_ALIGNED_MASK   : u64 = 0b1;
-pub const WORD_ALIGNED_MASK   : u64 = 0b11;
+pub const WORD_ALIGNED_MASK   : u64 = 0b1;
+pub const DUAL_ALIGNED_MASK   : u64 = 0b11;
 pub const QUAD_ALIGNED_MASK   : u64 = 0b111;
 
 pub const PAGE_ITEM_BITS      : u64 = 13;
@@ -407,6 +407,19 @@ impl Memory {
                 number::Data::Quad(u64::from_le_bytes([ buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7] ]))
             }
         })
+    }
+    
+    pub fn set(&mut self, mut frame: Frame, r#virtual: bool, value: number::Data) -> Result<(), GetError> {
+        self.process_test_frame(&mut frame, r#virtual)?;
+        let max_buffer = value.quad_buffer();
+        let buffer = frame.size.buffer(&max_buffer);
+        
+        match frame.size {
+            Size::Byte => *self.bytes.get_mut(frame.address as usize).ok_or(GetError::OutOfBounds)? = u8::from(value),
+            _ => if write_buffer_into_vec(&mut self.bytes, frame.address as usize, buffer) != buffer.len() { return Err(GetError::OutOfBounds) }
+        }
+        
+        Ok(())
     }
 }
 

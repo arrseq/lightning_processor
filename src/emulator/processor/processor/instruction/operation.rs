@@ -1,9 +1,11 @@
+use std::borrow::Cow;
 use std::fmt::Debug;
 use emulator::memory::Memory;
 use emulator::processor;
 use emulator::processor::processor::instruction::Data;
-use emulator::processor::processor::instruction::operand::DynamicReadError;
+use emulator::processor::processor::instruction::operand::{Dynamic, DynamicReadError, Static};
 use emulator::processor::processor::{Context, Ports, Registers};
+use number;
 use crate::emulator::processor::processor::instruction;
 use crate::emulator::processor::processor::instruction::operation::arithmetic::Arithmetic;
 use crate::utility::Coded;
@@ -29,7 +31,14 @@ pub enum OperationExecuteError<CustomError> {
     /// Caused from reading the dynamic error or dereferencing it.
     DynamicRead(DynamicReadError),
     /// Error caused by the operation that is unique.
-    Custom(CustomError)
+    Custom(CustomError),
+    /// The register code provided was invalid for the static operand.
+    InvalidStaticRegister
+}
+
+pub struct AllPresent<'a> {
+    pub r#static: u64,
+    pub dynamic: Cow<'a, number::Data>
 }
 
 pub trait Operation<'a>: Coded<u8> + Default {

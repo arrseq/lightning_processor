@@ -78,6 +78,11 @@ pub enum DynamicReadError {
     InvalidRegisterIndex
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DynamicWriteError {
+    
+}
+
 impl Dynamic {
     /// Read the immediate based on the exponent. The number of bytes read from the stream is based on using the
     /// immediate exponent as a power of 2.
@@ -212,6 +217,10 @@ impl Dynamic {
             Self::Constant(immediate) => Cow::Borrowed(immediate),
             Self::Memory(address) => Cow::Owned(memory.get(Frame { size: size.clone(), address: address.quad() }, translate).map_err(DynamicReadError::Memory)?)
         })
+    }
+    
+    pub fn write(&self, size: &Size, memory: &mut Memory, translate: bool, registers: &processor::Registers) -> Result<(), DynamicWriteError> {
+        todo!();
     }
 }
 
