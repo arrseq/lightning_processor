@@ -11,6 +11,7 @@
 <style lang="scss">
     @import "../conf/text.scss";
     @import "../conf/surface.scss";
+    @import "../conf/pixels.scss";
     
     .root {
         display: flex;
@@ -18,6 +19,7 @@
         align-items: center;
         justify-content: center;
         gap: 1px;
+        border-radius: $pixels__radius;
         height: 100%;
         
         span {

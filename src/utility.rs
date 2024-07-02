@@ -1,5 +1,4 @@
 use std::borrow::Cow;
-use std::io::Read;
 
 /// Read a vector like a stream. Read buffer.len() amount of bytes from the vector and into the buffer. This will return
 /// the number of bytes read.
@@ -13,10 +12,10 @@ pub fn read_vec_into_buffer(vec: &Vec<u8>, start: usize, buffer: &mut [u8]) -> u
             Some(value) => buffer[index] = *value,
             None => return bytes_read
         }
-        
+
         bytes_read += 1;
     }
-    
+
     bytes_read
 }
 
@@ -41,7 +40,7 @@ pub trait FromRepresentation<'a>: Sized {
 #[derive(Debug, Clone)]
 pub enum Bracket {
     Opening,
-    Closing
+    Closing,
 }
 
 impl<'a> Representable<'a> for Bracket {
@@ -66,10 +65,11 @@ impl<'a> FromRepresentation<'a> for Bracket {
 /// Read all of a structure into another buffer of some sort. This is similar to [Read] with the difference being that
 /// all data is read into the buffer and any that don't fit are simply truncated.
 ///
-/// Use this on things such as enums or things without structures. This is jank and not good, this trait is a retro fit
-/// due to poor early planing, things like [Data] are too deeply nested and implemented to be refactored into a
+/// Use this on things such as enums or things without structures. This is impropper and not good, this trait is a retro 
+/// fit due to poor early planing, things like [Data] are too deeply nested and implemented to be refactored into a
 /// structure to then be later used with Read.
-pub trait ReadAll<T> where
+pub trait ReadAll<T>
+where
     T: ?Sized {
     /// Read some container and store the result inside a target somehow. This returns the number of bytes stored.
     fn read_all(&self, target: &mut T) -> usize;

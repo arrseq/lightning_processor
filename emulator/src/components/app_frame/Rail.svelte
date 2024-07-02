@@ -33,5 +33,6 @@
         align-self: flex-start;
         overflow: auto;
         width: $pixels__label_height;
+        padding: 2px;
     }
 </style>

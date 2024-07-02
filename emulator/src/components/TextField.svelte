@@ -21,6 +21,8 @@
         background: $surface__control_secondary;
         align-items: center;
         align-self: flex-start;
+        border-radius: $pixels__radius;
+        border: 1px solid rgba(0, 0, 0, 14%);
 
         span.vr {
             width: $pixels__border_control;
@@ -32,10 +34,11 @@
             background: transparent;
             outline: none;
             border: none;
-            padding: 4px 14px;
+            padding: 2px 14px;
             color: $text__primary_color;
             font-size: $text__primary_font_size;
             font-family: $text__font_family;
+            border-radius: $pixels__radius;
 
             &:hover {
                 background: $surface__control_secondary;

@@ -238,7 +238,7 @@ impl ReadAll<[u8]> for Data {
     /// Data::Quad(u64::MAX).read_all(&mut dual_buffer);
     /// assert_eq!(dual_buffer, [255u8; 4]);
     /// ```
-    fn read_all(&mut self, target: &mut [u8]) -> usize {
+    fn read_all(&self, target: &mut [u8]) -> usize {
         let mut bytes_written = 0;
         let bytes = self.to_le_bytes();
         

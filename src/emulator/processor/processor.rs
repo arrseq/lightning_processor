@@ -11,14 +11,14 @@ pub struct Core {
 
 }
 
-/// The execution context.
+/// The execution context of an individual core.
 pub struct Context {
 
 }
 
 impl Core {
     /// Execute an instruction and see if the processor must halt. Doing this could modify the execution context.
-    pub fn execute(_instruction: &Instruction, _memory: &mut Memory, ports: &mut Ports) -> bool {
+    pub fn execute(_instruction: &Instruction, _memory: &mut Memory, _ports: &mut Ports) -> bool {
         todo!();
     }
 }

@@ -14,7 +14,7 @@
     @import "../conf/anime.scss";
 
     .root {
-        padding: 4px 14px;
+        padding: 2px 14px;
         color: $text__primary_color;
         font-family: $text__font_family;
         font-size: $text__primary_font_size;
@@ -22,9 +22,7 @@
         white-space: nowrap;
 
         // Force center.
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        display: inline-block;
         flex: 0;
 
         &.active {
@@ -47,7 +45,7 @@
         &.vertical {
             text-orientation: mixed;
             writing-mode: vertical-rl;
-            padding: 14px 4px;
+            padding: 14px 2px;
         }
     }
 </style>

@@ -1,5 +1,4 @@
-use std::borrow::Cow;
-use utility::{Bracket, Representable};
+use utility::Bracket;
 
 pub enum Control {
     Bracket(Bracket),

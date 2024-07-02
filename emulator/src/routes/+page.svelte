@@ -8,6 +8,8 @@
     import Label from "../components/Label.svelte";
     import Frame from "../components/app_frame/Frame.svelte";
     import CanvasXt3 from "../components/CanvasXT3.svelte";
+    import Button from "../components/Button.svelte";
+    import TextField from "../components/TextField.svelte";
 
     let name = "";
     let greetMsg = "";
@@ -42,6 +44,9 @@
         {#snippet network_view()}
             <Frame title="Network View">
                 <Label>Network Viewer is not ready.</Label>
+
+                <Button>Text Actions</Button>
+                <TextField />
             </Frame>
         {/snippet}
 

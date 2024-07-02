@@ -15,16 +15,19 @@ pub const DATA_CODE      : u8 = 1;
 // Operation
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum OperationExecuteError {
+pub enum OperationExecuteError<CustomError> {
     /// The data parameter received the wrong value for the current operations. The boolean in the error contains
     /// whether the data parameter was expected.
     Data(bool),
     /// The operand presence was incorrect. The expected operand presence is contained in this error.
-    Operand(OperandsPresence)
+    Operand(OperandsPresence),
+    /// Error caused by the operation that is unique.
+    Custom(CustomError)
 }
 
 pub trait Operation<'a>: Coded<u8> + Default {
-    fn execute(&self, code: u8, data: Option<&instruction::Data>, context: &mut processor::processor::Context) -> Result<(), OperationExecuteError>;
+    type CustomError;
+    fn execute(&self, code: u8, data: Option<&instruction::Data>, context: &mut processor::processor::Context) -> Result<(), OperationExecuteError<Self::CustomError>>;
 
     /// Get which operands are expected. [None] indicates that the operation does not expect any operands.
     fn get_presence(&self) -> Option<OperandsPresence>;
@@ -81,7 +84,7 @@ impl Extension {
 }
 
 impl Coded<u8> for Extension {
-    fn code(&mut self) -> u8 {
+    fn code(&self) -> u8 {
         match self {
             Self::Arithmetic(_) => ARITHMETIC_CODE
         }

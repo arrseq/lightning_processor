@@ -16,19 +16,20 @@ pub enum Arithmetic {
 }
 
 impl<'a> Operation<'a> for Arithmetic {
-    fn execute(&mut self, _code: u8, _data: Option<&Data>, _context: &mut processor::processor::Context) -> Result<(), OperationExecuteError> {
+    type CustomError = ();
+    fn execute(&self, _code: u8, _data: Option<&Data>, _context: &mut processor::processor::Context) -> Result<(), OperationExecuteError<Self::CustomError>> {
         // context.accumulator = 100;
         // TODO
         Ok(())
     }
 
-    fn get_presence(&mut self) -> Option<OperandsPresence> {
+    fn get_presence(&self) -> Option<OperandsPresence> {
         Some(OperandsPresence::AllPresent)
     }
 }
 
 impl Coded<u8> for Arithmetic {
-    fn code(&mut self) -> u8 {
+    fn code(&self) -> u8 {
         match self {
             Self::Add      => ADD_CODE,
             Self::Subtract => SUBTRACT_CODE

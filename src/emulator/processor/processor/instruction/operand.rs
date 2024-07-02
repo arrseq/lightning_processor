@@ -3,9 +3,9 @@
 //! The static operand is a simple and optional register field which can be used as the destination.
 
 use std::io::Read;
-use crate::emulator::processor::processor::instruction::operation::Operation;
+
 use crate::emulator::processor::processor::instruction::{Driver, Registers};
-use crate::{number};
+use crate::number;
 use crate::number::{BYTE_SIZE, DUAL_SIZE, QUAD_SIZE, WORD_SIZE};
 
 // region: Constants

@@ -36,7 +36,7 @@
         overflow-x: auto;
         overflow-y: hidden;
         max-width: 100%;
-        padding: 0 4px;
+        padding: 2px 4px;
 
         &.primary {
             background: $surface__body;

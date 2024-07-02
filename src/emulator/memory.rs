@@ -33,7 +33,7 @@
 use std::collections::HashMap;
 use std::io;
 use std::io::{ErrorKind, Read, Seek, SeekFrom};
-use utility::LastError;
+use utility::{LastError, ReadAll};
 use crate::number;
 use crate::number::{BYTE_SIZE, DUAL_SIZE, QUAD_SIZE, Size, WORD_SIZE};
 use crate::utility::read_vec_into_buffer;
@@ -212,7 +212,7 @@ impl<'a> From<&'a mut Memory> for MemoryCursor<'a> {
 }
 
 impl<'a> LastError<GetError> for MemoryCursor<'a> {
-    fn last_error(&mut self) -> &Option<GetError> {
+    fn last_error(&self) -> &Option<GetError> {
         &self.get_error
     }
 }
@@ -229,7 +229,7 @@ impl<'a> Read for MemoryCursor<'a> {
             None => return Err(io::Error::new(ErrorKind::Other, "Invalid buffer length"))
         };
 
-        let mut data = match self.memory.get(Frame { address: self.read_head, size }, self.translate) {
+        let data = match self.memory.get(Frame { address: self.read_head, size }, self.translate) {
             Ok(result) => result,
             // Memory errors can be accessed after this function by executing
             // LastError<GetError>::last_error(&mut Memory).

@@ -120,7 +120,7 @@ impl Encodable<[u8; 2]> for Driver {
     /// assert_eq!(encoded[0], 0b001010_1_0);
     /// assert_eq!(encoded[1], 0b1110_11_10);
     /// ```
-    fn encode(&mut self) -> [u8; 2] {
+    fn encode(&self) -> [u8; 2] {
         let mut driver0 = 0.set_extension(self.extension);
         driver0 = driver0.set_synchronise(self.synchronise);
         driver0 = driver0.set_dynamic_destination(self.dynamic_destination);

@@ -16,6 +16,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        background: $surface__body;
+        background: $surface__titlebar;
+        padding: 2px 4px;
     }
 </style>
