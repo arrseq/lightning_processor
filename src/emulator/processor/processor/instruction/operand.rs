@@ -203,31 +203,14 @@ impl Dynamic {
     /// ```
     pub fn read(&self, size: Size, memory: &Memory, translate: bool, registers: &processor::Registers) -> Result<Cow<Data>, DynamicReadError> {
         Ok(match self {
-            Self::Register(register) => match registers.get(*register as usize) {
-                Some(dereferenced) => Cow::Owned(Data::from_size_selecting(size, *dereferenced)),
-                None => return Err(DynamicReadError::InvalidRegisterIndex)
-            },
+            Self::Register(register) => Cow::Owned(Data::from_size_selecting(size, *registers.get(*register as usize).ok_or(DynamicReadError::InvalidRegisterIndex)?)),
             Self::Offset(offset) => {
-                let register_dereferenced = match registers.get(offset.register as usize) {
-                    Some(dereferenced) => *dereferenced,
-                    None => return Err(DynamicReadError::InvalidRegisterIndex)
-                };
-                
-                let address = match register_dereferenced.checked_add(offset.offset.quad()) {
-                    Some(sum) => sum,
-                    None => return Err(DynamicReadError::Overflow)
-                };
-                
-                match memory.get(Frame { size, address }, translate) {
-                    Ok(dereferenced) => Cow::Owned(dereferenced),
-                    Err(error) => return Err(DynamicReadError::Memory(error))
-                }
+                let register_dereferenced = *registers.get(offset.register as usize).ok_or(DynamicReadError::InvalidRegisterIndex)?;
+                let address = register_dereferenced.checked_add(offset.offset.quad()).ok_or(DynamicReadError::Overflow)?;
+                Cow::Owned(memory.get(Frame { size, address }, translate).map_err(DynamicReadError::Memory)?)
             },
             Self::Constant(immediate) => Cow::Borrowed(immediate),
-            Self::Memory(address) => match memory.get(Frame { size, address: address.quad() }, translate) {
-                Ok(dereferenced) => Cow::Owned(dereferenced),
-                Err(error) => return Err(DynamicReadError::Memory(error))
-            }
+            Self::Memory(address) => Cow::Owned(memory.get(Frame { size, address: address.quad() }, translate).map_err(DynamicReadError::Memory)?)
         })
     }
 }
