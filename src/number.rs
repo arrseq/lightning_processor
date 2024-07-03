@@ -192,6 +192,19 @@ impl Data {
             Self::Quad(_) => QUAD_SIZE as u8
         }
     }
+
+    pub fn is_zero(&self) -> bool {
+        match self {
+            Self::Byte(v) => *v == 0,
+            Self::Word(v) => *v == 0,
+            Self::Dual(v) => *v == 0,
+            Self::Quad(v) => *v == 0
+        }
+    }
+
+    pub fn not_zero(&self) -> bool {
+        !self.is_zero()
+    }
 }
 
 // region: Converting numbers to data instances
