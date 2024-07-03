@@ -333,7 +333,6 @@ pub trait CheckedDiv: Sized {
 
 impl CheckedAdd for Data {
     fn checked_add(&self, factor: &Data) -> Option<Data> {
-        if self.size() != factor.size() { return None; }
         Some(match self {
             Self::Byte(v) => Data::Byte(v.checked_add(u8::from(factor))?),
             Self::Word(v) => Data::Word(v.checked_add(u16::from(factor))?),
@@ -345,7 +344,6 @@ impl CheckedAdd for Data {
 
 impl CheckedSub for Data {
     fn checked_sub(&self, factor: &Data) -> Option<Data> {
-        if self.size() != factor.size() { return None; }
         Some(match self {
             Self::Byte(v) => Data::Byte(v.checked_sub(u8::from(factor))?),
             Self::Word(v) => Data::Word(v.checked_sub(u16::from(factor))?),
@@ -357,7 +355,6 @@ impl CheckedSub for Data {
 
 impl CheckedMul for Data {
     fn checked_mul(&self, factor: &Data) -> Option<Data> {
-        if self.size() != factor.size() { return None; }
         Some(match self {
             Self::Byte(v) => Data::Byte(v.checked_mul(u8::from(factor))?),
             Self::Word(v) => Data::Word(v.checked_mul(u16::from(factor))?),
@@ -369,7 +366,6 @@ impl CheckedMul for Data {
 
 impl CheckedDiv for Data {
     fn checked_div(&self, factor: &Data) -> Option<Data> {
-        if self.size() != factor.size() { return None; }
         Some(match self {
             Self::Byte(v) => Data::Byte(v.checked_div(u8::from(factor))?),
             Self::Word(v) => Data::Word(v.checked_div(u16::from(factor))?),
@@ -399,7 +395,6 @@ pub trait CarryingDiv {
 
 impl CarryingAdd for Data {
     fn carrying_add(&self, factor: &Data, carry: bool) -> Option<(Data, bool)> {
-        if self.size() != factor.size() { return None; }
         Some(match self {
             Self::Byte(v) => {
                 let binding = v.carrying_add(u8::from(factor), carry);
@@ -423,7 +418,6 @@ impl CarryingAdd for Data {
 
 impl CarryingSub for Data {
     fn carrying_sub(&self, factor: &Data, carry: bool) -> Option<(Data, bool)> {
-        if self.size() != factor.size() { return None; }
         Some(match self {
             Self::Byte(v) => {
                 let binding = v.borrowing_sub(u8::from(factor), carry);
@@ -444,3 +438,66 @@ impl CarryingSub for Data {
         })
     }
 }
+// endregion
+
+// region: Wrapping calculations.
+pub trait WrappingAdd {
+    fn wrapping_add(&self, factor: &Self) -> Self;
+}
+
+pub trait WrappingSub {
+    fn wrapping_sub(&self, factor: &Self) -> Self;
+}
+
+pub trait WrappingMul {
+    fn wrapping_mul(&self, factor: &Self) -> Self;
+}
+
+pub trait WrappingDiv {
+    fn wrapping_div(&self, factor: &Self) -> Self;
+}
+
+impl WrappingAdd for Data {
+    fn wrapping_add(&self, factor: &Self) -> Self {
+        match self {
+            Self::Byte(v) => Data::Byte(v.wrapping_add(u8::from(factor))),
+            Self::Word(v) => Data::Word(v.wrapping_add(u16::from(factor))),
+            Self::Dual(v) => Data::Dual(v.wrapping_add(u32::from(factor))),
+            Self::Quad(v) => Data::Quad(v.wrapping_add(u64::from(factor)))
+        }
+    }
+}
+
+impl WrappingSub for Data {
+    fn wrapping_sub(&self, factor: &Self) -> Self {
+        match self {
+            Self::Byte(v) => Data::Byte(v.wrapping_sub(u8::from(factor))),
+            Self::Word(v) => Data::Word(v.wrapping_sub(u16::from(factor))),
+            Self::Dual(v) => Data::Dual(v.wrapping_sub(u32::from(factor))),
+            Self::Quad(v) => Data::Quad(v.wrapping_sub(u64::from(factor)))
+        }
+    }
+}
+
+impl WrappingMul for Data {
+    fn wrapping_mul(&self, factor: &Self) -> Self {
+        match self {
+            Self::Byte(v) => Data::Byte(v.wrapping_mul(u8::from(factor))),
+            Self::Word(v) => Data::Word(v.wrapping_mul(u16::from(factor))),
+            Self::Dual(v) => Data::Dual(v.wrapping_mul(u32::from(factor))),
+            Self::Quad(v) => Data::Quad(v.wrapping_mul(u64::from(factor)))
+        }
+    }
+}
+
+impl WrappingDiv for Data {
+    fn wrapping_div(&self, factor: &Self) -> Self {
+        match self {
+            Self::Byte(v) => Data::Byte(v.wrapping_div(u8::from(factor))),
+            Self::Word(v) => Data::Word(v.wrapping_div(u16::from(factor))),
+            Self::Dual(v) => Data::Dual(v.wrapping_div(u32::from(factor))),
+            Self::Quad(v) => Data::Quad(v.wrapping_div(u64::from(factor)))
+        }
+    }
+}
+// endregion
