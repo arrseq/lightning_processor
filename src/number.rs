@@ -206,7 +206,7 @@ impl Data {
         !self.is_zero()
     }
     
-    pub fn resize(&self, new_size: Size) -> Self {
+    pub fn resize(&self, new_size: &Size) -> Self {
         match new_size {
             Size::Byte => Self::Byte(u8::from(self)),
             Size::Word => Self::Word(u16::from(self)),
