@@ -205,6 +205,15 @@ impl Data {
     pub fn not_zero(&self) -> bool {
         !self.is_zero()
     }
+    
+    pub fn resize(&self, new_size: Size) -> Self {
+        match new_size {
+            Size::Byte => Self::Byte(u8::from(self)),
+            Size::Word => Self::Word(u16::from(self)),
+            Size::Dual => Self::Dual(u32::from(self)),
+            Size::Quad => Self::Quad(u64::from(self))
+        }
+    }
 }
 
 // region: Converting numbers to data instances
