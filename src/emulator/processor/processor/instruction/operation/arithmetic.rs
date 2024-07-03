@@ -1,8 +1,9 @@
+use std::borrow::Cow;
 use emulator::memory::Memory;
 use emulator::processor::processor::{Context, ExternalContext, Ports, Registers};
 use emulator::processor::processor::instruction::operand::{Destination, Dynamic};
 use number;
-use number::{CheckedAdd, CheckedMul, CheckedSub};
+use number::{CarryingAdd, CarryingSub, CheckedAdd, CheckedMul, CheckedSub};
 use crate::emulator::processor;
 use crate::emulator::processor::processor::instruction::Data;
 use crate::emulator::processor::processor::instruction::operand::OperandsPresence;
@@ -24,36 +25,47 @@ pub enum Arithmetic {
     Divide
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ExecuteError {
-    /// A calculation resulted in an overflow.
-    Overflow
+/// Flags that can be set or will be set by this unit. Flags could be used by instructions that read the flags. Specific 
+/// instructions can be used to read the flags. 
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct Flags {
+    pub overflow: bool,
+    pub cary: bool,
+    pub zero: bool,
+    pub sign: bool
 }
 
 impl<'a> Operation<'a> for Arithmetic {
-    type CustomError = ExecuteError;
+    type CustomError = ();
 
-    fn execute(&self, data: Option<&Data>, context: &mut Context, external_context: &mut ExternalContext) -> Result<(), OperationExecuteError<Self::CustomError>> {
+    fn execute<X: AsRef<[u8]> + AsMut<[u8]>>(&self, data: Option<&Data>, context: &mut Context, external_context: &mut ExternalContext<X>) -> Result<(), OperationExecuteError<Self::CustomError>> {
         let data = data.ok_or(OperationExecuteError::Data(true))?;
         let all_operands = data.operands.all().ok_or(OperationExecuteError::Operand(OperandsPresence::AllPresent))?;
         let r#static = number::Data::from_size_selecting(&data.width, *context.registers.get(all_operands.x_static as usize).ok_or(OperationExecuteError::InvalidStaticRegister)?);
-        let dynamic = all_operands.x_dynamic.read(&data.width, &mut external_context.memory, context.virtual_mode, &context.registers).map_err(OperationExecuteError::DynamicRead)?;
-
-        let result = match self {
-            Self::Add => r#static.checked_add(dynamic.into_owned()),
-            Self::Subtract => r#static.checked_sub(dynamic.into_owned()),
-            Self::Multiply => r#static.checked_mul(dynamic.into_owned()),
-            Self::Divide => r#static.checked_mul(dynamic.into_owned()),
-            _ => todo!()
-        }
-            .ok_or(OperationExecuteError::Custom(ExecuteError::Overflow))?;
+        let dynamic = &*all_operands.x_dynamic
+            .read(&data.width, &external_context.memory, context.virtual_mode, &context.registers).map_err(OperationExecuteError::DynamicRead)?;
         
-        match data.destination {
-            Destination::Static => *context.registers.get_mut(all_operands.x_static as usize).unwrap() = result.quad(),
-            Destination::Dynamic => all_operands.x_dynamic
-                .write(&data.width, &mut external_context.memory, context.virtual_mode, &mut context.registers, result)
-                .map_err(OperationExecuteError::DynamicRead)?
+        context.arithmetic_flags.overflow = match self {
+            Self::Add => r#static.checked_add(dynamic),
+            Self::Subtract => r#static.checked_sub(dynamic),
+            Self::Multiply => r#static.checked_mul(dynamic),
+            Self::Divide => r#static.checked_mul(dynamic)
+        }.is_none();
+
+        context.arithmetic_flags.cary = match self {
+            Self::Add => r#static.carrying_add(dynamic, false).unwrap().1,
+            Self::Subtract => r#static.carrying_sub(dynamic, false).unwrap().1,
+            _ => false
         };
+        
+        context.arithmetic_flags.zero = todo!();
+        
+        // match data.destination {
+        //     Destination::Static => *context.registers.get_mut(all_operands.x_static as usize).unwrap() = result.quad(),
+        //     Destination::Dynamic => all_operands.x_dynamic
+        //         .write(&data.width, &mut external_context.memory, context.virtual_mode, &mut context.registers, result)
+        //         .map_err(OperationExecuteError::DynamicRead)?
+        // };
         
         Ok(())
     }

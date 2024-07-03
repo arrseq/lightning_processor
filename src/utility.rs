@@ -5,14 +5,15 @@ use std::borrow::Cow;
 /// ```
 /// assert!(false); // TODO: Test
 /// ```
-pub fn read_vec_into_buffer(vec: &Vec<u8>, start: usize, buffer: &mut [u8]) -> usize {
+pub fn read_bytes_into_buffer<X: AsRef<[u8]>>(vec: &X, start: usize, buffer: &mut [u8]) -> usize {
     let mut bytes_read = 0;
-    for index in 0..buffer.len() {
-        match vec.get(start + index) {
-            Some(value) => buffer[index] = *value,
-            None => return bytes_read
-        }
+    let vec_slice = vec.as_ref();
 
+    for index in 0..buffer.len() {
+        match vec_slice.get(start + index) {
+            Some(&value) => buffer[index] = value,
+            None => return bytes_read,
+        }
         bytes_read += 1;
     }
 
@@ -24,16 +25,23 @@ pub fn read_vec_into_buffer(vec: &Vec<u8>, start: usize, buffer: &mut [u8]) -> u
 /// ```
 /// assert!(false); // TODO: Test
 /// ```
-pub fn write_buffer_into_vec(vec: &mut Vec<u8>, start: usize, buffer: &[u8]) -> usize {
+pub fn write_buffer_into_bytes<X: AsRef<[u8]> + AsMut<[u8]>>(vec: &mut X, start: usize, buffer: &[u8]) -> usize {
     let mut bytes_written = 0;
-    // Ensure the vector has enough space to accommodate the new data
-    if vec.len() < start + buffer.len() {
-        vec.resize(start + buffer.len(), 0);
-    }
-    for index in 0..buffer.len() {
-        vec[start + index] = buffer[index];
+    let vec_len = vec.as_ref().len();
+    let buffer_len = buffer.len();
+
+    // Get a mutable reference to the underlying slice
+    let vec_mut = vec.as_mut();
+
+    // Write to the buffer, stopping if we run out of space
+    for index in 0..buffer_len {
+        if start + index >= vec_len {
+            break;
+        }
+        vec_mut[start + index] = buffer[index];
         bytes_written += 1;
     }
+
     bytes_written
 }
 

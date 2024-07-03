@@ -33,10 +33,10 @@
 use std::collections::HashMap;
 use std::io;
 use std::io::{ErrorKind, Read, Seek, SeekFrom};
-use utility::{LastError, ReadAll, write_buffer_into_vec};
+use utility::{LastError, ReadAll, write_buffer_into_bytes};
 use crate::number;
 use crate::number::{BYTE_SIZE, DUAL_SIZE, QUAD_SIZE, Size, WORD_SIZE};
-use crate::utility::read_vec_into_buffer;
+use crate::utility::read_bytes_into_buffer;
 
 // region: Constants
 pub const WORD_ALIGNED_MASK   : u64 = 0b1;
@@ -170,91 +170,16 @@ impl Address for u64 {
 }
 // endregion
 
-/// Memory addressing must be aligned. Rules must be followed for frame based operations on memory.
+/// Memory addressing must be aligned, and rules must be followed for frame oriented operations on memory.
 /// - If the memory is size constrained, then ensure the frame is not reaching past the memory size limit.
 /// - Frames must be aligned to simulate hardware limitations of an implemented memory module.
-#[derive(Debug, Clone, Default)]
-pub struct Memory {
-    pub bytes: Vec<u8>,
+#[derive(Debug, Clone)]
+pub struct Memory<T: AsRef<[u8]> + AsMut<[u8]>> {
+    pub bytes: T,
     pub max_address: Option<u64>,
-    /// Number of bytes in each page.
-    pub page_size: u64,
     /// Mappings of virtual page addresses to physical page addresses.
     pub pages: HashMap<u64, u64>
 }
-
-// region: Memory cursor
-/// A tool used for interacting with memory through a [Read] and [Write] stream.
-#[derive(Debug)]
-pub struct MemoryCursor {
-    /// The location to start reading from. This does not apply when doing direct reads.
-    pub read_head: u64,
-    /// Whether to translate the address of the read head.
-    pub translate: bool,
-    pub memory: Memory,
-    /// The [GetError] produced by memory from the last fetch from memory. If no error was produced, then [None] is
-    /// stored.
-    pub get_error: Option<GetError>
-}
-
-impl From<Memory> for MemoryCursor {
-    /// ```
-    /// assert!(false); // TODO: Test
-    /// ```
-    fn from(value: Memory) -> Self {
-        Self {
-            read_head: 0,
-            translate: false,
-            memory: value,
-            get_error: None
-        }
-    }
-}
-
-impl LastError<GetError> for MemoryCursor {
-    fn last_error(&self) -> &Option<GetError> {
-        &self.get_error
-    }
-}
-
-// TODO: Implement write
-
-impl Read for MemoryCursor {
-    /// ```
-    /// assert!(false); // TODO: Test
-    /// ```
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        let size = match Size::from_size(buf.len()) {
-            Some(value) => value,
-            None => return Err(io::Error::new(ErrorKind::Other, "Invalid buffer length"))
-        };
-
-        let data = match self.memory.get(Frame { address: self.read_head, size }, self.translate) {
-            Ok(result) => result,
-            // Memory errors can be accessed after this function by executing
-            // LastError<GetError>::last_error(&mut Memory).
-            Err(_) => return Err(io::Error::new(ErrorKind::Other, "Failed to read from memory"))
-        };
-
-        Ok(data.read_all(buf))
-    }
-}
-
-impl Seek for MemoryCursor {
-    /// ```
-    /// // TODO; Test
-    /// ```
-    fn seek(&mut self, pos: SeekFrom) -> std::io::Result<u64> {
-        match pos {
-            SeekFrom::Start(start) => self.read_head = start,
-            SeekFrom::End(end) => self.read_head = (self.memory.bytes.len() as i64 - end) as u64,
-            SeekFrom::Current(curr) => self.read_head = (self.read_head as i64 + curr) as u64
-        }
-
-        Ok(self.read_head)
-    }
-}
-// endregion
 
 /// Error caused from setting data in memory.
 pub enum SetError {
@@ -273,7 +198,7 @@ pub enum GetError {
     PageFault
 }
 
-impl Memory {
+impl<T: AsRef<[u8]> + AsMut<[u8]>> Memory<T> {
     /// Translate the virtual address into a physical address based on the current situation. This returns a unit if the
     /// page mapping does not exist. This is a page fault.
     /// If the page does not exist then that case is a page fault. This function would return [None] to imply a page
@@ -305,6 +230,14 @@ impl Memory {
         let virtual_item = r#virtual.extract_item();
 
         Some(physical_page.set_item(virtual_item))
+    }
+    
+    pub fn new(bytes: T) -> Self {
+        Self {
+            bytes,
+            pages: Default::default(),
+            max_address: None
+        }
     }
 
     /// Utility function to check for errors in an address frame when performing operations on memory and to handle
@@ -388,22 +321,22 @@ impl Memory {
         Ok(match frame.size {
             Size::Byte => {
                 let buffer = &mut max_buffer[0..BYTE_SIZE];
-                if read_vec_into_buffer(&self.bytes, frame.address as usize, buffer) != buffer.len() { return Err(GetError::OutOfBounds) }
+                if read_bytes_into_buffer(&self.bytes, frame.address as usize, buffer) != buffer.len() { return Err(GetError::OutOfBounds) }
                 number::Data::Byte(buffer[0])
             },
             Size::Word => {
                 let buffer = &mut max_buffer[0..WORD_SIZE];
-                if read_vec_into_buffer(&self.bytes, frame.address as usize, buffer) != buffer.len() { return Err(GetError::OutOfBounds) }
+                if read_bytes_into_buffer(&self.bytes, frame.address as usize, buffer) != buffer.len() { return Err(GetError::OutOfBounds) }
                 number::Data::Word(u16::from_le_bytes([ buffer[0], buffer[1] ]))
             },
             Size::Dual => {
                 let buffer = &mut max_buffer[0..DUAL_SIZE];
-                if read_vec_into_buffer(&self.bytes, frame.address as usize, buffer) != buffer.len() { return Err(GetError::OutOfBounds) }
+                if read_bytes_into_buffer(&self.bytes, frame.address as usize, buffer) != buffer.len() { return Err(GetError::OutOfBounds) }
                 number::Data::Dual(u32::from_le_bytes([ buffer[0], buffer[1], buffer[2], buffer[3] ]))
             },
             Size::Quad => {
                 let buffer = &mut max_buffer[0..QUAD_SIZE];
-                if read_vec_into_buffer(&self.bytes, frame.address as usize, buffer) != buffer.len() { return Err(GetError::OutOfBounds) }
+                if read_bytes_into_buffer(&self.bytes, frame.address as usize, buffer) != buffer.len() { return Err(GetError::OutOfBounds) }
                 number::Data::Quad(u64::from_le_bytes([ buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7] ]))
             }
         })
@@ -415,22 +348,10 @@ impl Memory {
         let buffer = frame.size.buffer(&max_buffer);
         
         match frame.size {
-            Size::Byte => *self.bytes.get_mut(frame.address as usize).ok_or(GetError::OutOfBounds)? = u8::from(value),
-            _ => if write_buffer_into_vec(&mut self.bytes, frame.address as usize, buffer) != buffer.len() { return Err(GetError::OutOfBounds) }
+            Size::Byte => *self.bytes.as_mut().get_mut(frame.address as usize).ok_or(GetError::OutOfBounds)? = u8::from(&value),
+            _ => if write_buffer_into_bytes(&mut self.bytes, frame.address as usize, buffer) != buffer.len() { return Err(GetError::OutOfBounds) }
         }
         
         Ok(())
-    }
-}
-
-impl From<Vec<u8>> for Memory {
-    /// Initialize the memory from a vector. The length of the vector is used to set the max address of the memory.
-    fn from(value: Vec<u8>) -> Self {
-        Self {
-            max_address: Some(value.len() as u64),
-            page_size: 0,
-            bytes: value,
-            pages: HashMap::new()
-        }
     }
 }

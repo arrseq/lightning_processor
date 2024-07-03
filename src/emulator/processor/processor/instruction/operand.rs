@@ -204,7 +204,7 @@ impl Dynamic {
     /// ```
     /// // TODO: Test
     /// ```
-    pub fn read(&self, size: &Size, memory: &Memory, translate: bool, registers: &processor::Registers) -> Result<Cow<Data>, DynamicReadError> {
+    pub fn read<X: AsRef<[u8]> + AsMut<[u8]>>(&self, size: &Size, memory: &Memory<X>, translate: bool, registers: &processor::Registers) -> Result<Cow<Data>, DynamicReadError> {
         Ok(match self {
             Self::Register(register) => Cow::Owned(Data::from_size_selecting(&size, *registers.get(*register as usize).ok_or(DynamicReadError::InvalidRegisterIndex)?)),
             Self::Offset(offset) => {
@@ -217,7 +217,7 @@ impl Dynamic {
         })
     }
     
-    pub fn write(&self, size: &Size, memory: &mut Memory, translate: bool, registers: &mut processor::Registers, value: Data) -> Result<(), DynamicReadError> {
+    pub fn write<X: AsRef<[u8]> + AsMut<[u8]>>(&self, size: &Size, memory: &mut Memory<X>, translate: bool, registers: &mut processor::Registers, value: Data) -> Result<(), DynamicReadError> {
         match self {
             Self::Register(register) => *registers.get_mut(*register as usize).ok_or(DynamicReadError::InvalidRegisterIndex)? = value.quad(),
             Self::Offset(offset) => {

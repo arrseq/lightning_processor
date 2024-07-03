@@ -289,49 +289,50 @@ pub enum ExtractError {
 }
 
 // region: Data to number conversion
-impl From<Data> for u8 {
-    fn from(value: Data) -> Self {
+impl From<&Data> for u8 {
+    fn from(value: &Data) -> Self {
         value.quad() as u8
     }
 }
 
-impl From<Data> for u16 {
-    fn from(value: Data) -> Self {
+impl From<&Data> for u16 {
+    fn from(value: &Data) -> Self {
         value.quad() as u16
     }
 }
 
-impl From<Data> for u32 {
-    fn from(value: Data) -> Self {
+impl From<&Data> for u32 {
+    fn from(value: &Data) -> Self {
         value.quad() as u32
     }
 }
 
-impl From<Data> for u64 {
-    fn from(value: Data) -> Self {
-        value.quad() as u64
+impl From<&Data> for u64 {
+    fn from(value: &Data) -> Self {
+        value.quad()
     }
 }
 // endregion
 
+// region: Checked functions.
 pub trait CheckedAdd: Sized {
-    fn checked_add(self, factor: Data) -> Option<Data>;
+    fn checked_add(&self, factor: &Data) -> Option<Data>;
 }
 
 pub trait CheckedSub: Sized {
-    fn checked_sub(self, factor: Data) -> Option<Data>;
+    fn checked_sub(&self, factor: &Data) -> Option<Data>;
 }
 
 pub trait CheckedMul: Sized {
-    fn checked_mul(self, factor: Data) -> Option<Data>;
+    fn checked_mul(&self, factor: &Data) -> Option<Data>;
 }
 
 pub trait CheckedDiv: Sized {
-    fn checked_div(self, factor: Data) -> Option<Data>;
+    fn checked_div(&self, factor: &Data) -> Option<Data>;
 }
 
 impl CheckedAdd for Data {
-    fn checked_add(self, factor: Data) -> Option<Data> {
+    fn checked_add(&self, factor: &Data) -> Option<Data> {
         if self.size() != factor.size() { return None; }
         Some(match self {
             Self::Byte(v) => Data::Byte(v.checked_add(u8::from(factor))?),
@@ -343,7 +344,7 @@ impl CheckedAdd for Data {
 }
 
 impl CheckedSub for Data {
-    fn checked_sub(self, factor: Data) -> Option<Data> {
+    fn checked_sub(&self, factor: &Data) -> Option<Data> {
         if self.size() != factor.size() { return None; }
         Some(match self {
             Self::Byte(v) => Data::Byte(v.checked_sub(u8::from(factor))?),
@@ -355,7 +356,7 @@ impl CheckedSub for Data {
 }
 
 impl CheckedMul for Data {
-    fn checked_mul(self, factor: Data) -> Option<Data> {
+    fn checked_mul(&self, factor: &Data) -> Option<Data> {
         if self.size() != factor.size() { return None; }
         Some(match self {
             Self::Byte(v) => Data::Byte(v.checked_mul(u8::from(factor))?),
@@ -367,13 +368,79 @@ impl CheckedMul for Data {
 }
 
 impl CheckedDiv for Data {
-    fn checked_div(self, factor: Data) -> Option<Data> {
+    fn checked_div(&self, factor: &Data) -> Option<Data> {
         if self.size() != factor.size() { return None; }
         Some(match self {
             Self::Byte(v) => Data::Byte(v.checked_div(u8::from(factor))?),
             Self::Word(v) => Data::Word(v.checked_div(u16::from(factor))?),
             Self::Dual(v) => Data::Dual(v.checked_div(u32::from(factor))?),
             Self::Quad(v) => Data::Quad(v.checked_div(u64::from(factor))?)
+        })
+    }
+}
+// endregion
+
+// region: Carrying
+pub trait CarryingAdd {
+    fn carrying_add(&self, factor: &Data, carry: bool) -> Option<(Data, bool)>;
+}
+
+pub trait CarryingSub {
+    fn carrying_sub(&self, factor: &Data, carry: bool) -> Option<(Data, bool)>;
+}
+
+pub trait CarryingMul {
+    fn carrying_mul(&self, factor: &Data, carry: bool) -> Option<(Data, bool)>;
+}
+
+pub trait CarryingDiv {
+    fn carrying_div(&self, factor: &Data, carry: bool) -> Option<(Data, bool)>;
+}
+
+impl CarryingAdd for Data {
+    fn carrying_add(&self, factor: &Data, carry: bool) -> Option<(Data, bool)> {
+        if self.size() != factor.size() { return None; }
+        Some(match self {
+            Self::Byte(v) => {
+                let binding = v.carrying_add(u8::from(factor), carry);
+                (Data::Byte(binding.0), binding.1)
+            },
+            Self::Word(v) => {
+                let binding = v.carrying_add(u16::from(factor), carry);
+                (Data::Word(binding.0), binding.1)
+            },
+            Self::Dual(v) => {
+                let binding = v.carrying_add(u32::from(factor), carry);
+                (Data::Dual(binding.0), binding.1)
+            },
+            Self::Quad(v) => {
+                let binding = v.carrying_add(u64::from(factor), carry);
+                (Data::Quad(binding.0), binding.1)
+            }
+        })
+    }
+}
+
+impl CarryingSub for Data {
+    fn carrying_sub(&self, factor: &Data, carry: bool) -> Option<(Data, bool)> {
+        if self.size() != factor.size() { return None; }
+        Some(match self {
+            Self::Byte(v) => {
+                let binding = v.borrowing_sub(u8::from(factor), carry);
+                (Data::Byte(binding.0), binding.1)
+            },
+            Self::Word(v) => {
+                let binding = v.borrowing_sub(u16::from(factor), carry);
+                (Data::Word(binding.0), binding.1)
+            },
+            Self::Dual(v) => {
+                let binding = v.borrowing_sub(u32::from(factor), carry);
+                (Data::Dual(binding.0), binding.1)
+            },
+            Self::Quad(v) => {
+                let binding = v.borrowing_sub(u64::from(factor), carry);
+                (Data::Quad(binding.0), binding.1)
+            }
         })
     }
 }

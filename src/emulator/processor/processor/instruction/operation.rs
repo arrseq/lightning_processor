@@ -43,7 +43,7 @@ pub struct AllPresent<'a> {
 
 pub trait Operation<'a>: Coded<u8> + Default {
     type CustomError: Debug + Clone + PartialEq + Eq;
-    fn execute(&self, data: Option<&Data>, context: &mut Context, external_context: &mut ExternalContext) -> Result<(), OperationExecuteError<Self::CustomError>>;
+    fn execute<X: AsRef<[u8]> + AsMut<[u8]>>(&self, data: Option<&Data>, context: &mut Context, external_context: &mut ExternalContext<X>) -> Result<(), OperationExecuteError<Self::CustomError>>;
 
     /// Get which operands are expected. [None] indicates that the operation does not expect any operands.
     fn presence(&self) -> Option<OperandsPresence>;
