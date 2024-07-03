@@ -32,7 +32,7 @@ pub enum Arithmetic {
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Flags {
     pub overflow: bool,
-    pub cary: bool,
+    pub regrouping: bool,
     pub zero: bool,
     pub sign: bool
 }
@@ -43,9 +43,11 @@ impl<'a> Operation<'a> for Arithmetic {
     fn execute<X: AsRef<[u8]> + AsMut<[u8]>>(&self, data: Option<&Data>, context: &mut Context, external_context: &mut ExternalContext<X>) -> Result<(), OperationExecuteError<Self::CustomError>> {
         let data = data.ok_or(OperationExecuteError::Data(true))?;
         let all_operands = data.operands.all().ok_or(OperationExecuteError::Operand(OperandsPresence::AllPresent))?;
-        let r#static = number::Data::from_size_selecting(&data.width, *context.registers.get(all_operands.x_static as usize).ok_or(OperationExecuteError::InvalidStaticRegister)?);
-        let dynamic = &*all_operands.x_dynamic
-            .read(&data.width, &external_context.memory, context.virtual_mode, &context.registers).map_err(OperationExecuteError::DynamicRead)?;
+        let r#static = number::Data::from_size_selecting(&data.width, *context.registers.get(all_operands.x_static as usize).ok_or(OperationExecuteError::InvalidStaticRegister)?)
+            .resize(&data.width);
+        let dynamic = &(*all_operands.x_dynamic
+            .read(&data.width, &external_context.memory, context.virtual_mode, &context.registers).map_err(OperationExecuteError::DynamicRead)?)
+            .resize(&data.width);
         
         context.arithmetic_flags.overflow = match self {
             Self::Add | Arithmetic::CarryingAdd => r#static.checked_add(dynamic),
@@ -54,11 +56,11 @@ impl<'a> Operation<'a> for Arithmetic {
             Self::Divide => r#static.checked_mul(dynamic)
         }.is_none();
 
-        context.arithmetic_flags.cary = match self {
+        context.arithmetic_flags.regrouping = match self {
             Self::Add => r#static.carrying_add(dynamic, false).unwrap().1,
             Self::Subtract => r#static.carrying_sub(dynamic, false).unwrap().1,
-            Self::CarryingAdd => r#static.carrying_add(dynamic, context.arithmetic_flags.cary).unwrap().1,
-            Self::BorrowingSub => r#static.carrying_add(dynamic, context.arithmetic_flags.cary).unwrap().1,
+            Self::CarryingAdd => r#static.carrying_add(dynamic, context.arithmetic_flags.regrouping).unwrap().1,
+            Self::BorrowingSub => r#static.carrying_add(dynamic, context.arithmetic_flags.regrouping).unwrap().1,
             _ => false
         };
         
