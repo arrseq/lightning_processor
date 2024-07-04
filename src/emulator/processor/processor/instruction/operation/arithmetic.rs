@@ -18,9 +18,8 @@ pub const CARRYING_ADD_CODE : u8 = 4;
 pub const BORROWING_SUB_CODE: u8 = 5;
 // endregion
 
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Arithmetic {
-    #[default]
     Add,
     Subtract,
     Multiply, 
@@ -40,9 +39,7 @@ pub struct Flags {
 }
 
 impl<'a> Operation<'a> for Arithmetic {
-    type CustomError = ();
-
-    fn execute<X: AsRef<[u8]> + AsMut<[u8]>>(&self, data: Option<&Data>, context: &mut Context, external_context: &mut ExternalContext<X>) -> Result<(), OperationExecuteError<Self::CustomError>> {
+    fn execute<X: AsRef<[u8]> + AsMut<[u8]>>(&self, data: Option<&Data>, context: &mut Context, external_context: &mut ExternalContext<X>) -> Result<(), OperationExecuteError> {
         let data = data.ok_or(OperationExecuteError::Data(true))?;
         let all_operands = data.operands.all().ok_or(OperationExecuteError::Operand(OperandsPresence::AllPresent))?;
         let r#static = number::Data::from_size_selecting(&data.width, *context.registers.get(all_operands.x_static as usize).ok_or(OperationExecuteError::InvalidStaticRegister)?)
