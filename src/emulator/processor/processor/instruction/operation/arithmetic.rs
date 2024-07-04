@@ -10,10 +10,12 @@ use crate::emulator::processor::processor::instruction::operand::OperandsPresenc
 use crate::emulator::processor::processor::instruction::operation::{Coded, Operation, OperationExecuteError};
 
 // region: Constants
-pub const ADD_CODE     : u8 = 0;
-pub const SUBTRACT_CODE: u8 = 1;
-pub const MULTIPLY_CODE: u8 = 2;
-pub const DIVIDE_CODE  : u8 = 3;
+pub const ADD_CODE          : u8 = 0;
+pub const SUBTRACT_CODE     : u8 = 1;
+pub const MULTIPLY_CODE     : u8 = 2;
+pub const DIVIDE_CODE       : u8 = 3;
+pub const CARRYING_ADD_CODE : u8 = 4;
+pub const BORROWING_SUB_CODE: u8 = 5;
 // endregion
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -24,7 +26,7 @@ pub enum Arithmetic {
     Multiply, 
     Divide,
     CarryingAdd,
-    BorrowingSub,
+    BorrowingSub
 }
 
 /// Flags that can be set or will be set by this unit. Flags could be used by instructions that read the flags. Specific 
@@ -50,28 +52,36 @@ impl<'a> Operation<'a> for Arithmetic {
             .resize(&data.width);
         
         context.arithmetic_flags.overflow = match self {
-            Self::Add | Arithmetic::CarryingAdd => r#static.checked_add(dynamic),
-            Self::Subtract | Arithmetic::BorrowingSub => r#static.checked_sub(dynamic),
-            Self::Multiply => r#static.checked_mul(dynamic),
-            Self::Divide => r#static.checked_mul(dynamic)
-        }.is_none();
+            Self::Add      | Arithmetic::CarryingAdd  => r#static.checked_add(dynamic).is_none(),
+            Self::Subtract | Arithmetic::BorrowingSub => r#static.checked_sub(dynamic).is_none(),
+            Self::Multiply                            => r#static.checked_mul(dynamic).is_none(),
+            Self::Divide                              => r#static.checked_mul(dynamic).is_none(),
+            _                                         => context.arithmetic_flags.overflow
+        };
 
         context.arithmetic_flags.regrouping = match self {
-            Self::Add => r#static.carrying_add(dynamic, false).unwrap().1,
-            Self::Subtract => r#static.carrying_sub(dynamic, false).unwrap().1,
-            Self::CarryingAdd => r#static.carrying_add(dynamic, context.arithmetic_flags.regrouping).unwrap().1,
+            Self::Add          => r#static.carrying_add(dynamic, false).unwrap().1,
+            Self::Subtract     => r#static.carrying_sub(dynamic, false).unwrap().1,
+            Self::CarryingAdd  => r#static.carrying_add(dynamic, context.arithmetic_flags.regrouping).unwrap().1,
             Self::BorrowingSub => r#static.carrying_add(dynamic, context.arithmetic_flags.regrouping).unwrap().1,
-            _ => false
+            _                  => false
         };
         
         let result = match self {
-            Self::Add | Self::CarryingAdd => r#static.wrapping_add(dynamic),
+            Self::Add      | Self::CarryingAdd  => r#static.wrapping_add(dynamic),
             Self::Subtract | Self::BorrowingSub => r#static.wrapping_sub(dynamic),
-            Self::Multiply => r#static.wrapping_mul(dynamic),
-            Self::Divide => r#static.wrapping_div(dynamic)
+            Self::Multiply                      => r#static.wrapping_mul(dynamic),
+            Self::Divide                        => r#static.wrapping_div(dynamic),
+    
         };
         
         context.arithmetic_flags.zero = result.is_zero();
+        context.arithmetic_flags.sign = match result {
+            number::Data::Byte(v)  => (v & !(u8::MAX >> 1)) > 0,
+            number::Data::Word(v) => (v & !(u16::MAX >> 1)) > 0,
+            number::Data::Dual(v) => (v & !(u32::MAX >> 1)) > 0,
+            number::Data::Quad(v) => (v & !(u64::MAX >> 1)) > 0
+        };
         
         match data.destination {
             Destination::Static => *context.registers.get_mut(all_operands.x_static as usize).unwrap() = result.quad(),
@@ -91,11 +101,12 @@ impl<'a> Operation<'a> for Arithmetic {
 impl Coded<u8> for Arithmetic {
     fn code(&self) -> u8 {
         match self {
-            Self::Add      => ADD_CODE,
-            Self::Subtract => SUBTRACT_CODE,
-            Self::Multiply => MULTIPLY_CODE,
-            Self::Divide   => DIVIDE_CODE,
-            _ => todo!() // TODO
+            Self::Add          => ADD_CODE,
+            Self::Subtract     => SUBTRACT_CODE,
+            Self::Multiply     => MULTIPLY_CODE,
+            Self::Divide       => DIVIDE_CODE,
+            Self::CarryingAdd  => CARRYING_ADD_CODE,
+            Self::BorrowingSub => BORROWING_SUB_CODE
         }
     }
 }
@@ -103,11 +114,12 @@ impl Coded<u8> for Arithmetic {
 impl Arithmetic {
     pub fn from_code(code: u8) -> Option<Self> {
         Some(match code {
-            ADD_CODE      => Self::Add,
-            SUBTRACT_CODE => Self::Subtract,
-            MULTIPLY_CODE => Self::Multiply,
-            DIVIDE_CODE   => Self::Divide,
-            // TODO
+            ADD_CODE           => Self::Add,
+            SUBTRACT_CODE      => Self::Subtract,
+            MULTIPLY_CODE      => Self::Multiply,
+            DIVIDE_CODE        => Self::Divide,
+            CARRYING_ADD_CODE  => Self::CarryingAdd,
+            BORROWING_SUB_CODE => Self::BorrowingSub,
             _ => return None
         })
     }

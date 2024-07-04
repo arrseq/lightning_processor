@@ -1,17 +1,36 @@
 extern crate atln_processor;
 
-use std::io::Cursor;
+#[feature(ptr_metadata)]
+
+use std::fs::{self, OpenOptions};
+use std::io::{Cursor, Read, Write};
 use std::sync::{Arc, Mutex};
-use std::thread;
+use std::{env, thread, fs::File};
 
 use atln_processor::emulator::memory::Memory;
-use atln_processor::emulator::processor::processor::{Core, ExternalContext, Ports};
+use atln_processor::emulator::processor::processor::{Core, ExternalContext, instruction, Ports};
 use atln_processor::emulator::processor::processor::instruction::Instruction;
+use atln_processor::emulator::processor::processor::instruction::operand::{AllPresent, Destination, Dynamic, Operands};
+use atln_processor::emulator::processor::processor::instruction::operation::arithmetic::Arithmetic;
+use atln_processor::emulator::processor::processor::instruction::operation::Extension;
+use atln_processor::number::{Data, Size};
+use atln_processor::utility::Encodable;
 
-fn main() {
-    let num_cpus = 8;
+fn main() -> std::io::Result<()> {
+    let args: Vec<String> = env::args().collect();
+    let path = args[1].clone();
+    
+    println!("Accessing file at {}", path);
+
+    let mut file = File::open(path.clone())?;
+    let metadata = fs::metadata(path).expect("unable to read metadata");
+    let mut mem_buf = vec![0u8; metadata.len() as usize];
+
+    file.read(&mut mem_buf);
+
+    let num_cpus = 20;
     let context = Arc::new(Mutex::new(ExternalContext {
-        memory: Memory::new(vec![0u8; 1000]),
+        memory: Memory::new(mem_buf),
         ports: Ports::default()
     }));
     
@@ -21,7 +40,7 @@ fn main() {
 
         let handle = thread::spawn(move || {
             let mut cpu0 = Core::default();
-            cpu0.context.registers[2] = 1;
+            cpu0.context.registers[0] = 0;
             
             loop {
                 let (instruction, instruction_length) = {
@@ -36,7 +55,7 @@ fn main() {
                 cpu0.execute(&instruction, &mut context_clone.lock().unwrap());
                 cpu0.context.instruction_pointer += instruction_length;
 
-                println!("Executed an instruction. Cpuid={}; Pc={}.", cpuid, cpu0.context.instruction_pointer);
+                println!("Executed an instruction. Cpuid={}; Pc={}; r0={}; Regrouping={}", cpuid, cpu0.context.instruction_pointer, cpu0.context.registers[0], cpu0.context.arithmetic_flags.regrouping);
             }
         });
 
@@ -44,4 +63,5 @@ fn main() {
     }
     
     for handle in handles { handle.join().expect("Core crashed."); }
+    Ok(())
 }
