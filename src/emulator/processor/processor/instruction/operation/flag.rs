@@ -7,7 +7,7 @@ use number::{CarryingAdd, CarryingSub, CheckedAdd, CheckedMul, CheckedSub, Wrapp
 use crate::emulator::processor;
 use crate::emulator::processor::processor::instruction::Data;
 use crate::emulator::processor::processor::instruction::operand::OperandsPresence;
-use crate::emulator::processor::processor::instruction::operation::{Coded, Operation, OperationExecuteError};
+use crate::emulator::processor::processor::instruction::operation::{CodedLegacy, Operation, OperationExecuteError};
 
 // region: Constants
 pub const JUMP_IF_OVERFLOW_CODE      : u8 = 0;
@@ -36,7 +36,7 @@ impl<'a> Operation<'a> for Flag {
     fn execute<X: AsRef<[u8]> + AsMut<[u8]>>(&self, data: Option<&Data>, context: &mut Context, external_context: &mut ExternalContext<X>) -> Result<(), OperationExecuteError> {
         let data = data.ok_or(OperationExecuteError::Data(true))?;
         let all_operands = data.operands.all().ok_or(OperationExecuteError::Operand(OperandsPresence::AllPresent))?;
-        let r#static = number::Data::from_size_selecting(&data.width, *context.registers.get(all_operands.x_static as usize).ok_or(OperationExecuteError::InvalidStaticRegister)?)
+        let r#static = number::Number::from_size_selecting(&data.width, *context.registers.get(all_operands.x_static as usize).ok_or(OperationExecuteError::InvalidStaticRegister)?)
             .resize(&data.width);
         let dynamic = &(*all_operands.x_dynamic
             .read(&data.width, &external_context.memory, context.virtual_mode, &context.registers).map_err(OperationExecuteError::DynamicRead)?)
@@ -52,7 +52,7 @@ impl<'a> Operation<'a> for Flag {
     }
 }
 
-impl Coded<u8> for Flag {
+impl CodedLegacy<u8> for Flag {
     fn code(&self) -> u8 {
         match self {
             Self::JumpIfOverflow      => JUMP_IF_OVERFLOW_CODE,

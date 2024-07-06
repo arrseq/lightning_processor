@@ -314,7 +314,7 @@ impl<T: AsRef<[u8]> + AsMut<[u8]>> Memory<T> {
     /// assert_eq!(memory.get(Frame { address: 4, size: Size::Word }, true).unwrap(), Data::Word(256));
     /// // endregion
     /// ```
-    pub fn get(&self, mut frame: Frame, r#virtual: bool) -> Result<number::Data, GetError> {
+    pub fn get(&self, mut frame: Frame, r#virtual: bool) -> Result<number::Number, GetError> {
         self.process_test_frame(&mut frame, r#virtual)?;
         let mut max_buffer = [0u8; QUAD_SIZE];
 
@@ -322,27 +322,27 @@ impl<T: AsRef<[u8]> + AsMut<[u8]>> Memory<T> {
             Size::Byte => {
                 let buffer = &mut max_buffer[0..BYTE_SIZE];
                 if read_bytes_into_buffer(&self.bytes, frame.address as usize, buffer) != buffer.len() { return Err(GetError::OutOfBounds) }
-                number::Data::Byte(buffer[0])
+                number::Number::Byte(buffer[0])
             },
             Size::Word => {
                 let buffer = &mut max_buffer[0..WORD_SIZE];
                 if read_bytes_into_buffer(&self.bytes, frame.address as usize, buffer) != buffer.len() { return Err(GetError::OutOfBounds) }
-                number::Data::Word(u16::from_le_bytes([ buffer[0], buffer[1] ]))
+                number::Number::Word(u16::from_le_bytes([ buffer[0], buffer[1] ]))
             },
             Size::Dual => {
                 let buffer = &mut max_buffer[0..DUAL_SIZE];
                 if read_bytes_into_buffer(&self.bytes, frame.address as usize, buffer) != buffer.len() { return Err(GetError::OutOfBounds) }
-                number::Data::Dual(u32::from_le_bytes([ buffer[0], buffer[1], buffer[2], buffer[3] ]))
+                number::Number::Dual(u32::from_le_bytes([ buffer[0], buffer[1], buffer[2], buffer[3] ]))
             },
             Size::Quad => {
                 let buffer = &mut max_buffer[0..QUAD_SIZE];
                 if read_bytes_into_buffer(&self.bytes, frame.address as usize, buffer) != buffer.len() { return Err(GetError::OutOfBounds) }
-                number::Data::Quad(u64::from_le_bytes([ buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7] ]))
+                number::Number::Quad(u64::from_le_bytes([ buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7] ]))
             }
         })
     }
     
-    pub fn set(&mut self, mut frame: Frame, r#virtual: bool, value: number::Data) -> Result<(), GetError> {
+    pub fn set(&mut self, mut frame: Frame, r#virtual: bool, value: number::Number) -> Result<(), GetError> {
         self.process_test_frame(&mut frame, r#virtual)?;
         let max_buffer = value.quad_buffer();
         let buffer = frame.size.buffer(&max_buffer);

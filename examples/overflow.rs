@@ -1,8 +1,8 @@
 extern crate atln_processor;
 
-use atln_processor::number::{CheckedAdd, Data};
+use atln_processor::number::{CheckedAdd, Number};
 
 fn main() {
-    let data = Data::Word(u16::MAX - 1);
-    dbg!(data.checked_add(Data::Word(2)));
+    let data = Number::Word(u16::MAX - 1);
+    dbg!(data.checked_add(Number::Word(2)));
 }

@@ -13,7 +13,7 @@ use atln_processor::emulator::processor::processor::instruction::Instruction;
 use atln_processor::emulator::processor::processor::instruction::operand::{AllPresent, Destination, Dynamic, Operands};
 use atln_processor::emulator::processor::processor::instruction::operation::arithmetic::Arithmetic;
 use atln_processor::emulator::processor::processor::instruction::operation::Extension;
-use atln_processor::number::{Data, Size};
+use atln_processor::number::{Number, Size};
 use atln_processor::utility::Encodable;
 
 fn main() -> std::io::Result<()> {

@@ -3,7 +3,7 @@ use std::{net::TcpListener, sync::{Arc, Mutex, MutexGuard}, thread::{self, JoinH
 pub mod command;
 pub mod system;
 
-use atln_processor::{emulator::memory::Frame, number::{Data, Size}};
+use atln_processor::{emulator::memory::Frame, number::{Number, Size}};
 use command::{Memory__ReadByteFrame, Test__VideoRedNoise, Test__VideoRedNoise__SetDimension};
 use ocl::ProQue;
 use rand::{thread_rng, Rng};

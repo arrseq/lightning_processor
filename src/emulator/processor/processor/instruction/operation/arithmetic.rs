@@ -7,7 +7,7 @@ use number::{CarryingAdd, CarryingSub, CheckedAdd, CheckedMul, CheckedSub, Wrapp
 use crate::emulator::processor;
 use crate::emulator::processor::processor::instruction::Data;
 use crate::emulator::processor::processor::instruction::operand::OperandsPresence;
-use crate::emulator::processor::processor::instruction::operation::{Coded, Operation, OperationExecuteError};
+use crate::emulator::processor::processor::instruction::operation::{CodedLegacy, Operation, OperationExecuteError};
 
 // region: Constants
 pub const ADD_CODE          : u8 = 0;
@@ -42,7 +42,7 @@ impl<'a> Operation<'a> for Arithmetic {
     fn execute<X: AsRef<[u8]> + AsMut<[u8]>>(&self, data: Option<&Data>, context: &mut Context, external_context: &mut ExternalContext<X>) -> Result<(), OperationExecuteError> {
         let data = data.ok_or(OperationExecuteError::Data(true))?;
         let all_operands = data.operands.all().ok_or(OperationExecuteError::Operand(OperandsPresence::AllPresent))?;
-        let r#static = number::Data::from_size_selecting(&data.width, *context.registers.get(all_operands.x_static as usize).ok_or(OperationExecuteError::InvalidStaticRegister)?)
+        let r#static = number::Number::from_size_selecting(&data.width, *context.registers.get(all_operands.x_static as usize).ok_or(OperationExecuteError::InvalidStaticRegister)?)
             .resize(&data.width);
         let dynamic = &(*all_operands.x_dynamic
             .read(&data.width, &external_context.memory, context.virtual_mode, &context.registers).map_err(OperationExecuteError::DynamicRead)?)
@@ -74,10 +74,10 @@ impl<'a> Operation<'a> for Arithmetic {
         
         context.arithmetic_flags.zero = result.is_zero();
         context.arithmetic_flags.sign = match result {
-            number::Data::Byte(v)  => (v & !(u8::MAX >> 1)) > 0,
-            number::Data::Word(v) => (v & !(u16::MAX >> 1)) > 0,
-            number::Data::Dual(v) => (v & !(u32::MAX >> 1)) > 0,
-            number::Data::Quad(v) => (v & !(u64::MAX >> 1)) > 0
+            number::Number::Byte(v)  => (v & !(u8::MAX >> 1)) > 0,
+            number::Number::Word(v) => (v & !(u16::MAX >> 1)) > 0,
+            number::Number::Dual(v) => (v & !(u32::MAX >> 1)) > 0,
+            number::Number::Quad(v) => (v & !(u64::MAX >> 1)) > 0
         };
         
         match data.destination {
@@ -95,7 +95,7 @@ impl<'a> Operation<'a> for Arithmetic {
     }
 }
 
-impl Coded<u8> for Arithmetic {
+impl CodedLegacy<u8> for Arithmetic {
     fn code(&self) -> u8 {
         match self {
             Self::Add          => ADD_CODE,
