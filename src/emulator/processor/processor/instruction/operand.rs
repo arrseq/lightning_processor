@@ -7,7 +7,7 @@ use std::io::Read;
 use emulator::memory;
 use emulator::memory::{Frame, Memory};
 use emulator::processor::processor;
-use number::{Data, Size};
+use number::{Number, Size};
 
 use crate::emulator::processor::processor::instruction::{Driver, Registers};
 use crate::number;
@@ -34,7 +34,7 @@ pub type Static = u8;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Offset {
     pub register: u8,
-    pub offset: number::Data
+    pub offset: number::Number
 }
 
 /// Either a register code or immediate value addressing mode. Being dynamic means this gives the programmer freedom to 
@@ -46,9 +46,9 @@ pub enum Dynamic {
     /// Read value from register, add an offset to it, then use the sum to dereference memory.
     Offset(Offset),
     /// Read value from immediate as data.
-    Constant(number::Data),
+    Constant(number::Number),
     /// Read value from memory address by addressing it with the immediate.
-    Memory(number::Data)
+    Memory(number::Number)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -102,7 +102,7 @@ impl Dynamic {
     /// assert!(matches!(Dynamic::read_immediate(IMMEDIATE_EXPONENT_DUAL, &mut Cursor::new(dual.to_le_bytes())).unwrap(), number::Data::Dual(_dual)));
     /// assert!(matches!(Dynamic::read_immediate(IMMEDIATE_EXPONENT_QUAD, &mut Cursor::new(quad.to_le_bytes())).unwrap(), number::Data::Quad(_quad)));
     /// ```
-    pub fn read_immediate(exponent: u8, stream: &mut impl Read) -> Result<number::Data, ReadImmediateError> {
+    pub fn read_immediate(exponent: u8, stream: &mut impl Read) -> Result<number::Number, ReadImmediateError> {
         let mut quad_buffer = [0u8; QUAD_SIZE as usize];
 
         let buffer: &mut [u8] = match exponent {
@@ -119,7 +119,7 @@ impl Dynamic {
         };
 
         // Unwrapping is safe here because the exponent is validated when creating the buffer.
-        Ok(number::Data::from_exponent_selecting(exponent, u64::from_le_bytes(quad_buffer)).unwrap())
+        Ok(number::Number::from_exponent_selecting(exponent, u64::from_le_bytes(quad_buffer)).unwrap())
     }
 
     /// Create a new dynamic operand from codes. Not all the codes may be used. Returns [None] if the addressing code
@@ -181,7 +181,7 @@ impl Dynamic {
         }
     }
 
-    pub fn immediate(&self) -> Option<&number::Data> {
+    pub fn immediate(&self) -> Option<&number::Number> {
         Some(match self {
             Self::Register(_) => return None,
             Self::Offset(offset) => &offset.offset,
@@ -204,9 +204,9 @@ impl Dynamic {
     /// ```
     /// // TODO: Test
     /// ```
-    pub fn read<X: AsRef<[u8]> + AsMut<[u8]>>(&self, size: &Size, memory: &Memory<X>, translate: bool, registers: &processor::Registers) -> Result<Cow<Data>, DynamicReadError> {
+    pub fn read<X: AsRef<[u8]> + AsMut<[u8]>>(&self, size: &Size, memory: &Memory<X>, translate: bool, registers: &processor::Registers) -> Result<Cow<Number>, DynamicReadError> {
         Ok(match self {
-            Self::Register(register) => Cow::Owned(Data::from_size_selecting(&size, *registers.get(*register as usize).ok_or(DynamicReadError::InvalidRegisterIndex)?)),
+            Self::Register(register) => Cow::Owned(Number::from_size_selecting(&size, *registers.get(*register as usize).ok_or(DynamicReadError::InvalidRegisterIndex)?)),
             Self::Offset(offset) => {
                 let register_dereferenced = *registers.get(offset.register as usize).ok_or(DynamicReadError::InvalidRegisterIndex)?;
                 let address = register_dereferenced.checked_add(offset.offset.quad()).ok_or(DynamicReadError::Overflow)?;
@@ -217,7 +217,7 @@ impl Dynamic {
         })
     }
     
-    pub fn write<X: AsRef<[u8]> + AsMut<[u8]>>(&self, size: &Size, memory: &mut Memory<X>, translate: bool, registers: &mut processor::Registers, value: Data) -> Result<(), DynamicReadError> {
+    pub fn write<X: AsRef<[u8]> + AsMut<[u8]>>(&self, size: &Size, memory: &mut Memory<X>, translate: bool, registers: &mut processor::Registers, value: Number) -> Result<(), DynamicReadError> {
         match self {
             Self::Register(register) => *registers.get_mut(*register as usize).ok_or(DynamicReadError::InvalidRegisterIndex)? = value.quad(),
             Self::Offset(offset) => {

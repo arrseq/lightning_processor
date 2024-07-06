@@ -6,7 +6,7 @@ use atln_processor::emulator::processor::processor::instruction::Instruction;
 use atln_processor::emulator::processor::processor::instruction::operand::{AllPresent, Destination, Dynamic, Operands};
 use atln_processor::emulator::processor::processor::instruction::operation::arithmetic::Arithmetic;
 use atln_processor::emulator::processor::processor::instruction::operation::Extension;
-use atln_processor::number::{Data, Size};
+use atln_processor::number::{Number, Size};
 use atln_processor::utility::Encodable;
 use std::{env, io};
 use std::fs::File;
@@ -21,7 +21,7 @@ fn make_program(total_bytes: usize, code_instances: usize) -> Vec<u8> {
         synchronous: false,
         operands: Operands::AllPresent(AllPresent {
             x_static: 0,
-            x_dynamic: Dynamic::Constant(Data::Byte(100))
+            x_dynamic: Dynamic::Constant(Number::Byte(100))
         })
     })).unwrap().encode();
 

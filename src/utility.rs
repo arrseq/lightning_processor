@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::ops::Deref;
 
 /// Read a vector like a stream. Read buffer.len() amount of bytes from the vector and into the buffer. This will return
 /// the number of bytes read.
@@ -46,7 +47,7 @@ pub fn write_buffer_into_bytes<X: AsRef<[u8]> + AsMut<[u8]>>(vec: &mut X, start:
 }
 
 /// Get an identifier code for an item.
-pub trait Coded<Type> {
+pub trait CodedLegacy<Type> {
     fn code(&self) -> Type;
 }
 
@@ -105,3 +106,88 @@ pub trait LastError<E> {
     /// Get the last emitted error from a member of the parent object.
     fn last_error(&self) -> &Option<E>;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+// region: Coded items that use identifiers from some documentation.
+pub trait ToCode {
+    type Code;
+    fn to_code(&self) -> Self::Code;
+}
+
+pub trait TryFromCode: Sized {
+    type Code;
+    
+    /// Try to get an instance of the item from a code. [None] returned for an invalid code.
+    fn try_from_code(code: Self::Code) -> Option<Self>;
+}
+
+pub trait FromCode: Sized {
+    type Code;
+
+    /// Get an instance of the item from a code.
+    fn from_code(code: Self::Code) -> Self;
+}
+
+pub trait TryCoded: TryFromCode + ToCode {}
+pub trait Coded: FromCode + ToCode {}
+// endregion
+
+// region: Traits for encoded items.
+/// It is assumed that whatever is being encoded is also valid.
+pub trait Encode {
+    type Output;
+
+    /// Encode this item into some encoded output.
+    fn encode(&self) -> Self::Output;
+}
+
+/// Decide a valid structure into a valid encoded form.
+pub trait Decode {
+    type Input;
+
+    /// Decode an encoded input into self.
+    fn decode(input: Self::Input) -> Self;
+}
+
+/// Try to decode a potentially invalid encoded form of a structure.
+pub trait TryDecode: Sized {
+    type Input;
+    type Error;
+    
+    /// Decide a potentially invalid input into result.
+    fn try_decode(input: Self::Input) -> Result<Self::Error, Self>;
+}
+// endregion
+
+// region: Get the binary max value from a number of bits.
+#[const_trait]
+pub trait MaxWithBits: Sized {
+    /// As a number of bits, get the largest number that could represent. Returns [None] if the number of bits is 0.
+    fn max_with_bits(&self) -> Option<Self>;
+}
+
+impl const MaxWithBits for usize {
+    /// ```
+    /// use atln_processor::utility::MaxWithBits;
+    /// 
+    /// assert_eq!(4usize.max_with_bits().unwrap(), 15);
+    /// assert_eq!(1usize.max_with_bits().unwrap(), 1);
+    /// assert_eq!(0usize.max_with_bits(), None);
+    /// ```
+    fn max_with_bits(&self) -> Option<Self> {
+        if *self == 0 { return None; }
+        Some(2usize.pow(*self as u32) - 1)
+    }
+}
+// endregion

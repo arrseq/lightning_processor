@@ -48,7 +48,7 @@ use emulator::processor::processor::instruction::operand::OperandsPresence;
 use crate::number;
 use super::instruction::operand::{Destination, Dynamic, Operand, Operands, OperandsConstructError};
 use super::instruction::operation::{Extension, ExtensionFromCodeInvalid, Operation};
-use crate::utility::{Coded, Encodable};
+use crate::utility::{CodedLegacy, Encodable};
 
 // region: Binary processor bit masks
 pub const DRIVER0_EXTENSION_MASK           : u8 = 0b111111_0_0;
@@ -520,7 +520,7 @@ impl Data {
     /// use std::io::Cursor;
     /// use atln_processor::emulator::processor::processor::instruction::{Data, Driver};
     /// use atln_processor::emulator::processor::processor::instruction::operation::arithmetic::Arithmetic;
-    /// use atln_processor::emulator::processor::processor::instruction::operation::{Coded, Extension};
+    /// use atln_processor::emulator::processor::processor::instruction::operation::{CodedLegacy, Extension};
     /// use atln_processor::emulator::processor::processor::instruction::operand::Destination;
     ///
     /// let mut extension = Extension::Arithmetic(Arithmetic::Add);
@@ -611,7 +611,7 @@ impl Instruction {
     /// Use the driver, registers, and immediate to encode into a dynamic number of bytes. Encoding is variable
     /// length. The data is not validated here. To use an immediate, registers must be of the [Some] variant. If an
     /// immediate is [Some] and registers is [None] then [None] will also be returned.
-    pub fn encode_driver_registers_immediate(driver: &mut Driver, registers: Option<&Registers>, immediate: Option<&number::Data>) -> Option<Vec<u8>> {
+    pub fn encode_driver_registers_immediate(driver: &mut Driver, registers: Option<&Registers>, immediate: Option<&number::Number>) -> Option<Vec<u8>> {
         let mut encoded = Vec::new();
 
         encoded.extend(driver.encode());
@@ -776,7 +776,7 @@ impl Encodable<Vec<u8>> for Instruction {
         let mut addressing = 0;
         let mut immediate_exponent = 0;
         let mut registers: Option<Registers> = None;
-        let mut immediate: Option<number::Data> = None;
+        let mut immediate: Option<number::Number> = None;
 
         if let Some(data) = &self.data {
             synchronise = data.synchronous;

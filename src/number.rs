@@ -57,13 +57,13 @@ impl Size {
     }
 }
 
-impl From<Data> for Size {
-    fn from(value: Data) -> Self {
+impl From<Number> for Size {
+    fn from(value: Number) -> Self {
         match value {
-            Data::Byte(_) => Self::Byte,
-            Data::Word(_) => Self::Word,
-            Data::Dual(_) => Self::Dual,
-            Data::Quad(_) => Self::Quad
+            Number::Byte(_) => Self::Byte,
+            Number::Word(_) => Self::Word,
+            Number::Dual(_) => Self::Dual,
+            Number::Quad(_) => Self::Quad
         }
     }
 }
@@ -109,14 +109,14 @@ impl Size {
 /// Complete variants that annotate numbers with their type in the same enum allowing for the data type to be changed
 /// during runtime.
 #[derive(Debug, Clone, Eq)]
-pub enum Data {
+pub enum Number {
     Byte(u8),
     Word(u16),
     Dual(u32),
     Quad(u64)
 }
 
-impl Data {
+impl Number {
     pub fn to_le_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
@@ -217,32 +217,32 @@ impl Data {
 }
 
 // region: Converting numbers to data instances
-impl From<u8> for Data {
+impl From<u8> for Number {
     fn from(value: u8) -> Self {
         Self::Byte(value)
     }
 }
 
-impl From<u16> for Data {
+impl From<u16> for Number {
     fn from(value: u16) -> Self {
         Self::Word(value)
     }
 }
 
-impl From<u32> for Data {
+impl From<u32> for Number {
     fn from(value: u32) -> Self {
         Self::Dual(value)
     }
 }
 
-impl From<u64> for Data {
+impl From<u64> for Number {
     fn from(value: u64) -> Self {
         Self::Quad(value)
     }
 }
 // endregion
 
-impl From<Size> for Data {
+impl From<Size> for Number {
     fn from(value: Size) -> Self {
         match value {
             Size::Byte => Self::Byte(0),
@@ -253,13 +253,13 @@ impl From<Size> for Data {
     }
 }
 
-impl PartialEq for Data {
+impl PartialEq for Number {
     fn eq(&self, other: &Self) -> bool {
         self.quad() == other.quad()
     }
 }
 
-impl ReadAll<[u8]> for Data {
+impl ReadAll<[u8]> for Number {
     /// Read bytes of the stored number type into a slice reference.
     /// ```
     /// use atln_processor::number::Data;
@@ -311,26 +311,26 @@ pub enum ExtractError {
 }
 
 // region: Data to number conversion
-impl From<&Data> for u8 {
-    fn from(value: &Data) -> Self {
+impl From<&Number> for u8 {
+    fn from(value: &Number) -> Self {
         value.quad() as u8
     }
 }
 
-impl From<&Data> for u16 {
-    fn from(value: &Data) -> Self {
+impl From<&Number> for u16 {
+    fn from(value: &Number) -> Self {
         value.quad() as u16
     }
 }
 
-impl From<&Data> for u32 {
-    fn from(value: &Data) -> Self {
+impl From<&Number> for u32 {
+    fn from(value: &Number) -> Self {
         value.quad() as u32
     }
 }
 
-impl From<&Data> for u64 {
-    fn from(value: &Data) -> Self {
+impl From<&Number> for u64 {
+    fn from(value: &Number) -> Self {
         value.quad()
     }
 }
@@ -338,61 +338,61 @@ impl From<&Data> for u64 {
 
 // region: Checked functions.
 pub trait CheckedAdd: Sized {
-    fn checked_add(&self, factor: &Data) -> Option<Data>;
+    fn checked_add(&self, factor: &Number) -> Option<Number>;
 }
 
 pub trait CheckedSub: Sized {
-    fn checked_sub(&self, factor: &Data) -> Option<Data>;
+    fn checked_sub(&self, factor: &Number) -> Option<Number>;
 }
 
 pub trait CheckedMul: Sized {
-    fn checked_mul(&self, factor: &Data) -> Option<Data>;
+    fn checked_mul(&self, factor: &Number) -> Option<Number>;
 }
 
 pub trait CheckedDiv: Sized {
-    fn checked_div(&self, factor: &Data) -> Option<Data>;
+    fn checked_div(&self, factor: &Number) -> Option<Number>;
 }
 
-impl CheckedAdd for Data {
-    fn checked_add(&self, factor: &Data) -> Option<Data> {
+impl CheckedAdd for Number {
+    fn checked_add(&self, factor: &Number) -> Option<Number> {
         Some(match self {
-            Self::Byte(v) => Data::Byte(v.checked_add(u8::from(factor))?),
-            Self::Word(v) => Data::Word(v.checked_add(u16::from(factor))?),
-            Self::Dual(v) => Data::Dual(v.checked_add(u32::from(factor))?),
-            Self::Quad(v) => Data::Quad(v.checked_add(u64::from(factor))?)
+            Self::Byte(v) => Number::Byte(v.checked_add(u8::from(factor))?),
+            Self::Word(v) => Number::Word(v.checked_add(u16::from(factor))?),
+            Self::Dual(v) => Number::Dual(v.checked_add(u32::from(factor))?),
+            Self::Quad(v) => Number::Quad(v.checked_add(u64::from(factor))?)
         })
     }
 }
 
-impl CheckedSub for Data {
-    fn checked_sub(&self, factor: &Data) -> Option<Data> {
+impl CheckedSub for Number {
+    fn checked_sub(&self, factor: &Number) -> Option<Number> {
         Some(match self {
-            Self::Byte(v) => Data::Byte(v.checked_sub(u8::from(factor))?),
-            Self::Word(v) => Data::Word(v.checked_sub(u16::from(factor))?),
-            Self::Dual(v) => Data::Dual(v.checked_sub(u32::from(factor))?),
-            Self::Quad(v) => Data::Quad(v.checked_sub(u64::from(factor))?)
+            Self::Byte(v) => Number::Byte(v.checked_sub(u8::from(factor))?),
+            Self::Word(v) => Number::Word(v.checked_sub(u16::from(factor))?),
+            Self::Dual(v) => Number::Dual(v.checked_sub(u32::from(factor))?),
+            Self::Quad(v) => Number::Quad(v.checked_sub(u64::from(factor))?)
         })
     }
 }
 
-impl CheckedMul for Data {
-    fn checked_mul(&self, factor: &Data) -> Option<Data> {
+impl CheckedMul for Number {
+    fn checked_mul(&self, factor: &Number) -> Option<Number> {
         Some(match self {
-            Self::Byte(v) => Data::Byte(v.checked_mul(u8::from(factor))?),
-            Self::Word(v) => Data::Word(v.checked_mul(u16::from(factor))?),
-            Self::Dual(v) => Data::Dual(v.checked_mul(u32::from(factor))?),
-            Self::Quad(v) => Data::Quad(v.checked_mul(u64::from(factor))?)
+            Self::Byte(v) => Number::Byte(v.checked_mul(u8::from(factor))?),
+            Self::Word(v) => Number::Word(v.checked_mul(u16::from(factor))?),
+            Self::Dual(v) => Number::Dual(v.checked_mul(u32::from(factor))?),
+            Self::Quad(v) => Number::Quad(v.checked_mul(u64::from(factor))?)
         })
     }
 }
 
-impl CheckedDiv for Data {
-    fn checked_div(&self, factor: &Data) -> Option<Data> {
+impl CheckedDiv for Number {
+    fn checked_div(&self, factor: &Number) -> Option<Number> {
         Some(match self {
-            Self::Byte(v) => Data::Byte(v.checked_div(u8::from(factor))?),
-            Self::Word(v) => Data::Word(v.checked_div(u16::from(factor))?),
-            Self::Dual(v) => Data::Dual(v.checked_div(u32::from(factor))?),
-            Self::Quad(v) => Data::Quad(v.checked_div(u64::from(factor))?)
+            Self::Byte(v) => Number::Byte(v.checked_div(u8::from(factor))?),
+            Self::Word(v) => Number::Word(v.checked_div(u16::from(factor))?),
+            Self::Dual(v) => Number::Dual(v.checked_div(u32::from(factor))?),
+            Self::Quad(v) => Number::Quad(v.checked_div(u64::from(factor))?)
         })
     }
 }
@@ -400,62 +400,62 @@ impl CheckedDiv for Data {
 
 // region: Carrying
 pub trait CarryingAdd {
-    fn carrying_add(&self, factor: &Data, carry: bool) -> Option<(Data, bool)>;
+    fn carrying_add(&self, factor: &Number, carry: bool) -> Option<(Number, bool)>;
 }
 
 pub trait CarryingSub {
-    fn carrying_sub(&self, factor: &Data, carry: bool) -> Option<(Data, bool)>;
+    fn carrying_sub(&self, factor: &Number, carry: bool) -> Option<(Number, bool)>;
 }
 
 pub trait CarryingMul {
-    fn carrying_mul(&self, factor: &Data, carry: bool) -> Option<(Data, bool)>;
+    fn carrying_mul(&self, factor: &Number, carry: bool) -> Option<(Number, bool)>;
 }
 
 pub trait CarryingDiv {
-    fn carrying_div(&self, factor: &Data, carry: bool) -> Option<(Data, bool)>;
+    fn carrying_div(&self, factor: &Number, carry: bool) -> Option<(Number, bool)>;
 }
 
-impl CarryingAdd for Data {
-    fn carrying_add(&self, factor: &Data, carry: bool) -> Option<(Data, bool)> {
+impl CarryingAdd for Number {
+    fn carrying_add(&self, factor: &Number, carry: bool) -> Option<(Number, bool)> {
         Some(match self {
             Self::Byte(v) => {
                 let binding = v.carrying_add(u8::from(factor), carry);
-                (Data::Byte(binding.0), binding.1)
+                (Number::Byte(binding.0), binding.1)
             },
             Self::Word(v) => {
                 let binding = v.carrying_add(u16::from(factor), carry);
-                (Data::Word(binding.0), binding.1)
+                (Number::Word(binding.0), binding.1)
             },
             Self::Dual(v) => {
                 let binding = v.carrying_add(u32::from(factor), carry);
-                (Data::Dual(binding.0), binding.1)
+                (Number::Dual(binding.0), binding.1)
             },
             Self::Quad(v) => {
                 let binding = v.carrying_add(u64::from(factor), carry);
-                (Data::Quad(binding.0), binding.1)
+                (Number::Quad(binding.0), binding.1)
             }
         })
     }
 }
 
-impl CarryingSub for Data {
-    fn carrying_sub(&self, factor: &Data, carry: bool) -> Option<(Data, bool)> {
+impl CarryingSub for Number {
+    fn carrying_sub(&self, factor: &Number, carry: bool) -> Option<(Number, bool)> {
         Some(match self {
             Self::Byte(v) => {
                 let binding = v.borrowing_sub(u8::from(factor), carry);
-                (Data::Byte(binding.0), binding.1)
+                (Number::Byte(binding.0), binding.1)
             },
             Self::Word(v) => {
                 let binding = v.borrowing_sub(u16::from(factor), carry);
-                (Data::Word(binding.0), binding.1)
+                (Number::Word(binding.0), binding.1)
             },
             Self::Dual(v) => {
                 let binding = v.borrowing_sub(u32::from(factor), carry);
-                (Data::Dual(binding.0), binding.1)
+                (Number::Dual(binding.0), binding.1)
             },
             Self::Quad(v) => {
                 let binding = v.borrowing_sub(u64::from(factor), carry);
-                (Data::Quad(binding.0), binding.1)
+                (Number::Quad(binding.0), binding.1)
             }
         })
     }
@@ -479,46 +479,46 @@ pub trait WrappingDiv {
     fn wrapping_div(&self, factor: &Self) -> Self;
 }
 
-impl WrappingAdd for Data {
+impl WrappingAdd for Number {
     fn wrapping_add(&self, factor: &Self) -> Self {
         match self {
-            Self::Byte(v) => Data::Byte(v.wrapping_add(u8::from(factor))),
-            Self::Word(v) => Data::Word(v.wrapping_add(u16::from(factor))),
-            Self::Dual(v) => Data::Dual(v.wrapping_add(u32::from(factor))),
-            Self::Quad(v) => Data::Quad(v.wrapping_add(u64::from(factor)))
+            Self::Byte(v) => Number::Byte(v.wrapping_add(u8::from(factor))),
+            Self::Word(v) => Number::Word(v.wrapping_add(u16::from(factor))),
+            Self::Dual(v) => Number::Dual(v.wrapping_add(u32::from(factor))),
+            Self::Quad(v) => Number::Quad(v.wrapping_add(u64::from(factor)))
         }
     }
 }
 
-impl WrappingSub for Data {
+impl WrappingSub for Number {
     fn wrapping_sub(&self, factor: &Self) -> Self {
         match self {
-            Self::Byte(v) => Data::Byte(v.wrapping_sub(u8::from(factor))),
-            Self::Word(v) => Data::Word(v.wrapping_sub(u16::from(factor))),
-            Self::Dual(v) => Data::Dual(v.wrapping_sub(u32::from(factor))),
-            Self::Quad(v) => Data::Quad(v.wrapping_sub(u64::from(factor)))
+            Self::Byte(v) => Number::Byte(v.wrapping_sub(u8::from(factor))),
+            Self::Word(v) => Number::Word(v.wrapping_sub(u16::from(factor))),
+            Self::Dual(v) => Number::Dual(v.wrapping_sub(u32::from(factor))),
+            Self::Quad(v) => Number::Quad(v.wrapping_sub(u64::from(factor)))
         }
     }
 }
 
-impl WrappingMul for Data {
+impl WrappingMul for Number {
     fn wrapping_mul(&self, factor: &Self) -> Self {
         match self {
-            Self::Byte(v) => Data::Byte(v.wrapping_mul(u8::from(factor))),
-            Self::Word(v) => Data::Word(v.wrapping_mul(u16::from(factor))),
-            Self::Dual(v) => Data::Dual(v.wrapping_mul(u32::from(factor))),
-            Self::Quad(v) => Data::Quad(v.wrapping_mul(u64::from(factor)))
+            Self::Byte(v) => Number::Byte(v.wrapping_mul(u8::from(factor))),
+            Self::Word(v) => Number::Word(v.wrapping_mul(u16::from(factor))),
+            Self::Dual(v) => Number::Dual(v.wrapping_mul(u32::from(factor))),
+            Self::Quad(v) => Number::Quad(v.wrapping_mul(u64::from(factor)))
         }
     }
 }
 
-impl WrappingDiv for Data {
+impl WrappingDiv for Number {
     fn wrapping_div(&self, factor: &Self) -> Self {
         match self {
-            Self::Byte(v) => Data::Byte(v.wrapping_div(u8::from(factor))),
-            Self::Word(v) => Data::Word(v.wrapping_div(u16::from(factor))),
-            Self::Dual(v) => Data::Dual(v.wrapping_div(u32::from(factor))),
-            Self::Quad(v) => Data::Quad(v.wrapping_div(u64::from(factor)))
+            Self::Byte(v) => Number::Byte(v.wrapping_div(u8::from(factor))),
+            Self::Word(v) => Number::Word(v.wrapping_div(u16::from(factor))),
+            Self::Dual(v) => Number::Dual(v.wrapping_div(u32::from(factor))),
+            Self::Quad(v) => Number::Quad(v.wrapping_div(u64::from(factor)))
         }
     }
 }

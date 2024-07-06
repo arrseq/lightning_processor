@@ -9,7 +9,7 @@ use self::flag::Flag;
 use number;
 use crate::emulator::processor::processor::instruction;
 use crate::emulator::processor::processor::instruction::operation::arithmetic::Arithmetic;
-use crate::utility::Coded;
+use crate::utility::CodedLegacy;
 
 use super::operand::OperandsPresence;
 
@@ -38,10 +38,10 @@ pub enum OperationExecuteError {
 
 pub struct AllPresent<'a> {
     pub r#static: u64,
-    pub dynamic: Cow<'a, number::Data>
+    pub dynamic: Cow<'a, number::Number>
 }
 
-pub trait Operation<'a>: Coded<u8> {
+pub trait Operation<'a>: CodedLegacy<u8> {
     fn execute<X: AsRef<[u8]> + AsMut<[u8]>>(&self, data: Option<&Data>, context: &mut Context, external_context: &mut ExternalContext<X>) -> Result<(), OperationExecuteError>;
 
     /// Get which operands are expected. [None] indicates that the operation does not expect any operands.
@@ -67,8 +67,7 @@ pub enum ExtensionFromCodeInvalid {
 /// compiled for the architecture.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Extension {
-    Arithmetic(Arithmetic),
-    Flag(Flag)
+    Arithmetic(Arithmetic)
 }
 
 impl Default for Extension {
@@ -82,25 +81,22 @@ impl Extension {
     pub fn from_codes(extension: ExtensionCode, operation: OperationCode) -> Result<Self, ExtensionFromCodeInvalid> {
         Ok(match extension {
             ARITHMETIC_CODE => Self::Arithmetic(Arithmetic::from_code(operation).ok_or(ExtensionFromCodeInvalid::Operation)?),
-            FLAG_CODE => Self::Flag(Flag::from_code(operation).ok_or(ExtensionFromCodeInvalid::Operation)?),
             _ => return Err(ExtensionFromCodeInvalid::Extension)
         })
     }
 
     /// Retrieve the underlying operation trait.
-    pub fn operation(&self) -> &dyn Operation {
+    pub fn operation(&self) -> &impl Operation {
         match self {
-            Self::Arithmetic(arithmetic) => arithmetic,
-            Self::Flag(flag) => flag
+            Self::Arithmetic(arithmetic) => arithmetic
         }
     }
 }
 
-impl Coded<u8> for Extension {
+impl CodedLegacy<u8> for Extension {
     fn code(&self) -> u8 {
         match self {
-            Self::Arithmetic(_) => ARITHMETIC_CODE,
-            Self::Flag(_) => FLAG_CODE
+            Self::Arithmetic(_) => ARITHMETIC_CODE
         }
     }
 }
@@ -108,7 +104,7 @@ impl Coded<u8> for Extension {
 // TODO: Moved to doctest
 #[cfg(test)]
 mod extension_test {
-    use crate::emulator::processor::processor::instruction::operation::{ARITHMETIC_CODE, Coded, Extension, Operation};
+    use crate::emulator::processor::processor::instruction::operation::{ARITHMETIC_CODE, CodedLegacy, Extension, Operation};
     use crate::emulator::processor::processor::instruction::operation::arithmetic::{ADD_CODE, Arithmetic, SUBTRACT_CODE};
 
     #[test]
