@@ -1,5 +1,10 @@
 use std::borrow::Cow;
-use std::ops::Deref;
+use std::marker::PhantomData;
+use std::ops::{Add, Sub};
+use std::process::Output;
+use number;
+use number::{Size};
+use num_traits::ops::checked::CheckedAdd;
 
 /// Read a vector like a stream. Read buffer.len() amount of bytes from the vector and into the buffer. This will return
 /// the number of bytes read.
@@ -92,8 +97,8 @@ impl<'a> FromRepresentation<'a> for Bracket {
 /// Read all of a structure into another buffer of some sort. This is similar to [Read] with the difference being that
 /// all data is read into the buffer and any that don't fit are simply truncated.
 ///
-/// Use this on things such as enums or things without structures. This is impropper and not good, this trait is a retro 
-/// fit due to poor early planing, things like [Data] are too deeply nested and implemented to be refactored into a
+/// Use this on things such as enums or things without structures. This is improper and not good, this trait is a retro
+/// fit due to poor early planning, things like [Data] are too deeply nested and implemented to be refactored into a
 /// structure to then be later used with Read.
 pub trait ReadAll<T>
 where
@@ -139,8 +144,10 @@ pub trait FromCode: Sized {
     fn from_code(code: Self::Code) -> Self;
 }
 
-pub trait TryCoded: TryFromCode + ToCode {}
-pub trait Coded: FromCode + ToCode {}
+pub trait TryCoded: TryFromCode<Code=<Self as TryCoded>::Code> + ToCode<Code=<Self as TryCoded>::Code> + MaxCode<Code=<Self as TryCoded>::Code> {
+    type Code;
+}
+pub trait Coded<Code>: FromCode<Code=Code> + ToCode<Code=Code> + MaxCode<Code=Code> {}
 // endregion
 
 // region: Traits for encoded items.
@@ -164,9 +171,19 @@ pub trait Decode {
 pub trait TryDecode: Sized {
     type Input;
     type Error;
-    
+
     /// Decide a potentially invalid input into result.
     fn try_decode(input: Self::Input) -> Result<Self::Error, Self>;
+}
+
+pub trait MaxCode {
+    type Code;
+
+    /// Get the largest valid code supported by the type.
+    fn max_code() -> Self::Code;
+    
+    /// Get the number of codes supported.
+    fn codes() -> Self::Code;
 }
 // endregion
 
@@ -180,7 +197,7 @@ pub trait MaxWithBits: Sized {
 impl const MaxWithBits for usize {
     /// ```
     /// use atln_processor::utility::MaxWithBits;
-    /// 
+    ///
     /// assert_eq!(4usize.max_with_bits().unwrap(), 15);
     /// assert_eq!(1usize.max_with_bits().unwrap(), 1);
     /// assert_eq!(0usize.max_with_bits(), None);
@@ -189,5 +206,49 @@ impl const MaxWithBits for usize {
         if *self == 0 { return None; }
         Some(2usize.pow(*self as u32) - 1)
     }
+}
+// endregion
+
+// region: Code partitioning.
+#[derive(Debug, Clone, Copy)]
+pub enum Partitioned<Code, First: TryCoded<Code=Code>, Second: TryCoded<Code=Code>> {
+    First(First),
+    Second(Second)
+}
+
+impl<Code: CheckedAdd + Sub<Output=Code> + number::Max + PartialOrd, First: TryCoded<Code=Code>, Second: TryCoded<Code=Code>> TryFromCode for Partitioned<Code, First, Second> {
+    type Code = Code;
+
+    fn try_from_code(code: Self::Code) -> Option<Self> {
+        if code > First::max_code() { return Some(Self::Second(Second::try_from_code(code - First::codes())?)); }
+        Some(Self::First(First::try_from_code(code)?))
+    }
+}
+
+impl<Code: CheckedAdd + number::Max + PartialOrd, First: TryCoded<Code=Code>, Second: TryCoded<Code=Code>> ToCode for Partitioned<Code, First, Second> {
+    type Code = Code;
+
+    fn to_code(&self) -> Self::Code {
+        match self {
+            Self::First(v) => v.to_code(),
+            Self::Second(v) => First::codes() + v.to_code()
+        }
+    }
+}
+
+impl<Code: CheckedAdd + number::Max + PartialOrd, First: TryCoded<Code=Code>, Second: TryCoded<Code=Code>> MaxCode for Partitioned<Code, First, Second> {
+    type Code = Code;
+
+    fn max_code() -> Self::Code {
+        First::max_code() + Second::max_code()
+    }
+
+    fn codes() -> Self::Code {
+        First::codes() +  Second::codes()
+    }
+}
+
+impl<Code: CheckedAdd + Sub<Output=Code> + number::Max + PartialOrd, First: TryCoded<Code=Code>, Second: TryCoded<Code=Code>> TryCoded for Partitioned<Code, First, Second> {
+    type Code = Code;
 }
 // endregion
