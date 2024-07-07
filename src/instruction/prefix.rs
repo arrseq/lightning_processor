@@ -22,7 +22,7 @@ pub enum ExecutionMode {
 #[derive(Debug)]
 pub struct Prefixes {
     /// Escape into reading the opcode and front end half of the instruction. This determines the size of the opcode.
-    pub escape: Option<operation::Size>,
+    pub escape: operation::Size,
     /// Set the instruction set code. This allows you to execute instructions from a different instruction set.
     pub extension: Option<operation::Extension>,
     /// Hint to the processor that the branch is likely taken. If this is incorrect, it results in a pipeline flush and
@@ -69,13 +69,11 @@ impl EncodeDynamic for Prefixes {
             })
         }
 
-        if let Some(escape) = &self.escape {
-            // The escape prefix must be encoded last as the processor will immediately start reading the instruction
-            // front end after this.
-            output.push(match escape {
-                operation::Size::Byte => Prefix::EscapeByte as u8,
-                operation::Size::Word => Prefix::EscapeWord as u8
-            });
-        }
+        // The escape prefix must be encoded last as the processor will immediately start reading the instruction
+        // front end after this.
+        output.push(match self.escape {
+            operation::Size::Byte => Prefix::EscapeByte as u8,
+            operation::Size::Word => Prefix::EscapeWord as u8
+        });
     }
 }

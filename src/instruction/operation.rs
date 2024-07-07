@@ -17,6 +17,15 @@ pub enum Sized {
     Word(u16)
 }
 
+impl From<&Sized> for Size {
+    fn from(value: &Sized) -> Self {
+        match value {
+            Sized::Byte(_) => Self::Byte,
+            Sized::Word(_) => Self::Word
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum Extension {
     Basic,
@@ -27,6 +36,15 @@ pub enum Extension {
 pub enum Operation {
     Basic(Basic),
     Floating(Floating)
+}
+
+impl From<&Operation> for Extension {
+    fn from(value: &Operation) -> Self {
+        match value {
+            Operation::Basic(_) => Extension::Basic,
+            Operation::Floating(_) => Extension::Floating
+        }
+    }
 }
 
 impl ToCode for Operation {
@@ -41,7 +59,7 @@ impl ToCode for Operation {
 }
 
 impl Operation {
-    /// Convert the operation to a code, then store it in a [Sized] type corresponding to what value [Size] is. This 
+    /// Convert the operation to a code, then store it in a [Sized] type corresponding to what value [Size] is. This
     /// could result in the operation code losing data and start referring to a different operation. This behavior could
     /// be undefined.
     pub fn force_code_constrained(&self, size: &Size) -> Sized {
@@ -52,7 +70,7 @@ impl Operation {
             Size::Word => Sized::Word(code)
         }
     }
-    
+
     /// Convert the operation to a code and use the smallest data type that can represent that operation.
     pub fn to_smallest_code(&self) -> Sized {
         let code = self.to_code();
