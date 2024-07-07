@@ -36,15 +36,17 @@ pub struct Prefixes {
 pub enum Prefix {
     EscapeByte,
     EscapeWord,
+    
     ExtensionBasic,
     ExtensionFloating,
+    
     BranchLikelyTaken,
     BranchNotLikelyTaken,
+    
     ExecutionModeSynchronize,
     ExecutionModeRepeatFixed,
     ExecutionModeRepeatUntilEqual,
 }
-
 
 impl EncodeDynamic for Prefixes {
     fn encode_dyn(&self, output: &mut Vec<u8>) {

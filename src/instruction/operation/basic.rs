@@ -7,6 +7,8 @@ pub enum Code {
     CarryingAdd,
     Subtract,
     BorrowingSubtract,
+    Multiply, 
+    Divide,
 
     Copy,
 
@@ -35,6 +37,8 @@ pub enum Basic {
     CarryingAdd(operand::Dual),
     Subtract(operand::Dual),
     BorrowingSubtract(operand::Dual),
+    Multiply(operand::Dual),
+    Divide(operand::Dual),
     
     /// Copy the value between the operands corresponding to the result destination of the data.
     Copy(operand::Dual),
@@ -73,6 +77,8 @@ impl ToCode for Basic {
             Basic::CarryingAdd(_) => Code::CarryingAdd,
             Basic::Subtract(_) => Code::Subtract,
             Basic::BorrowingSubtract(_) => Code::BorrowingSubtract,
+            Basic::Multiply(_) => Code::Multiply,
+            Basic::Divide(_) => Code::Divide,
             Basic::Copy(_) => Code::Copy,
             Basic::AppendStack(_) => Code::AppendStack,
             Basic::AppendStackRegisters => Code::AppendStackRegisters,

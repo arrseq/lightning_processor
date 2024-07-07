@@ -7,6 +7,7 @@
 extern crate num_traits;
 extern crate strum;
 extern crate strum_macros;
+extern crate num_enum;
 
 // pub mod emulator;
 pub mod number;

@@ -13,7 +13,7 @@ fn main() {
             branch_likely_taken: None,
             execution_mode: Some(prefix::ExecutionMode::Synchronize)
         },
-        operation: Operation::Basic(operation::basic::Basic::Add(operand::Dual {
+        operation: Operation::Basic(operation::basic::Basic::BorrowingSubtract(operand::Dual {
             r#static: Register::from_code(0),
             dynamic: operand::dynamic::Dynamic::Register(Register::from_code(1)),
             destination: operand::Type::Static
