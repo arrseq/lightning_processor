@@ -1,6 +1,7 @@
-use strum_macros::FromRepr;
+//! If a prefix from the same category but different modes are used, then only the first instance of it is considered.
+
 use instruction::operation;
-use utility::ToCode;
+use utility::EncodeDynamic;
 
 #[derive(Debug)]
 pub enum Repeat {
@@ -11,68 +12,68 @@ pub enum Repeat {
 }
 
 #[derive(Debug)]
-pub enum Prefix {
-    /// Escape into reading the opcode and front end half of the instruction. This determines the size of the opcode.
-    Escape(operation::Size),
+pub enum ExecutionMode {
     /// Synchronize execution among other processors.
     Synchronize,
-    /// Hint to the processor that the branch is likely taken. If this is incorrect, it results in a pipeline flush and 
-    /// a performance penalty. This will not cause the entire operation to fail on its own. 
-    BranchLikelyTaken(bool),
     /// Repeat the current instruction based on a specific algorithm.
     Repeat(Repeat)
 }
 
-impl From<&Direct> for Prefix {
-    fn from(value: &Direct) -> Self {
-        match value {
-            Direct::EscapeByte => Self::Escape(operation::Size::Byte),
-            Direct::EscapeWord => Self::Escape(operation::Size::Word),
-            
-            Direct::Synchronize => Self::Synchronize,
-            
-            Direct::BranchLikelyTaken => Self::BranchLikelyTaken(true),
-            Direct::BranchNotLikelyTaken => Self::BranchLikelyTaken(false),
-            
-            Direct::RepeatFixed => Self::Repeat(Repeat::Fixed),
-            Direct::RepeatUntilEqual => Self::Repeat(Repeat::UntilEqual)
-        }
-    }
+#[derive(Debug)]
+pub struct Prefixes {
+    /// Escape into reading the opcode and front end half of the instruction. This determines the size of the opcode.
+    pub escape: Option<operation::Size>,
+    /// Set the instruction set code. This allows you to execute instructions from a different instruction set.
+    pub extension: Option<operation::Extension>,
+    /// Hint to the processor that the branch is likely taken. If this is incorrect, it results in a pipeline flush and
+    /// a performance penalty. This will not cause the entire operation to fail on its own.
+    pub branch_likely_taken: Option<bool>,
+    pub execution_mode: Option<ExecutionMode>
 }
 
-#[derive(Debug, Clone, Copy, FromRepr)]
 #[repr(u8)]
-pub enum Direct {
+#[derive(Copy, Clone)]
+pub enum Prefix {
     EscapeByte,
-    EscapeWord, 
-    
-    Synchronize,
-
+    EscapeWord,
+    ExtensionBasic,
+    ExtensionFloating,
     BranchLikelyTaken,
     BranchNotLikelyTaken,
-
-    RepeatFixed,
-    RepeatUntilEqual
+    ExecutionModeSynchronize,
+    ExecutionModeRepeatFixed,
+    ExecutionModeRepeatUntilEqual,
 }
 
-impl ToCode for Direct {
-    type Code = u8;
-    fn to_code(&self) -> Self::Code { *self as Self::Code }
-}
 
-impl From<&Prefix> for Direct {
-    fn from(value: &Prefix) -> Self {
-        match value {
-            Prefix::Escape(escape) => match escape {
-                operation::Size::Byte => Self::EscapeByte,
-                operation::Size::Word => Self::EscapeWord
-            },
-            Prefix::Synchronize => Self::Synchronize,
-            Prefix::BranchLikelyTaken(likely_taken) => if *likely_taken { Self::BranchLikelyTaken } else { Self::BranchNotLikelyTaken },
-            Prefix::Repeat(algorithm) => match algorithm {
-                Repeat::Fixed => Self::RepeatFixed,
-                Repeat::UntilEqual => Self::RepeatUntilEqual
-            }
+impl EncodeDynamic for Prefixes {
+    fn encode_dyn(&self, output: &mut Vec<u8>) {
+        if let Some(extension) = &self.extension {
+            output.push(match extension {
+                operation::Extension::Basic => Prefix::ExtensionBasic as u8,
+                operation::Extension::Floating => Prefix::ExtensionFloating as u8
+            })
+        }
+
+        if let Some(branch_likely_taken) = &self.branch_likely_taken { output.push(if *branch_likely_taken { Prefix::BranchLikelyTaken as u8 } else { Prefix::BranchNotLikelyTaken as u8 }); }
+
+        if let Some(execution_mode) = &self.execution_mode {
+            output.push(match execution_mode {
+                ExecutionMode::Synchronize => Prefix::ExecutionModeSynchronize as u8,
+                ExecutionMode::Repeat(repeat) => match repeat {
+                    Repeat::Fixed => Prefix::ExecutionModeRepeatFixed as u8,
+                    Repeat::UntilEqual => Prefix::ExecutionModeRepeatUntilEqual as u8
+                }
+            })
+        }
+
+        if let Some(escape) = &self.escape {
+            // The escape prefix must be encoded last as the processor will immediately start reading the instruction
+            // front end after this.
+            output.push(match escape {
+                operation::Size::Byte => Prefix::EscapeByte as u8,
+                operation::Size::Word => Prefix::EscapeWord as u8
+            });
         }
     }
 }

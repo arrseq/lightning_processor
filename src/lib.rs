@@ -2,6 +2,7 @@
 #![feature(const_option)]
 #![feature(const_trait_impl)]
 #![feature(effects)]
+#![feature(iter_collect_into)]
 
 extern crate num_traits;
 extern crate strum;

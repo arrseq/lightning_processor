@@ -5,13 +5,19 @@ pub mod basic;
 pub mod floating;
 
 #[derive(Debug)]
-pub enum Operation {
-    Basic(Basic),
-    Floating(Floating)
-}
-
-#[derive(Debug)]
 pub enum Size {
     Byte,
     Word
+}
+
+#[derive(Debug)]
+pub enum Extension {
+    Basic,
+    Floating
+}
+
+#[derive(Debug)]
+pub enum Operation {
+    Basic(Basic),
+    Floating(Floating)
 }

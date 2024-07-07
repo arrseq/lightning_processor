@@ -1,27 +1,25 @@
-use utility::{Encode, MaxCode, ToCode, TryCoded, TryFromCode};
-use strum_macros::{EnumCount, FromRepr};
+use utility::{EncodeDynamic, MaxCode, ToCode, TryCoded, TryFromCode};
 use strum::{EnumCount};
 use instruction::operation::Operation;
-use instruction::prefix::Prefix;
+use instruction::prefix::{Prefixes};
 
 pub mod operand;
 pub mod operation;
 pub mod prefix;
 
 pub struct Instruction {
-    pub prefixes: Vec<Prefix>,
+    pub prefixes: Prefixes,
     pub operation: Operation
 }
 
-impl Encode for Instruction {
-    type Output = Vec<u8>;
+#[derive(Debug)]
+pub enum EncodeError {
+    
+}
 
-    fn encode(&self) -> Self::Output {
-        for prefix in &self.prefixes {
-            let direct = prefix::Direct::from(prefix);
-            dbg!(direct);
-        }
-        
-        Vec::new()
+impl EncodeDynamic for Instruction {
+    fn encode_dyn(&self, output: &mut Vec<u8>) {
+        output.clear();
+        self.prefixes.encode_dyn(output);
     }
 }
