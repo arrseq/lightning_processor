@@ -1,5 +1,7 @@
+use strum_macros::FromRepr;
 use instruction::operation;
 
+#[derive(Debug)]
 pub enum Repeat {
     /// Repeat this instruction a fixed number of times based on the value of the A register.
     Fixed,
@@ -7,6 +9,7 @@ pub enum Repeat {
     UntilEqual
 }
 
+#[derive(Debug)]
 pub enum Prefix {
     /// Escape into reading the opcode and front end half of the instruction. This determines the size of the opcode.
     Escape(operation::Size),
@@ -19,8 +22,8 @@ pub enum Prefix {
     Repeat(Repeat)
 }
 
-impl From<Direct> for Prefix {
-    fn from(value: Direct) -> Self {
+impl From<&Direct> for Prefix {
+    fn from(value: &Direct) -> Self {
         match value {
             Direct::EscapeByte => Self::Escape(operation::Size::Byte),
             Direct::EscapeWord => Self::Escape(operation::Size::Word),
@@ -36,6 +39,8 @@ impl From<Direct> for Prefix {
     }
 }
 
+#[derive(Debug, FromRepr)]
+#[repr(u8)]
 pub enum Direct {
     EscapeByte,
     EscapeWord, 
@@ -49,15 +54,15 @@ pub enum Direct {
     RepeatUntilEqual
 }
 
-impl From<Prefix> for Direct {
-    fn from(value: Prefix) -> Self {
+impl From<&Prefix> for Direct {
+    fn from(value: &Prefix) -> Self {
         match value {
             Prefix::Escape(escape) => match escape {
                 operation::Size::Byte => Self::EscapeByte,
                 operation::Size::Word => Self::EscapeWord
             },
             Prefix::Synchronize => Self::Synchronize,
-            Prefix::BranchLikelyTaken(likely_taken) => if likely_taken { Self::BranchLikelyTaken } else { Self::BranchNotLikelyTaken },
+            Prefix::BranchLikelyTaken(likely_taken) => if *likely_taken { Self::BranchLikelyTaken } else { Self::BranchNotLikelyTaken },
             Prefix::Repeat(algorithm) => match algorithm {
                 Repeat::Fixed => Self::RepeatFixed,
                 Repeat::UntilEqual => Self::RepeatUntilEqual

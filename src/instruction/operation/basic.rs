@@ -1,5 +1,6 @@
 use instruction::operand;
 
+#[derive(Debug)]
 pub enum Basic {
     Add(operand::Dual),
     CarryingAdd(operand::Dual),

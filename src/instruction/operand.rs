@@ -5,6 +5,7 @@ pub mod dynamic;
 pub mod register;
 pub mod registers;
 
+#[derive(Debug)]
 pub struct Dual {
     pub r#static: Register,
     pub dynamic: Dynamic,
@@ -13,16 +14,14 @@ pub struct Dual {
 }
 
 /// Different configurations for the operands regarding the presence of individual operands.
+#[derive(Debug)]
 pub enum Configuration {
     Dual(Dual),
     Static(Register),
     Dynamic(Dynamic)
 }
 
-impl From<Dual> for Configuration { fn from(value: Dual) -> Self { Self::Dual(value) } }
-impl From<Register> for Configuration { fn from(value: Register) -> Self { Self::Static(value) } }
-impl From<Dynamic> for Configuration { fn from(value: Dynamic) -> Self { Self::Dynamic(value) } }
-
+#[derive(Debug)]
 pub enum Type {
     Static,
     Dynamic
