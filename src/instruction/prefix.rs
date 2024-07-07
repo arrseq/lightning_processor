@@ -19,15 +19,49 @@ pub enum Prefix {
     Repeat(Repeat)
 }
 
+impl From<Direct> for Prefix {
+    fn from(value: Direct) -> Self {
+        match value {
+            Direct::EscapeByte => Self::Escape(operation::Size::Byte),
+            Direct::EscapeWord => Self::Escape(operation::Size::Word),
+            
+            Direct::Synchronize => Self::Synchronize,
+            
+            Direct::BranchLikelyTaken => Self::BranchLikelyTaken(true),
+            Direct::BranchNotLikelyTaken => Self::BranchLikelyTaken(false),
+            
+            Direct::RepeatFixed => Self::Repeat(Repeat::Fixed),
+            Direct::RepeatUntilEqual => Self::Repeat(Repeat::UntilEqual)
+        }
+    }
+}
+
 pub enum Direct {
     EscapeByte,
     EscapeWord, 
     
     Synchronize,
-    
-    BranchLikelyTakenTrue,
-    BranchLikelyTakenFalse,
+
+    BranchLikelyTaken,
+    BranchNotLikelyTaken,
 
     RepeatFixed,
     RepeatUntilEqual
+}
+
+impl From<Prefix> for Direct {
+    fn from(value: Prefix) -> Self {
+        match value {
+            Prefix::Escape(escape) => match escape {
+                operation::Size::Byte => Self::EscapeByte,
+                operation::Size::Word => Self::EscapeWord
+            },
+            Prefix::Synchronize => Self::Synchronize,
+            Prefix::BranchLikelyTaken(likely_taken) => if likely_taken { Self::BranchLikelyTaken } else { Self::BranchNotLikelyTaken },
+            Prefix::Repeat(algorithm) => match algorithm {
+                Repeat::Fixed => Self::RepeatFixed,
+                Repeat::UntilEqual => Self::RepeatUntilEqual
+            }
+        }
+    }
 }
