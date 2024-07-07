@@ -4,17 +4,14 @@ use instruction::operation::floating::Floating;
 pub mod basic;
 pub mod floating;
 
+#[derive(Debug)]
 pub enum Operation {
     Basic(Basic),
     Floating(Floating)
 }
 
-pub enum FlatOperation {
-    BasicAdd,
-    BasicCarryingAdd,
-    BasicSubtract,
-    BasicBorrowingSubtract,
-    
-    FloatingAdd,
-    FloatingSubtract
+#[derive(Debug)]
+pub enum Size {
+    Byte,
+    Word
 }

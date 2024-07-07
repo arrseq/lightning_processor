@@ -1,4 +1,4 @@
-use utility::{Decode, FromCode};
+use utility::{FromCode};
 use crate::utility::{Encode, ToCode};
 
 use super::register::{self, Register};
@@ -31,10 +31,8 @@ impl Encode for Registers {
     }
 }
 
-impl Decode for Registers {
-    type Input = u8;
-
-    fn decode(input: Self::Input) -> Self {
+impl Registers {
+    fn decode(input: u8) -> Self {
         let r#static = Register::from_code(input >> register::INDEX_BITS);
         let dynamic = Register::from_code(input);
         

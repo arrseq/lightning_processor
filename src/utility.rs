@@ -159,14 +159,6 @@ pub trait Encode {
     fn encode(&self) -> Self::Output;
 }
 
-/// Decide a valid structure into a valid encoded form.
-pub trait Decode {
-    type Input;
-
-    /// Decode an encoded input into self.
-    fn decode(input: Self::Input) -> Self;
-}
-
 /// Try to decode a potentially invalid encoded form of a structure.
 pub trait TryDecode: Sized {
     type Input;
