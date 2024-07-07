@@ -1,5 +1,6 @@
 use strum_macros::FromRepr;
 use instruction::operation;
+use utility::ToCode;
 
 #[derive(Debug)]
 pub enum Repeat {
@@ -39,7 +40,7 @@ impl From<&Direct> for Prefix {
     }
 }
 
-#[derive(Debug, FromRepr)]
+#[derive(Debug, Clone, Copy, FromRepr)]
 #[repr(u8)]
 pub enum Direct {
     EscapeByte,
@@ -52,6 +53,11 @@ pub enum Direct {
 
     RepeatFixed,
     RepeatUntilEqual
+}
+
+impl ToCode for Direct {
+    type Code = u8;
+    fn to_code(&self) -> Self::Code { *self as Self::Code }
 }
 
 impl From<&Prefix> for Direct {
