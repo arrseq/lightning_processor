@@ -1,4 +1,35 @@
 use instruction::operand;
+use utility::ToCode;
+
+#[repr(u16)]
+pub enum Code {
+    Add,
+    CarryingAdd,
+    Subtract,
+    BorrowingSubtract,
+    Multiply, 
+    Divide,
+
+    Copy,
+
+    AppendStack,
+    AppendStackRegisters,
+    DetachStack,
+    DetachStackRegisters,
+
+    LogicalAnd,
+    LogicalOr,
+    LogicalNot,
+    LogicalXor,
+
+    Increment,
+    Decrement,
+
+    JumpIfZero,
+    JumpIfOverflow,
+    JumpIfRegrouping,
+    JumpIfNegative
+}
 
 #[derive(Debug)]
 pub enum Basic {
@@ -6,6 +37,8 @@ pub enum Basic {
     CarryingAdd(operand::Dual),
     Subtract(operand::Dual),
     BorrowingSubtract(operand::Dual),
+    Multiply(operand::Dual),
+    Divide(operand::Dual),
     
     /// Copy the value between the operands corresponding to the result destination of the data.
     Copy(operand::Dual),
@@ -32,5 +65,35 @@ pub enum Basic {
     JumpIfZero(operand::dynamic::Dynamic),
     JumpIfOverflow(operand::dynamic::Dynamic),
     JumpIfRegrouping(operand::dynamic::Dynamic),
-    JumpIfNegative(operand::dynamic::Dynamic),
+    JumpIfNegative(operand::dynamic::Dynamic)
+}
+
+impl ToCode for Basic {
+    type Code = u16;
+
+    fn to_code(&self) -> Self::Code {
+        (match self {
+            Self::Add(_) => Code::Add,
+            Basic::CarryingAdd(_) => Code::CarryingAdd,
+            Basic::Subtract(_) => Code::Subtract,
+            Basic::BorrowingSubtract(_) => Code::BorrowingSubtract,
+            Basic::Multiply(_) => Code::Multiply,
+            Basic::Divide(_) => Code::Divide,
+            Basic::Copy(_) => Code::Copy,
+            Basic::AppendStack(_) => Code::AppendStack,
+            Basic::AppendStackRegisters => Code::AppendStackRegisters,
+            Basic::DetachStack(_) => Code::DetachStack,
+            Basic::DetachStackRegisters => Code::DetachStackRegisters,
+            Basic::LogicalAnd(_) => Code::LogicalAnd,
+            Basic::LogicalOr(_) => Code::LogicalOr,
+            Basic::LogicalNot(_) => Code::LogicalNot,
+            Basic::LogicalXor(_) => Code::LogicalXor,
+            Basic::Increment(_) => Code::Increment,
+            Basic::Decrement(_) => Code::Decrement,
+            Basic::JumpIfZero(_) => Code::JumpIfZero,
+            Basic::JumpIfOverflow(_) => Code::JumpIfOverflow,
+            Basic::JumpIfRegrouping(_) => Code::JumpIfRegrouping,
+            Basic::JumpIfNegative(_) => Code::JumpIfNegative
+        }) as Self::Code
+    }
 }

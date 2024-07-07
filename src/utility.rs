@@ -159,13 +159,8 @@ pub trait Encode {
     fn encode(&self) -> Self::Output;
 }
 
-/// Try to decode a potentially invalid encoded form of a structure.
-pub trait TryDecode: Sized {
-    type Input;
-    type Error;
-
-    /// Decide a potentially invalid input into result.
-    fn try_decode(input: Self::Input) -> Result<Self::Error, Self>;
+pub trait EncodeDynamic {
+    fn encode_dyn(&self, output: &mut Vec<u8>);
 }
 
 pub trait MaxCode {
