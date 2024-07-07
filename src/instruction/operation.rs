@@ -9,12 +9,7 @@ pub enum Operation {
     Floating(Floating)
 }
 
-pub enum FlatOperation {
-    BasicAdd,
-    BasicCarryingAdd,
-    BasicSubtract,
-    BasicBorrowingSubtract,
-    
-    FloatingAdd,
-    FloatingSubtract
+pub enum Size {
+    Byte,
+    Word
 }

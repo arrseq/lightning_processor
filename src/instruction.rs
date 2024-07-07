@@ -9,6 +9,6 @@ pub mod operation;
 pub mod prefix;
 
 pub struct Instruction {
-    prefixes: Vec<Prefix>,
-    operation: Operation
+    pub prefixes: Vec<Prefix>,
+    pub operation: Operation
 }
