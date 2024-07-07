@@ -1,22 +1,14 @@
-use self::register::Register;
-use self::dynamic::Dynamic;
-use utility::{Encode, TryCoded};
+use utility::{Encode, MaxCode, ToCode, TryCoded, TryFromCode};
+use strum_macros::{EnumCount, FromRepr};
+use strum::{EnumCount};
+use instruction::operation::Operation;
+use instruction::prefix::Prefix;
 
-pub mod dynamic;
-pub mod register;
-pub mod registers;
+pub mod operand;
+pub mod operation;
+pub mod prefix;
 
-pub struct Instruction<OpCode: TryCoded, PrCode: TryCoded, > {
-    pub prefixes: Vec<PrCode>,
-    pub operation: OpCode,
-    pub static_operand: Option<Register>,
-    pub dynamic_operand: Option<Dynamic>
-}
-
-impl<OpCode: TryCoded, PrCode: TryCoded> Encode for Instruction<OpCode, PrCode> {
-    type Output = Vec<u8>;
-
-    fn encode(&self) -> Self::Output {
-        todo!()
-    }
+pub struct Instruction {
+    prefixes: Vec<Prefix>,
+    operation: Operation
 }

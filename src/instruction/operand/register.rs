@@ -1,4 +1,4 @@
-use utility::{FromCode, MaxWithBits};
+use utility::{FromCode, MaxCode, MaxWithBits};
 use crate::utility::{ToCode, TryCoded, TryFromCode};
 
 /// There are 15 different registers supported.
@@ -24,8 +24,21 @@ impl ToCode for Register {
     fn to_code(&self) -> Self::Code { self.0 }
 }
 
-impl TryCoded for Register {}
+impl MaxCode for Register {
+    type Code = u8;
 
+    fn max_code() -> Self::Code {
+        MAX_INDEX as Self::Code
+    }
+
+    fn codes() -> Self::Code {
+        MAX_INDEX as Self::Code + 1
+    }
+}
+
+impl TryCoded for Register {
+    type Code = u8;
+}
 
 impl FromCode for Register {
     type Code = u8;
