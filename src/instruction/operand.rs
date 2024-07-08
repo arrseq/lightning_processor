@@ -31,6 +31,7 @@ impl Encode for SizedDual {
         let data_size = self.data_size.exponent();
         let destination = bool::from(&self.operand.destination) as u8;
         
+        
         let mut byte = 0u8;
         byte |= data_size << 6;
         byte |= destination << 5;
