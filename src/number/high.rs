@@ -18,3 +18,12 @@ impl From<&HighNumber> for HighSize {
         }
     }
 }
+
+impl From<&HighNumber> for u64 {
+    fn from(value: &HighNumber) -> Self {
+        match value {
+            HighNumber::Dual(v) => *v as u64,
+            HighNumber::Quad(v) => *v
+        }
+    }
+}

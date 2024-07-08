@@ -12,11 +12,11 @@ fn main() {
         branch_likely_taken: None,
         execution_mode: None,
         operation: Operation::Floating(operation::floating::Floating::Subtract(SizedDual {
-            data_size: number::Size::Byte,
+            data_size: number::Size::Quad,
             operand: operand::Dual {
                 r#static: Register::General(register::General::A0),
                 dynamic: operand::dynamic::Dynamic::Register(Register::General(register::General::A1)),
-                destination: operand::Type::Static 
+                destination: operand::Type::Dynamic 
             }
         }))
     };

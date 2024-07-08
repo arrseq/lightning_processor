@@ -53,6 +53,33 @@ pub enum Code {
     PointerStack
 }
 
+impl From<&Register> for Code {
+    fn from(value: &Register) -> Self {
+        match value {
+            Register::General(general) => match general {
+                General::A0 => Self::GeneralA0,
+                General::B0 => Self::GeneralB0,
+                General::C0 => Self::GeneralC0,
+                General::D0 => Self::GeneralD0,
+                General::E0 => Self::GeneralE0,
+                General::F0 => Self::GeneralF0,
+                General::A1 => Self::GeneralA1,
+                General::B1 => Self::GeneralB1,
+                General::C1 => Self::GeneralC1,
+                General::D1 => Self::GeneralD1,
+                General::E1 => Self::GeneralE1,
+                General::F1 => Self::GeneralF1,
+                General::A2 => Self::GeneralA2,
+                General::B2 => Self::GeneralB2
+            },
+            Register::Pointer(pointer) => match pointer {
+                Pointer::Base => Self::PointerBase,
+                Pointer::Stack => Self::PointerStack
+            }
+        }
+    }
+}
+
 /// A valid register target. 
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
@@ -67,12 +94,12 @@ impl TryFromCode for Register {
 
     fn try_from_code(code: Self::Code) -> Option<Self> {
         let code = Code::from_repr(code)?;
-        Some(Self::from(code))
+        Some(Self::from(&code))
     }
 }
 
-impl From<Code> for Register {
-    fn from(value: Code) -> Self {
+impl From<&Code> for Register {
+    fn from(value: &Code) -> Self {
         match value {
             Code::GeneralA0 => Self::General(General::A0),
             Code::GeneralB0 => Self::General(General::B0),
@@ -97,7 +124,7 @@ impl From<Code> for Register {
 impl ToCode for Register {
     type Code = u8;
 
-    fn to_code(&self) -> Self::Code { self.0 }
+    fn to_code(&self) -> Self::Code { Code::from(self) as Self::Code }
 }
 
 impl MaxCode for Register {
@@ -127,9 +154,9 @@ impl FromCode for Register {
     ///
     /// assert_eq!(Register::from_code(0b11111111).to_code(), 0b0000_1111);
     fn from_code(mut code: Self::Code) -> Self {
-        code = code & MAX_INDEX as u8;
+        code &= MAX_INDEX as u8;
         let code_enum = Code::from_repr(code).unwrap();
-        Self::from(code_enum)
+        Self::from(&code_enum)
     }
 }
 // endregion
