@@ -1,4 +1,5 @@
 use instruction::operand;
+use instruction::operand::GetConfiguration;
 use utility::ToCode;
 
 #[repr(u16)]
@@ -7,10 +8,19 @@ pub enum Code {
     Subtract
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum Floating {
-    Add(operand::Dual),
-    Subtract(operand::Dual)
+    Add(operand::SizedDual),
+    Subtract(operand::SizedDual)
+}
+
+impl GetConfiguration for Floating {
+    fn get_configuration(&self) -> Option<operand::Configuration> {
+        Some(match self {
+            Self::Add(x)
+                | Self::Subtract(x) => operand::Configuration::Dual(*x)
+        })
+    }
 }
 
 impl ToCode for Floating {
