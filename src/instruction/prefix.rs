@@ -1,9 +1,10 @@
 //! If a prefix from the same category but different modes are used, then only the first instance of it is considered.
 
 use instruction::operation;
+use number::low::LowSize;
 use utility::EncodeDynamic;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum Repeat {
     /// Repeat this instruction a fixed number of times based on the value of the A register.
     Fixed,
@@ -11,7 +12,7 @@ pub enum Repeat {
     UntilEqual
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum ExecutionMode {
     /// Synchronize execution among other processors.
     Synchronize,
@@ -19,10 +20,10 @@ pub enum ExecutionMode {
     Repeat(Repeat)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Prefixes {
     /// Escape into reading the opcode and front end half of the instruction. This determines the size of the opcode.
-    pub escape: Option<operation::Size>,
+    pub escape: LowSize,
     /// Set the instruction set code. This allows you to execute instructions from a different instruction set.
     pub extension: Option<operation::Extension>,
     /// Hint to the processor that the branch is likely taken. If this is incorrect, it results in a pipeline flush and
@@ -69,13 +70,11 @@ impl EncodeDynamic for Prefixes {
             })
         }
 
-        if let Some(escape) = &self.escape {
-            // The escape prefix must be encoded last as the processor will immediately start reading the instruction
-            // front end after this.
-            output.push(match escape {
-                operation::Size::Byte => Prefix::EscapeByte as u8,
-                operation::Size::Word => Prefix::EscapeWord as u8
-            });
-        }
+        // The escape prefix must be encoded last as the processor will immediately start reading the instruction
+        // front end after this.
+        output.push(match self.escape {
+            LowSize::Byte => Prefix::EscapeByte as u8,
+            LowSize::Word => Prefix::EscapeWord as u8
+        });
     }
 }

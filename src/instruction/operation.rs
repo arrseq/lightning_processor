@@ -1,32 +1,32 @@
+use instruction::operand;
+use instruction::operand::GetConfiguration;
 use instruction::operation::basic::Basic;
 use instruction::operation::floating::Floating;
+use number::low::{LowNumber, LowSize};
 use utility::ToCode;
 
 pub mod basic;
 pub mod floating;
 
-#[derive(Debug)]
-pub enum Size {
-    Byte,
-    Word
-}
-
-#[derive(Debug)]
-pub enum Sized {
-    Byte(u8),
-    Word(u16)
-}
-
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum Extension {
     Basic,
     Floating
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum Operation {
     Basic(Basic),
     Floating(Floating)
+}
+
+impl From<&Operation> for Extension {
+    fn from(value: &Operation) -> Self {
+        match value {
+            Operation::Basic(_) => Extension::Basic,
+            Operation::Floating(_) => Extension::Floating
+        }
+    }
 }
 
 impl ToCode for Operation {
@@ -40,24 +40,33 @@ impl ToCode for Operation {
     }
 }
 
+impl GetConfiguration for Operation {
+    fn get_configuration(&self) -> Option<operand::Configuration> {
+        match self {
+            Self::Basic(x) => x.get_configuration(),
+            Self::Floating(x) => x.get_configuration()
+        }
+    }
+}
+
 impl Operation {
-    /// Convert the operation to a code, then store it in a [Sized] type corresponding to what value [Size] is. This 
+    /// Convert the operation to a code, then store it in a [LowNumber] type corresponding to what value [LowSize] is. This
     /// could result in the operation code losing data and start referring to a different operation. This behavior could
     /// be undefined.
-    pub fn force_code_constrained(&self, size: &Size) -> Sized {
+    pub fn force_code_constrained(&self, size: &LowSize) -> LowNumber {
         let code = self.to_code();
 
         match size {
-            Size::Byte => Sized::Byte(code as u8),
-            Size::Word => Sized::Word(code)
+            LowSize::Byte => LowNumber::Byte(code as u8),
+            LowSize::Word => LowNumber::Word(code)
         }
     }
-    
+
     /// Convert the operation to a code and use the smallest data type that can represent that operation.
-    pub fn to_smallest_code(&self) -> Sized {
+    pub fn to_smallest_code(&self) -> LowNumber {
         let code = self.to_code();
 
-        if code > u8::MAX as u16 { return Sized::Word(code); }
-        Sized::Byte(code as u8)
+        if code > u8::MAX as u16 { return LowNumber::Word(code); }
+        LowNumber::Byte(code as u8)
     }
 }

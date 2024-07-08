@@ -6,6 +6,9 @@
 
 use utility::ReadAll;
 
+pub mod high;
+pub mod low;
+
 pub const BYTE_SIZE: usize = 1;
 pub const WORD_SIZE: usize = 2;
 pub const DUAL_SIZE: usize = 4;
@@ -35,7 +38,7 @@ impl<T> ArrayBounds for [T] {
 
 /// Absolute modes.
 /// Base type variants for representing an absolute value.
-#[derive(Default, Debug, Clone, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Size {
     #[default]
     Byte,
