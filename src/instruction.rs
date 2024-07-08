@@ -1,4 +1,4 @@
-use utility::{EncodeDynamic, MaxCode, ToCode, TryCoded, TryFromCode};
+use utility::{Encode, EncodeDynamic, MaxCode, ToCode, TryCoded, TryFromCode};
 use strum::{EnumCount};
 use instruction::operand::GetConfiguration;
 use instruction::operation::{Extension, Operation};
@@ -38,7 +38,13 @@ impl EncodeDynamic for Instruction {
         
         // Front end.
         
-        let configuration = self.operation.get_configuration();
-        dbg!(configuration);
+        if let Some(configuration) = self.operation.get_configuration() {
+            let encoded = match configuration {
+                operand::Configuration::Dual(x) => x.encode(),
+                _ => todo!()
+            };
+            
+            output.push(encoded);
+        }
     }
 }

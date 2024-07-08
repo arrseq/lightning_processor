@@ -29,7 +29,7 @@ impl Encode for SizedDual {
     fn encode(&self) -> Self::Output {
         // [data size] [destination] [dynamic mode] [address mode] [address constant size]
         let data_size = self.data_size.exponent();
-        let destination = bool::from(self.operand.destination) as u8;
+        let destination = bool::from(&self.operand.destination) as u8;
         
         let mut byte = 0u8;
         byte |= data_size << 6;
@@ -65,7 +65,7 @@ impl From<bool> for Type {
     fn from(value: bool) -> Self { if value { Self::Dynamic } else { Self::Static } }
 }
 
-impl From<Type> for bool {
+impl From<&Type> for bool {
     /// Convert an operand type to a boolean. If the operand is [Type::Dynamic] then [true] is returned.
-    fn from(value: Type) -> Self { matches!(value, Type::Dynamic) }
+    fn from(value: &Type) -> Self { matches!(value, Type::Dynamic) }
 }
