@@ -20,8 +20,8 @@ pub enum Operation {
     Floating(Floating)
 }
 
-impl From<&Operation> for Extension {
-    fn from(value: &Operation) -> Self {
+impl From<Operation> for Extension {
+    fn from(value: Operation) -> Self {
         match value {
             Operation::Basic(_) => Extension::Basic,
             Operation::Floating(_) => Extension::Floating

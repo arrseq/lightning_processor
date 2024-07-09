@@ -1,10 +1,4 @@
 use std::borrow::Cow;
-use std::marker::PhantomData;
-use std::ops::{Add, Sub};
-use std::process::Output;
-use number;
-use number::{Size};
-use num_traits::ops::checked::CheckedAdd;
 
 /// Read a vector like a stream. Read buffer.len() amount of bytes from the vector and into the buffer. This will return
 /// the number of bytes read.

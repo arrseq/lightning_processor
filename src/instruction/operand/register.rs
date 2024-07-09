@@ -53,8 +53,8 @@ pub enum Code {
     PointerStack
 }
 
-impl From<&Register> for Code {
-    fn from(value: &Register) -> Self {
+impl From<Register> for Code {
+    fn from(value: Register) -> Self {
         match value {
             Register::General(general) => match general {
                 General::A0 => Self::GeneralA0,
@@ -94,12 +94,12 @@ impl TryFromCode for Register {
 
     fn try_from_code(code: Self::Code) -> Option<Self> {
         let code = Code::from_repr(code)?;
-        Some(Self::from(&code))
+        Some(Self::from(code))
     }
 }
 
-impl From<&Code> for Register {
-    fn from(value: &Code) -> Self {
+impl From<Code> for Register {
+    fn from(value: Code) -> Self {
         match value {
             Code::GeneralA0 => Self::General(General::A0),
             Code::GeneralB0 => Self::General(General::B0),
@@ -124,7 +124,7 @@ impl From<&Code> for Register {
 impl ToCode for Register {
     type Code = u8;
 
-    fn to_code(&self) -> Self::Code { Code::from(self) as Self::Code }
+    fn to_code(&self) -> Self::Code { Code::from(*self) as Self::Code }
 }
 
 impl MaxCode for Register {
@@ -156,7 +156,7 @@ impl FromCode for Register {
     fn from_code(mut code: Self::Code) -> Self {
         code &= MAX_INDEX as u8;
         let code_enum = Code::from_repr(code).unwrap();
-        Self::from(&code_enum)
+        Self::from(code_enum)
     }
 }
 // endregion

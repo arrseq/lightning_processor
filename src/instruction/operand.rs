@@ -1,7 +1,7 @@
 use instruction::operand::dynamic::{Dynamic, SizedDynamic};
 use instruction::operand::register::Register;
 use number;
-use utility::Encode;
+use utility::{Encode, ToCode};
 
 pub mod dynamic;
 pub mod register;
@@ -21,22 +21,32 @@ pub struct SizedOperand<Operand> {
     pub data_size: number::Size
 }
 
+impl<Operand> SizedOperand<Operand> {
+    pub fn encode_operand_properties(data_size: number::Size, destination: Type, dynamic_operand: Option<&Dynamic>) -> u8 {
+        let data_size = data_size.exponent();
+        let destination = bool::from(destination) as u8;
+
+        let mut byte = 0u8;
+        byte |= data_size << 6;
+        byte |= destination << 5;
+        
+        if let Some(dynamic_operand) = dynamic_operand {
+            let addressing = dynamic_operand.to_code();
+            dbg!(addressing);
+            byte |= addressing << 1;
+        }
+
+        byte
+    }
+}
+
 pub type SizedDual = SizedOperand<Dual>;
 
 impl Encode for SizedDual {
     type Output = u8;
 
     fn encode(&self) -> Self::Output {
-        // [data size] [destination] [dynamic mode] [address mode] [address constant size]
-        let data_size = self.data_size.exponent();
-        let destination = bool::from(&self.operand.destination) as u8;
-        
-        
-        let mut byte = 0u8;
-        byte |= data_size << 6;
-        byte |= destination << 5;
-        
-        byte
+        todo!()
     }
 }
 
@@ -66,7 +76,7 @@ impl From<bool> for Type {
     fn from(value: bool) -> Self { if value { Self::Dynamic } else { Self::Static } }
 }
 
-impl From<&Type> for bool {
+impl From<Type> for bool {
     /// Convert an operand type to a boolean. If the operand is [Type::Dynamic] then [true] is returned.
-    fn from(value: &Type) -> Self { matches!(value, Type::Dynamic) }
+    fn from(value: Type) -> Self { matches!(value, Type::Dynamic) }
 }
