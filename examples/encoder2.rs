@@ -5,6 +5,7 @@ use atln_processor::instruction::operand::register::Register;
 use atln_processor::instruction::operand::{dynamic, register, SizedDual};
 use atln_processor::instruction::operation::Operation;
 use atln_processor::number;
+use atln_processor::number::Number;
 use atln_processor::utility::{EncodeDynamic, FromCode};
 
 fn main() {
@@ -15,10 +16,7 @@ fn main() {
             data_size: number::Size::Quad,
             operand: operand::Dual {
                 r#static: Register::General(register::General::F1),
-                dynamic: operand::dynamic::Dynamic::Address(dynamic::Address::Add(dynamic::Dual {
-                    base: Register::General(register::General::A1),
-                    offset: number::Number::Quad(10000000)
-                })),
+                dynamic: operand::dynamic::Dynamic::Constant(Number::Word(u16::MAX)),
                 destination: operand::Type::Dynamic 
             }
         }))

@@ -109,6 +109,11 @@ impl Dynamic {
         
         None
     }
+    
+    /// Get the constant field from the constant addressing mode.
+    pub fn get_constant(self) -> Option<Number> {
+        if let Self::Constant(x) = self { Some(x) } else { None }
+    }
 }
 
 impl ToCode for Dynamic {

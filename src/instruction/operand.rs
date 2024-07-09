@@ -86,6 +86,14 @@ impl Configuration {
             Self::Static(_) => return None
         })
     }
+    
+    pub fn get_size(self) -> number::Size {
+        match self {
+            Self::Dual(x) => x.data_size,
+            Self::Static(x) => x.data_size,
+            Self::Dynamic(x) => x.data_size
+        }
+    }
 }
 
 pub trait GetConfiguration {

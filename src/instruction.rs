@@ -3,7 +3,9 @@ use instruction::operand::register::Register;
 use instruction::operand::registers::Registers;
 use instruction::operation::{Extension, Operation};
 use instruction::prefix::{ExecutionMode, Prefixes};
+use number;
 use number::low::{LowNumber, LowSize};
+use number::Number;
 use utility::{Encode, EncodeDynamic};
 
 pub mod operand;
@@ -60,6 +62,11 @@ impl EncodeDynamic for Instruction {
             // Immediate.
             if let Some(dynamic) = dynamic {
                 if let Some(address_constant) = dynamic.get_address_constant() { output.extend(address_constant.to_le_bytes()); }
+                else if let Some(constant) = dynamic.get_constant() {
+                    // Ensure the constant fits the correct size of the data.
+                    let sized_constant = constant.resize(configuration.get_size());
+                    output.extend(sized_constant.to_le_bytes());
+                }
             }
         }
         // endregion
