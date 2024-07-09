@@ -1,12 +1,12 @@
 extern crate atln_processor;
 
-use atln_processor::instruction::{Instruction, operand, operation, prefix::{Prefixes}, prefix};
+use atln_processor::instruction::{Instruction, operand, operation};
+use atln_processor::instruction::operand::{register, SizedDual};
 use atln_processor::instruction::operand::register::Register;
-use atln_processor::instruction::operand::{dynamic, register, SizedDual};
 use atln_processor::instruction::operation::Operation;
 use atln_processor::number;
 use atln_processor::number::Number;
-use atln_processor::utility::{EncodeDynamic, FromCode};
+use atln_processor::utility::EncodeDynamic;
 
 fn main() {
     let instruction = Instruction {

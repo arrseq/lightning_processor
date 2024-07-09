@@ -1,6 +1,5 @@
 use instruction::operand::dynamic::{Dynamic, SizedDynamic};
 use instruction::operand::register::Register;
-use instruction::operand::registers::Registers;
 use number;
 use utility::{Encode, ToCode};
 

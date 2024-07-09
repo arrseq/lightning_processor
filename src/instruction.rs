@@ -3,9 +3,7 @@ use instruction::operand::register::Register;
 use instruction::operand::registers::Registers;
 use instruction::operation::{Extension, Operation};
 use instruction::prefix::{ExecutionMode, Prefixes};
-use number;
 use number::low::{LowNumber, LowSize};
-use number::Number;
 use utility::{Encode, EncodeDynamic};
 
 pub mod operand;
