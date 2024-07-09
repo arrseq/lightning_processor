@@ -1,5 +1,5 @@
 use utility::{FromCode};
-use crate::utility::{Encode, ToCode};
+use crate::utility::{ToCode};
 
 use super::register::{self, Register};
 
@@ -10,9 +10,7 @@ pub struct Registers {
     pub dynamic: Register
 }
 
-impl Encode for Registers {
-    type Output = u8;
-
+impl Registers {
     /// Encode both register codes adjacent to each other in a byte.
     /// ```
     /// use atln_processor::instruction::operand::register::Register;
@@ -26,7 +24,7 @@ impl Encode for Registers {
     /// 
     /// // TODO: Continue
     /// ```
-    fn encode(&self) -> Self::Output {
+    pub(crate) fn encode(&self) -> u8 {
         let mut output = self.dynamic.to_code();
         output |= self.r#static.to_code() << register::INDEX_BITS;
         output

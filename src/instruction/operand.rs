@@ -1,7 +1,7 @@
 use instruction::operand::dynamic::{Dynamic, SizedDynamic};
 use instruction::operand::register::Register;
 use number;
-use utility::{Encode, ToCode};
+use utility::{ToCode};
 
 pub mod dynamic;
 pub mod register;
@@ -43,20 +43,16 @@ impl<Operand> SizedOperand<Operand> {
 
 pub type SizedDual = SizedOperand<Dual>;
 
-impl Encode for SizedDual {
-    type Output = u8;
-
-    fn encode(&self) -> Self::Output {
+impl SizedDual {
+    pub(crate) fn encode(&self) -> u8 {
         self.encode_operand_properties(Some(self.operand.destination), Some(self.operand.dynamic))
     }
 }
 
 pub type SizedStatic = SizedOperand<Register>;
 
-impl Encode for SizedStatic {
-    type Output = u8;
-
-    fn encode(&self) -> Self::Output {
+impl SizedStatic {
+    pub(crate) fn encode(&self) -> u8 {
         self.encode_operand_properties(None, None)
     }
 }

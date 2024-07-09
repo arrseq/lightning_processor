@@ -1,12 +1,12 @@
 extern crate atln_processor;
 
+use std::io::Cursor;
 use atln_processor::instruction::{Instruction, operand, operation};
 use atln_processor::instruction::operand::{register, SizedDual};
 use atln_processor::instruction::operand::register::Register;
 use atln_processor::instruction::operation::Operation;
 use atln_processor::number;
 use atln_processor::number::Number;
-use atln_processor::utility::EncodeDynamic;
 
 fn main() {
     let instruction = Instruction {
@@ -23,7 +23,7 @@ fn main() {
     };
 
     let mut encoded = vec![0u8; 0];
-    instruction.encode_dyn(&mut encoded);
+    instruction.encode(&mut encoded);
 
-    dbg!(encoded);
+    let decoded = Instruction::decode(&mut Cursor::new(encoded));
 }

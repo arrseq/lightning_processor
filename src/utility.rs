@@ -144,19 +144,6 @@ pub trait TryCoded: TryFromCode<Code=<Self as TryCoded>::Code> + ToCode<Code=<Se
 pub trait Coded<Code>: FromCode<Code=Code> + ToCode<Code=Code> + MaxCode<Code=Code> {}
 // endregion
 
-// region: Traits for encoded items.
-/// It is assumed that whatever is being encoded is also valid.
-pub trait Encode {
-    type Output;
-
-    /// Encode this item into some encoded output.
-    fn encode(&self) -> Self::Output;
-}
-
-pub trait EncodeDynamic {
-    fn encode_dyn(&self, output: &mut Vec<u8>);
-}
-
 pub trait MaxCode {
     type Code;
 

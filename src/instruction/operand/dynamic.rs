@@ -1,6 +1,6 @@
 use strum_macros::FromRepr;
 use instruction::operand::SizedOperand;
-use utility::{Encode, ToCode};
+use utility::{ToCode};
 use crate::number::Number;
 
 use super::register::Register;
@@ -126,10 +126,8 @@ impl ToCode for Dynamic {
 
 pub type SizedDynamic = SizedOperand<Dynamic>;
 
-impl Encode for SizedDynamic {
-    type Output = u8;
-    
-    fn encode(&self) -> Self::Output {
+impl SizedDynamic {
+    pub(crate) fn encode(&self) -> u8 {
         self.encode_operand_properties(None, Some(self.operand))
     }
 }
