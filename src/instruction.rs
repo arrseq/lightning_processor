@@ -1,8 +1,10 @@
 use utility::{Encode, EncodeDynamic, MaxCode, ToCode, TryCoded, TryFromCode};
 use strum::{EnumCount};
-use instruction::operand::GetConfiguration;
+use instruction::operand::dynamic::Dynamic;
+use instruction::operand::{dynamic, GetConfiguration, register};
 use instruction::operation::{Extension, Operation};
 use instruction::prefix::{ExecutionMode, Prefixes};
+use number;
 use number::low::{LowNumber, LowSize};
 
 pub mod operand;

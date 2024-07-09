@@ -1,7 +1,7 @@
 use instruction::operand::dynamic::{Dynamic, SizedDynamic};
 use instruction::operand::register::Register;
 use number;
-use utility::Encode;
+use utility::{Encode, ToCode};
 
 pub mod dynamic;
 pub mod register;
@@ -30,11 +30,14 @@ impl Encode for SizedDual {
         // [data size] [destination] [dynamic mode] [address mode] [address constant size]
         let data_size = self.data_size.exponent();
         let destination = bool::from(&self.operand.destination) as u8;
+        let addressing = self.operand.dynamic.to_code();
         
+        dbg!(addressing);
         
         let mut byte = 0u8;
         byte |= data_size << 6;
         byte |= destination << 5;
+        byte |= addressing << 1;
         
         byte
     }

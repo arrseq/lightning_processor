@@ -2,7 +2,7 @@ extern crate atln_processor;
 
 use atln_processor::instruction::{Instruction, operand, operation, prefix::{Prefixes}, prefix};
 use atln_processor::instruction::operand::register::Register;
-use atln_processor::instruction::operand::{register, SizedDual};
+use atln_processor::instruction::operand::{dynamic, register, SizedDual};
 use atln_processor::instruction::operation::Operation;
 use atln_processor::number;
 use atln_processor::utility::{EncodeDynamic, FromCode};
@@ -15,7 +15,7 @@ fn main() {
             data_size: number::Size::Quad,
             operand: operand::Dual {
                 r#static: Register::General(register::General::A0),
-                dynamic: operand::dynamic::Dynamic::Register(Register::General(register::General::A1)),
+                dynamic: operand::dynamic::Dynamic::Address(dynamic::Address::Constant(number::Number::Quad(10000000))),
                 destination: operand::Type::Dynamic 
             }
         }))
