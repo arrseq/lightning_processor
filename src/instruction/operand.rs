@@ -22,9 +22,11 @@ pub struct SizedOperand<Operand> {
 }
 
 impl<Operand> SizedOperand<Operand> {
-    pub fn encode_operand_properties(data_size: number::Size, destination: Type, dynamic_operand: Option<&Dynamic>) -> u8 {
-        let data_size = data_size.exponent();
-        let destination = bool::from(destination) as u8;
+    pub fn encode_operand_properties(self, destination: Option<Type>, dynamic_operand: Option<Dynamic>) -> u8 {
+        let data_size = self.data_size.exponent();
+        
+        // Default to static operand destination. In these cases, the destination is irrelevant.
+        let destination = bool::from(destination.unwrap_or(Type::Static)) as u8;
 
         let mut byte = 0u8;
         byte |= data_size << 6;
@@ -46,11 +48,19 @@ impl Encode for SizedDual {
     type Output = u8;
 
     fn encode(&self) -> Self::Output {
-        todo!()
+        self.encode_operand_properties(Some(self.operand.destination), Some(self.operand.dynamic))
     }
 }
 
 pub type SizedStatic = SizedOperand<Register>;
+
+impl Encode for SizedStatic {
+    type Output = u8;
+    
+    fn encode(&self) -> Self::Output {
+        self.encode_operand_properties(None, None)
+    }
+}
 
 /// Different configurations for the operands regarding the presence of individual operands.
 #[derive(Debug, Clone, Copy)]
