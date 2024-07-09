@@ -1,4 +1,6 @@
 use instruction::operand::GetConfiguration;
+use instruction::operand::register::Register;
+use instruction::operand::registers::Registers;
 use instruction::operation::{Extension, Operation};
 use instruction::prefix::{ExecutionMode, Prefixes};
 use number::low::{LowNumber, LowSize};
@@ -40,10 +42,21 @@ impl EncodeDynamic for Instruction {
         if let Some(configuration) = self.operation.get_configuration() {
             let encoded = match configuration {
                 operand::Configuration::Dual(x) => x.encode(),
-                _ => todo!()
+                operand::Configuration::Dynamic(x) => x.encode(),
+                operand::Configuration::Static(x) => x.encode()
             };
             
+            // Operand information.
             output.push(encoded);
+            
+            // Registers.
+            let static_register = configuration.get_static_register().unwrap_or(Register::default());
+            let dynamic_register = configuration.get_dynamic_register().unwrap_or(Register::default());
+            let registers = Registers { dynamic: dynamic_register, r#static: static_register };
+            
+            dbg!(registers, dynamic_register, configuration.get_dynamic_register());
+            
+            output.push(registers.encode())
         }
     }
 }

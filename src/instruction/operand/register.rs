@@ -121,6 +121,12 @@ impl From<Code> for Register {
     }
 }
 
+impl Default for Register {
+    fn default() -> Self {
+        Self::General(General::A0)
+    }
+}
+
 impl ToCode for Register {
     type Code = u8;
 

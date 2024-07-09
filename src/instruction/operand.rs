@@ -1,5 +1,6 @@
 use instruction::operand::dynamic::{Dynamic, SizedDynamic};
 use instruction::operand::register::Register;
+use instruction::operand::registers::Registers;
 use number;
 use utility::{Encode, ToCode};
 
@@ -34,7 +35,6 @@ impl<Operand> SizedOperand<Operand> {
         
         if let Some(dynamic_operand) = dynamic_operand {
             let addressing = dynamic_operand.to_code();
-            dbg!(addressing);
             byte |= addressing << 1;
         }
 
@@ -68,6 +68,24 @@ pub enum Configuration {
     Dual(SizedDual),
     Static(SizedStatic),
     Dynamic(SizedDynamic)
+}
+
+impl Configuration {
+    pub fn get_static_register(self) -> Option<Register> {
+        Some(match self {
+            Self::Dual(x) => x.operand.r#static,
+            Self::Static(x) => x.operand,
+            Self::Dynamic(_) => return None
+        })
+    }
+    
+    pub fn get_dynamic_register(self) -> Option<Register> {
+        Some(match self {
+            Self::Dual(x) => return x.operand.dynamic.get_register(),
+            Self::Dynamic(x) => return x.operand.get_register(),
+            Self::Static(_) => return None
+        })
+    }
 }
 
 pub trait GetConfiguration {

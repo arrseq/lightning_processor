@@ -10,13 +10,13 @@ pub const MODES: u8 = 2u8.pow(MODE_BITS as u32);
 
 #[derive(Debug, Clone, Copy)]
 pub struct Dual {
-    pub constant: Number,
-    pub offset: Register
+    pub offset: Number,
+    pub base: Register
 }
 
 #[derive(Debug, Clone, Copy)]
 pub enum Address {
-    Register,
+    Register(Register),
     Constant(Number),
     /// Addressing mode where the register value and constant are added before being used to dereferencing memory.
     Add(Dual),
@@ -51,20 +51,20 @@ impl From<Dynamic> for Code {
             Dynamic::Register(_) => Self::Register,
             Dynamic::Constant(_) => Self::Constant,
             Dynamic::Address(address) => match address {
-                Address::Register => Self::AddressRegister,
+                Address::Register(_) => Self::AddressRegister,
                 Address::Constant(number) => match number {
                     Number::Byte(_) => Self::AddressConstantByte,
                     Number::Word(_) => Self::AddressConstantWord,
                     Number::Dual(_) => Self::AddressConstantDual,
                     Number::Quad(_) => Self::AddressConstantQuad
                 },
-                Address::Add(add) => match add.constant {
+                Address::Add(add) => match add.offset {
                     Number::Byte(_) => Self::AddressAddByte,
                     Number::Word(_) => Self::AddressAddWord,
                     Number::Dual(_) => Self::AddressAddDual,
                     Number::Quad(_) => Self::AddressAddQuad
                 },
-                Address::Subtract(subtract) => match subtract.constant {
+                Address::Subtract(subtract) => match subtract.offset {
                     Number::Byte(_) => Self::AddressSubtractByte,
                     Number::Word(_) => Self::AddressSubtractWord,
                     Number::Dual(_) => Self::AddressSubtractDual,
@@ -80,6 +80,21 @@ pub enum Dynamic {
     Register(Register),
     Constant(Number),
     Address(Address)
+}
+
+impl Dynamic {
+    pub fn get_register(self) -> Option<Register> {
+        Some(match self {
+            Self::Register(x) => x,
+            Self::Address(address) => match address {
+                Address::Register(x) => x,
+                Address::Add(add) => add.base,
+                Address::Subtract(subtract) => subtract.base,
+                Address::Constant(_) => return None
+            },
+            Self::Constant(_) => return None
+        })
+    }
 }
 
 impl ToCode for Dynamic {
