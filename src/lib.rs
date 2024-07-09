@@ -3,6 +3,7 @@
 #![feature(const_trait_impl)]
 #![feature(effects)]
 #![feature(iter_collect_into)]
+#![allow(clippy::unusual_byte_groupings)]
 
 // TODO: Temporary
 #![allow(incomplete_features)]

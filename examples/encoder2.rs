@@ -25,5 +25,6 @@ fn main() {
     let mut encoded = vec![0u8; 0];
     instruction.encode(&mut encoded);
 
-    let decoded = Instruction::decode(&mut Cursor::new(encoded));
+    let decoded = Instruction::decode(&mut Cursor::new(encoded)).unwrap();
+    dbg!(decoded, instruction);
 }

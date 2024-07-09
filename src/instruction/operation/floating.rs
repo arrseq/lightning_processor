@@ -1,6 +1,7 @@
 use strum_macros::FromRepr;
 use instruction::operand;
-use instruction::operand::{GetConfiguration, GetCodeConfiguration};
+use instruction::operand::{GetConfiguration, GetCodeConfiguration, SizedDual};
+use instruction::operation::basic::Basic;
 use utility::ToCode;
 
 #[derive(Debug, Clone, Copy, FromRepr)]
@@ -42,5 +43,14 @@ impl ToCode for Floating {
             Self::Add(_) => Code::Add,
             Self::Subtract(_) => Code::Subtract
         }) as Self::Code
+    }
+}
+
+impl Floating {
+    pub fn from_sized_dual(operation: Code, operands: SizedDual) -> Option<Self> {
+        Some(match operation {
+            Code::Add => Self::Add(operands),
+            Code::Subtract => Self::Subtract(operands)
+        })
     }
 }

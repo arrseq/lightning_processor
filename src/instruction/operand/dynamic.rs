@@ -1,5 +1,8 @@
+use std::io::Read;
 use strum_macros::FromRepr;
-use instruction::operand::SizedOperand;
+use instruction::operand::{DualDecodeError, SizedOperand};
+use number;
+use number::Size;
 use utility::{ToCode};
 use crate::number::Number;
 
@@ -43,6 +46,56 @@ pub enum Code {
     AddressSubtractWord,
     AddressSubtractDual,
     AddressSubtractQuad
+}
+
+impl Code {
+    pub fn requires_constant(self) -> bool {
+        matches!(self, Self::Constant)
+    }
+
+    pub fn required_address_constant(self) -> bool {
+        match self {
+            Self::AddressConstantByte
+                | Self::AddressConstantWord
+                | Self::AddressConstantDual
+                | Self::AddressConstantQuad => true,
+            Self::Register
+                | Self::Constant
+                | Self::AddressRegister
+                | Self::AddressAddByte
+                | Self::AddressAddWord
+                | Self::AddressAddDual
+                | Self::AddressAddQuad
+                | Self::AddressSubtractByte
+                | Self::AddressSubtractWord
+                | Self::AddressSubtractDual
+                | Self::AddressSubtractQuad => false
+        }
+    }
+
+    pub fn address_constant_size(self) -> Option<number::Size> {
+        Some(match self {
+            Self::AddressConstantByte
+                | Self::AddressAddByte
+                | Self::AddressSubtractByte => number::Size::Byte,
+            Self::AddressConstantWord
+                | Self::AddressAddWord
+                | Self::AddressSubtractWord => number::Size::Word,
+            Self::AddressConstantDual
+                | Self::AddressAddDual
+                | Self::AddressSubtractDual => number::Size::Dual,
+            Self::AddressConstantQuad
+                | Self::AddressAddQuad
+                | Self::AddressSubtractQuad => number::Size::Quad,
+            Self::Register
+                | Self::Constant
+                | Self::AddressRegister => return None
+        })
+    }
+
+    pub fn requires_generic_constant(self) -> bool {
+        self.required_address_constant() || self.requires_constant()
+    }
 }
 
 impl From<Dynamic> for Code {
@@ -114,6 +167,26 @@ impl Dynamic {
     pub fn get_constant(self) -> Option<Number> {
         if let Self::Constant(x) = self { Some(x) } else { None }
     }
+
+    pub fn decode(code: Code, constant: Number, dynamic_register: Register) -> Self {
+        match code {
+            Code::Register => Self::Register(dynamic_register),
+            Code::Constant => Self::Constant(constant),
+            Code::AddressRegister => Self::Address(Address::Register(dynamic_register)),
+            Code::AddressConstantByte => Self::Address(Address::Constant(constant.resize(Size::Byte))),
+            Code::AddressConstantWord => Self::Address(Address::Constant(constant.resize(Size::Word))),
+            Code::AddressConstantDual => Self::Address(Address::Constant(constant.resize(Size::Dual))),
+            Code::AddressConstantQuad => Self::Address(Address::Constant(constant.resize(Size::Quad))),
+            Code::AddressAddByte => Self::Address(Address::Add(Dual { base: dynamic_register, offset: constant.resize(Size::Byte) })),
+            Code::AddressAddWord => Self::Address(Address::Add(Dual { base: dynamic_register, offset: constant.resize(Size::Word) })),
+            Code::AddressAddDual => Self::Address(Address::Add(Dual { base: dynamic_register, offset: constant.resize(Size::Dual) })),
+            Code::AddressAddQuad => Self::Address(Address::Add(Dual { base: dynamic_register, offset: constant.resize(Size::Quad) })),
+            Code::AddressSubtractByte => Self::Address(Address::Subtract(Dual { base: dynamic_register, offset: constant.resize(Size::Byte) })),
+            Code::AddressSubtractWord => Self::Address(Address::Subtract(Dual { base: dynamic_register, offset: constant.resize(Size::Word) })),
+            Code::AddressSubtractDual => Self::Address(Address::Subtract(Dual { base: dynamic_register, offset: constant.resize(Size::Dual) })),
+            Code::AddressSubtractQuad => Self::Address(Address::Subtract(Dual { base: dynamic_register, offset: constant.resize(Size::Quad) }))
+        }
+    }
 }
 
 impl ToCode for Dynamic {
@@ -127,7 +200,16 @@ impl ToCode for Dynamic {
 pub type SizedDynamic = SizedOperand<Dynamic>;
 
 impl SizedDynamic {
-    pub(crate) fn encode(&self) -> u8 {
+    pub fn encode(&self) -> u8 {
         self.encode_operand_properties(None, Some(self.operand))
+    }
+
+    pub fn decode<Input: Read>(input: &mut Input) -> Result<Self, DualDecodeError> {
+        let meta = Self::decode_operand_properties(input).map_err(DualDecodeError::SizedOperand)?;
+
+        Ok(Self {
+            data_size: meta.3,
+            operand: meta.1.ok_or(DualDecodeError::MissingDynamic)?
+        })
     }
 }

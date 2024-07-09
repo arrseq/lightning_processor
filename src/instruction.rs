@@ -1,6 +1,7 @@
 use std::io;
 use std::io::{Read, Write};
-use instruction::operand::{GetConfiguration, GetCodeConfiguration};
+use instruction::operand::{GetConfiguration, GetCodeConfiguration, SizedDual, SizedStatic};
+use instruction::operand::dynamic::SizedDynamic;
 use instruction::operand::register::Register;
 use instruction::operand::registers::Registers;
 use instruction::operation::{Extension, Operation};
@@ -22,7 +23,8 @@ pub struct Instruction {
 pub enum DecodeError {
     Prefix(prefix::DecodeError),
     Read(io::Error),
-    InvalidOperationCode
+    InvalidOperationCode,
+    SizedOperand(operand::DualDecodeError)
 }
 
 impl Instruction {
@@ -82,12 +84,10 @@ impl Instruction {
     pub fn decode<Input: Read>(source: &mut Input) -> Result<Self, DecodeError> {
         // region: Backend.
         let prefixes = Prefixes::decode(source).map_err(DecodeError::Prefix)?;
-
-        dbg!(prefixes);
         // endregion
-        
+
         // region: Front end.
-        
+
         // Convert opcode to a word.
         let opcode = match prefixes.escape {
             LowSize::Byte => {
@@ -101,13 +101,28 @@ impl Instruction {
                 u16::from_le_bytes(buffer)
             }
         };
-        
+
         let extension = prefixes.extension.unwrap_or(Extension::default());
         let operation = operation::Code::from_extension_and_operation(extension, opcode).ok_or(DecodeError::InvalidOperationCode)?;
         let configuration = operation.get_code_configuration();
-        
-        dbg!(configuration);
-        
+
+        if let Some(configuration) = configuration {
+            // Operands are required if this is executed.
+
+            let operation = match configuration {
+                operand::ConfigurationCode::Dual => Operation::from_sized_dual(operation, SizedDual::decode(source).map_err(DecodeError::SizedOperand)?).ok_or(DecodeError::InvalidOperationCode)?,
+                // operand::ConfigurationCode::Dynamic => SizedDynamic::decode(source).map_err(DecodeError::SizedOperand)?,
+                // operand::ConfigurationCode::Static => SizedStatic::decode(source).map_err(DecodeError::SizedOperand)?
+                _ => todo!()
+            };
+            
+            return Ok(Self {
+                operation,
+                branch_likely_taken: prefixes.branch_likely_taken,
+                execution_mode: prefixes.execution_mode
+            })
+        }
+
         // endregion
         todo!()
     }

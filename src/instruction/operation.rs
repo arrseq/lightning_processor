@@ -1,6 +1,6 @@
 use strum_macros::FromRepr;
 use instruction::operand;
-use instruction::operand::{Configuration, ConfigurationCode, GetConfiguration, GetCodeConfiguration};
+use instruction::operand::{Configuration, ConfigurationCode, GetConfiguration, GetCodeConfiguration, SizedDual};
 use instruction::operation::basic::Basic;
 use instruction::operation::floating::Floating;
 use number::low::{LowNumber, LowSize};
@@ -99,5 +99,12 @@ impl Operation {
 
         if code > u8::MAX as u16 { return LowNumber::Word(code); }
         LowNumber::Byte(code as u8)
+    }
+
+    pub fn from_sized_dual(operation: Code, operands: SizedDual) -> Option<Self> {
+        Some(match operation {
+            Code::Basic(basic) => Self::Basic(Basic::from_sized_dual(basic, operands)?),
+            Code::Floating(floating) => Self::Floating(Floating::from_sized_dual(floating, operands)?)
+        })
     }
 }

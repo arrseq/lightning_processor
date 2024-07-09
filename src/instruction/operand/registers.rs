@@ -24,7 +24,7 @@ impl Registers {
     /// 
     /// // TODO: Continue
     /// ```
-    pub(crate) fn encode(&self) -> u8 {
+    pub fn encode(&self) -> u8 {
         let mut output = self.dynamic.to_code();
         output |= self.r#static.to_code() << register::INDEX_BITS;
         output

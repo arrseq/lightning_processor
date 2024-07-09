@@ -4,6 +4,7 @@
 
 // Constants
 
+use std::convert::TryInto;
 use utility::ReadAll;
 
 pub mod high;
@@ -97,12 +98,12 @@ impl Size {
     }
 
     /// Generate an slice buffer with the correct number of bytes for this instance.
-    pub fn buffer<'a>(&self, source_buffer: &'a [u8; 8]) -> &'a [u8] {
+    pub fn buffer<'a>(&self, source_buffer: &'a mut [u8; 8]) -> &'a mut [u8] {
         match self {
-            Self::Byte => &source_buffer[0..1],
-            Self::Word => &source_buffer[0..2],
-            Self::Dual => &source_buffer[0..4],
-            Self::Quad => &source_buffer[0..8]
+            Self::Byte => &mut source_buffer[0..1],
+            Self::Word => &mut source_buffer[0..2],
+            Self::Dual => &mut source_buffer[0..4],
+            Self::Quad => &mut source_buffer[0..8]
         }
     }
 }
@@ -119,6 +120,16 @@ pub enum Number {
 }
 
 impl Number {
+    pub fn from_buffer(buffer: &[u8]) -> Option<Self> {
+        Some(match buffer.len() {
+            1 => Self::Byte(buffer[0]),
+            2 => Self::Word(u16::from_le_bytes(buffer.try_into().unwrap())),
+            4 => Self::Dual(u32::from_le_bytes(buffer.try_into().unwrap())),
+            8 => Self::Quad(u64::from_le_bytes(buffer.try_into().unwrap())),
+            _ => return None
+        })
+    }
+    
     pub fn to_le_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 

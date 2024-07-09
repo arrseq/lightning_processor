@@ -1,6 +1,6 @@
 use strum_macros::FromRepr;
 use instruction::operand;
-use instruction::operand::{GetConfiguration, GetCodeConfiguration};
+use instruction::operand::{GetConfiguration, GetCodeConfiguration, SizedDual};
 use utility::ToCode;
 
 #[derive(Debug, Clone, Copy, FromRepr)]
@@ -38,26 +38,26 @@ impl GetCodeConfiguration for Code {
     fn get_code_configuration(&self) -> Option<operand::ConfigurationCode> {
         Some(match self {
             Self::Add
-            | Self::CarryingAdd
-            | Self::Subtract
-            | Self::BorrowingSubtract
-            | Self::Multiply
-            | Self::Divide
-            | Self::Copy => operand::ConfigurationCode::Dual,
+                | Self::CarryingAdd
+                | Self::Subtract
+                | Self::BorrowingSubtract
+                | Self::Multiply
+                | Self::Divide
+                | Self::Copy => operand::ConfigurationCode::Dual,
             Self::AppendStack
-            | Self::DetachStack
-            | Self::LogicalAnd
-            | Self::LogicalOr
-            | Self::LogicalNot
-            | Self::LogicalXor
-            | Self::Increment
-            | Self::Decrement
-            | Self::JumpIfZero
-            | Self::JumpIfOverflow
-            | Self::JumpIfRegrouping
-            | Self::JumpIfNegative => operand::ConfigurationCode::Dynamic,
+                | Self::DetachStack
+                | Self::LogicalAnd
+                | Self::LogicalOr
+                | Self::LogicalNot
+                | Self::LogicalXor
+                | Self::Increment
+                | Self::Decrement
+                | Self::JumpIfZero
+                | Self::JumpIfOverflow
+                | Self::JumpIfRegrouping
+                | Self::JumpIfNegative => operand::ConfigurationCode::Dynamic,
             Self::AppendStackRegisters
-            | Self::DetachStackRegisters => return None
+                | Self::DetachStackRegisters => return None
         })
     }
 }
@@ -97,6 +97,34 @@ pub enum Basic {
     JumpIfOverflow(operand::dynamic::SizedDynamic),
     JumpIfRegrouping(operand::dynamic::SizedDynamic),
     JumpIfNegative(operand::dynamic::SizedDynamic)
+}
+
+impl Basic {
+    pub fn from_sized_dual(operation: Code, operands: SizedDual) -> Option<Self> {
+        Some(match operation {
+            Code::Add => Self::Add(operands),
+            Code::CarryingAdd => Self::CarryingAdd(operands),
+            Code::Subtract => Self::Subtract(operands),
+            Code::BorrowingSubtract => Self::BorrowingSubtract(operands),
+            Code::Multiply => Self::Multiply(operands),
+            Code::Divide => Self::Divide(operands),
+            Code::Copy => Self::Copy(operands),
+            Code::AppendStack
+                | Code::DetachStack
+                | Code::LogicalAnd
+                | Code::LogicalOr
+                | Code::LogicalNot
+                | Code::LogicalXor
+                | Code::Increment
+                | Code::Decrement
+                | Code::JumpIfZero
+                | Code::JumpIfOverflow
+                | Code::JumpIfRegrouping
+                | Code::JumpIfNegative
+                | Code::AppendStackRegisters
+                | Code::DetachStackRegisters => return None
+        })
+    }
 }
 
 impl GetConfiguration for Basic {
