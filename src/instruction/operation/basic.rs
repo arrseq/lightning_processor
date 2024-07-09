@@ -1,6 +1,6 @@
 use strum_macros::FromRepr;
 use instruction::operand;
-use instruction::operand::GetConfiguration;
+use instruction::operand::{GetConfiguration, GetCodeConfiguration};
 use utility::ToCode;
 
 #[derive(Debug, Clone, Copy, FromRepr)]
@@ -32,6 +32,34 @@ pub enum Code {
     JumpIfOverflow,
     JumpIfRegrouping,
     JumpIfNegative
+}
+
+impl GetCodeConfiguration for Code {
+    fn get_code_configuration(&self) -> Option<operand::ConfigurationCode> {
+        Some(match self {
+            Self::Add
+            | Self::CarryingAdd
+            | Self::Subtract
+            | Self::BorrowingSubtract
+            | Self::Multiply
+            | Self::Divide
+            | Self::Copy => operand::ConfigurationCode::Dual,
+            Self::AppendStack
+            | Self::DetachStack
+            | Self::LogicalAnd
+            | Self::LogicalOr
+            | Self::LogicalNot
+            | Self::LogicalXor
+            | Self::Increment
+            | Self::Decrement
+            | Self::JumpIfZero
+            | Self::JumpIfOverflow
+            | Self::JumpIfRegrouping
+            | Self::JumpIfNegative => operand::ConfigurationCode::Dynamic,
+            Self::AppendStackRegisters
+            | Self::DetachStackRegisters => return None
+        })
+    }
 }
 
 #[derive(Debug, Clone, Copy)]

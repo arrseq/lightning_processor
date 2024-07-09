@@ -65,6 +65,13 @@ pub enum Configuration {
     Dynamic(SizedDynamic)
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum ConfigurationCode {
+    Dual,
+    Static,
+    Dynamic
+}
+
 impl Configuration {
     pub fn get_static_register(self) -> Option<Register> {
         Some(match self {
@@ -94,6 +101,10 @@ impl Configuration {
 pub trait GetConfiguration {
     /// Get the configuration of the current operation being references.
     fn get_configuration(&self) -> Option<Configuration>;
+}
+
+pub trait GetCodeConfiguration {
+    fn get_code_configuration(&self) -> Option<ConfigurationCode>;
 }
 
 #[derive(Debug, Clone, Copy)]

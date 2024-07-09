@@ -1,6 +1,6 @@
 use strum_macros::FromRepr;
 use instruction::operand;
-use instruction::operand::GetConfiguration;
+use instruction::operand::{GetConfiguration, GetCodeConfiguration};
 use utility::ToCode;
 
 #[derive(Debug, Clone, Copy, FromRepr)]
@@ -8,6 +8,15 @@ use utility::ToCode;
 pub enum Code {
     Add,
     Subtract
+}
+
+impl GetCodeConfiguration for Code {
+    fn get_code_configuration(&self) -> Option<operand::ConfigurationCode> {
+        Some(match self {
+            Self::Add
+                | Self::Subtract => operand::ConfigurationCode::Dual
+        })
+    }
 }
 
 #[derive(Debug, Clone, Copy)]

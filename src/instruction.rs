@@ -1,6 +1,6 @@
 use std::io;
 use std::io::{Read, Write};
-use instruction::operand::GetConfiguration;
+use instruction::operand::{GetConfiguration, GetCodeConfiguration};
 use instruction::operand::register::Register;
 use instruction::operand::registers::Registers;
 use instruction::operation::{Extension, Operation};
@@ -104,8 +104,9 @@ impl Instruction {
         
         let extension = prefixes.extension.unwrap_or(Extension::default());
         let operation = operation::Code::from_extension_and_operation(extension, opcode).ok_or(DecodeError::InvalidOperationCode)?;
+        let configuration = operation.get_code_configuration();
         
-        dbg!(operation);
+        dbg!(configuration);
         
         // endregion
         todo!()
