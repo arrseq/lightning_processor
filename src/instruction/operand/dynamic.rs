@@ -95,18 +95,24 @@ impl Dynamic {
             Self::Constant(_) => return None
         })
     }
-
-    pub fn get_constant(self) -> Option<Number> {
-        Some(match self {
-            Self::Constant(x) => x,
-            Self::Address(address) => match address {
+    
+    /// Get the constant field used by the address dynamic mode. 
+    pub fn get_address_constant(self) -> Option<Number> {
+        if let Self::Address(address) = self {
+            return Some(match address {
                 Address::Constant(x) => x,
                 Address::Add(dual)
-                | Address::Subtract(dual) => dual.offset,
+                    | Address::Subtract(dual) => dual.offset,
                 Address::Register(_) => return None
-            },
-            Self::Register(_) => return None
-        })
+            })
+        }
+        
+        None
+    }
+    
+    /// Get the constant field from the constant addressing mode.
+    pub fn get_constant(self) -> Option<Number> {
+        if let Self::Constant(x) = self { Some(x) } else { None }
     }
 }
 
@@ -122,7 +128,7 @@ pub type SizedDynamic = SizedOperand<Dynamic>;
 
 impl Encode for SizedDynamic {
     type Output = u8;
-
+    
     fn encode(&self) -> Self::Output {
         self.encode_operand_properties(None, Some(self.operand))
     }
