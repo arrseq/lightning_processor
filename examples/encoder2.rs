@@ -14,8 +14,11 @@ fn main() {
         operation: Operation::Floating(operation::floating::Floating::Subtract(SizedDual {
             data_size: number::Size::Quad,
             operand: operand::Dual {
-                r#static: Register::General(register::General::A0),
-                dynamic: operand::dynamic::Dynamic::Address(dynamic::Address::Constant(number::Number::Quad(10000000))),
+                r#static: Register::General(register::General::F1),
+                dynamic: operand::dynamic::Dynamic::Address(dynamic::Address::Add(dynamic::Dual {
+                    base: Register::General(register::General::A1),
+                    offset: number::Number::Quad(10000000)
+                })),
                 destination: operand::Type::Dynamic 
             }
         }))
