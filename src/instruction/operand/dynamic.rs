@@ -95,6 +95,20 @@ impl Dynamic {
             Self::Constant(_) => return None
         })
     }
+    
+    /// Get the constant field used by the address dynamic mode. 
+    pub fn get_address_constant(self) -> Option<Number> {
+        if let Self::Address(address) = self {
+            return Some(match address {
+                Address::Constant(x) => x,
+                Address::Add(dual)
+                    | Address::Subtract(dual) => dual.offset,
+                Address::Register(_) => return None
+            })
+        }
+        
+        None
+    }
 }
 
 impl ToCode for Dynamic {

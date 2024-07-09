@@ -18,7 +18,7 @@ pub const QUAD_SIZE: usize = 8;
 pub trait ArrayBounds {
     /// Whether an array index is inbounds of the self array or list.
     fn in_bounds(&self, index: usize) -> bool;
-    
+
     /// Whether an index is out of bounds to the self array.
     fn out_of_bounds(&self, index: usize) -> bool {
         !self.in_bounds(index)
@@ -131,7 +131,7 @@ impl Number {
 
         bytes
     }
-    
+
     pub fn exponent(&self) -> u8 {
         Size::from(*self).exponent()
     }
@@ -157,11 +157,11 @@ impl Number {
         if quad <= u32::MAX as u64 { return Self::Dual(quad as u32) }
         Self::Quad(quad)
     }
-    
+
     /// Store a u64 into the correct type with an exponent hint. If the exponent is for a smaller number, then
-    /// some information may be lost due to type conversion. If the exponent is not supported, then [None] is returned. 
+    /// some information may be lost due to type conversion. If the exponent is not supported, then [None] is returned.
     /// Only exponents 0, 1, 2, and 3 are supported.
-    /// 
+    ///
     /// TODO: Test
     pub fn from_exponent_selecting(exponent: u8, number: u64) -> Option<Self> {
         Some(match exponent {
@@ -172,7 +172,7 @@ impl Number {
             _ => return None
         })
     }
-    
+
     /// Turn u64 with the size into an instance of data.
     pub fn from_size_selecting(size: &Size, number: u64) -> Self {
         match size {
@@ -182,9 +182,9 @@ impl Number {
             Size::Quad => Self::Quad(number),
         }
     }
-    
+
     /// Get the number of bytes that is stored in the variant associative data of the enum.
-    /// 
+    ///
     /// TODO: Test
     pub fn size(&self) -> u8 {
         match self {
@@ -207,7 +207,7 @@ impl Number {
     pub fn not_zero(&self) -> bool {
         !self.is_zero()
     }
-    
+
     pub fn resize(&self, new_size: &Size) -> Self {
         match new_size {
             Size::Byte => Self::Byte(u8::from(*self)),
@@ -269,7 +269,7 @@ impl ReadAll<[u8]> for Number {
     ///
     /// let mut byte_buffer = [0u8; 1];
     ///
-    /// Data::Byte(255).read_all(&mut byte_buffer); 
+    /// Data::Byte(255).read_all(&mut byte_buffer);
     /// assert_eq!(byte_buffer, [255; 1]);
     /// Data::Byte(65).read_all(&mut byte_buffer);
     /// assert_eq!(byte_buffer, [65; 1]);
@@ -289,14 +289,14 @@ impl ReadAll<[u8]> for Number {
     fn read_all(&self, target: &mut [u8]) -> usize {
         let mut bytes_written = 0;
         let bytes = self.to_le_bytes();
-        
+
         for index in 0..self.size() {
             if target.in_bounds(index as usize) {
                 target[index as usize] = bytes[index as usize];
                 bytes_written += 1;
                 continue;
             }
-            
+
             break;
         }
 
