@@ -1,5 +1,6 @@
+use strum_macros::FromRepr;
 use instruction::operand;
-use instruction::operand::GetConfiguration;
+use instruction::operand::{Configuration, GetConfiguration};
 use instruction::operation::basic::Basic;
 use instruction::operation::floating::Floating;
 use number::low::{LowNumber, LowSize};
@@ -8,10 +9,26 @@ use utility::ToCode;
 pub mod basic;
 pub mod floating;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Default, Debug, Clone, Copy, FromRepr)]
 pub enum Extension {
+    #[default]
     Basic,
     Floating
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum Code {
+    Basic(basic::Code),
+    Floating(floating::Code)
+}
+
+impl Code {
+    pub fn from_extension_and_operation(extension: Extension, operation: u16) -> Option<Self> {
+        Some(match extension {
+            Extension::Basic => Code::Basic(basic::Code::from_repr(operation)?),
+            Extension::Floating => Code::Floating(floating::Code::from_repr(operation)?)
+        })
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -47,6 +64,11 @@ impl GetConfiguration for Operation {
             Self::Floating(x) => x.get_configuration()
         }
     }
+}
+
+#[derive(Debug)]
+pub enum OperationDecodeError {
+    
 }
 
 impl Operation {

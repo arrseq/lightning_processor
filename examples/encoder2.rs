@@ -1,18 +1,18 @@
 extern crate atln_processor;
 
-use atln_processor::instruction::{Instruction, operand, operation, prefix::{Prefixes}, prefix};
+use std::io::Cursor;
+use atln_processor::instruction::{Instruction, operand, operation};
+use atln_processor::instruction::operand::{register, SizedDual};
 use atln_processor::instruction::operand::register::Register;
-use atln_processor::instruction::operand::{dynamic, register, SizedDual};
 use atln_processor::instruction::operation::Operation;
 use atln_processor::number;
 use atln_processor::number::Number;
-use atln_processor::utility::{EncodeDynamic, FromCode};
 
 fn main() {
     let instruction = Instruction {
-        branch_likely_taken: None,
+        branch_likely_taken: Some(true),
         execution_mode: None,
-        operation: Operation::Floating(operation::floating::Floating::Subtract(SizedDual {
+        operation: Operation::Basic(operation::basic::Basic::Copy(SizedDual {
             data_size: number::Size::Quad,
             operand: operand::Dual {
                 r#static: Register::General(register::General::F1),
@@ -23,7 +23,7 @@ fn main() {
     };
 
     let mut encoded = vec![0u8; 0];
-    instruction.encode_dyn(&mut encoded);
+    instruction.encode(&mut encoded);
 
-    dbg!(encoded);
+    let decoded = Instruction::decode(&mut Cursor::new(encoded));
 }

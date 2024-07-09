@@ -1,25 +1,32 @@
+use std::io;
+use std::io::{Read, Write};
 use instruction::operand::GetConfiguration;
 use instruction::operand::register::Register;
 use instruction::operand::registers::Registers;
 use instruction::operation::{Extension, Operation};
 use instruction::prefix::{ExecutionMode, Prefixes};
-use number;
 use number::low::{LowNumber, LowSize};
-use number::Number;
-use utility::{Encode, EncodeDynamic};
 
 pub mod operand;
 pub mod operation;
 pub mod prefix;
 
+#[derive(Debug, Clone, Copy)]
 pub struct Instruction {
     pub branch_likely_taken: Option<bool>,
     pub execution_mode: Option<ExecutionMode>,
     pub operation: Operation
 }
 
-impl EncodeDynamic for Instruction {
-    fn encode_dyn(&self, output: &mut Vec<u8>) {
+#[derive(Debug)]
+pub enum DecodeError {
+    Prefix(prefix::DecodeError),
+    Read(io::Error),
+    InvalidOperationCode
+}
+
+impl Instruction {
+    pub fn encode<Output: Write + Extend<u8>>(self, output: &mut Output) {
         // region: Backend.
         let op_code =  self.operation.to_smallest_code();
         let extension = Extension::from(self.operation);
@@ -33,9 +40,9 @@ impl EncodeDynamic for Instruction {
             branch_likely_taken: self.branch_likely_taken
         };
         
-        prefixes.encode_dyn(output);
+        prefixes.encode(output);
         match op_code {
-            LowNumber::Byte(x) => output.push(x),
+            LowNumber::Byte(x) => output.extend([ x ]),
             LowNumber::Word(x) => output.extend(x.to_le_bytes())
         };
         // endregion
@@ -49,7 +56,7 @@ impl EncodeDynamic for Instruction {
             };
             
             // Operand information.
-            output.push(encoded);
+            output.extend([ encoded ]);
             
             // Registers.
             let dynamic = configuration.get_dynamic();
@@ -57,7 +64,7 @@ impl EncodeDynamic for Instruction {
             let dynamic_register = if let Some(dynamic) = dynamic { dynamic.get_register().unwrap_or(Register::default()) } else { Register::default() };
             let registers = Registers { dynamic: dynamic_register, r#static: static_register };
             
-            output.push(registers.encode());
+            output.extend([ registers.encode() ]);
             
             // Immediate.
             if let Some(dynamic) = dynamic {
@@ -70,5 +77,37 @@ impl EncodeDynamic for Instruction {
             }
         }
         // endregion
+    }
+
+    pub fn decode<Input: Read>(source: &mut Input) -> Result<Self, DecodeError> {
+        // region: Backend.
+        let prefixes = Prefixes::decode(source).map_err(DecodeError::Prefix)?;
+
+        dbg!(prefixes);
+        // endregion
+        
+        // region: Front end.
+        
+        // Convert opcode to a word.
+        let opcode = match prefixes.escape {
+            LowSize::Byte => {
+                let mut buffer = [0u8; 1];
+                source.read_exact(&mut buffer).map_err(DecodeError::Read)?;
+                buffer[0] as u16
+            },
+            LowSize::Word => {
+                let mut buffer = [0u8; 2];
+                source.read_exact(&mut buffer).map_err(DecodeError::Read)?;
+                u16::from_le_bytes(buffer)
+            }
+        };
+        
+        let extension = prefixes.extension.unwrap_or(Extension::default());
+        let operation = operation::Code::from_extension_and_operation(extension, opcode).ok_or(DecodeError::InvalidOperationCode)?;
+        
+        dbg!(operation);
+        
+        // endregion
+        todo!()
     }
 }
