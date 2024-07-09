@@ -10,9 +10,9 @@ use atln_processor::number::Number;
 
 fn main() {
     let instruction = Instruction {
-        branch_likely_taken: None,
+        branch_likely_taken: Some(true),
         execution_mode: None,
-        operation: Operation::Floating(operation::floating::Floating::Subtract(SizedDual {
+        operation: Operation::Basic(operation::basic::Basic::Copy(SizedDual {
             data_size: number::Size::Quad,
             operand: operand::Dual {
                 r#static: Register::General(register::General::F1),

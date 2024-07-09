@@ -1,7 +1,9 @@
+use strum_macros::FromRepr;
 use instruction::operand;
 use instruction::operand::GetConfiguration;
 use utility::ToCode;
 
+#[derive(Debug, Clone, Copy, FromRepr)]
 #[repr(u16)]
 pub enum Code {
     Add,

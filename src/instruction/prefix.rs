@@ -110,20 +110,20 @@ impl Prefixes {
             LowSize::Word => Code::EscapeWord as u8
         } ]);
     }
-    
+
     pub fn decode<Input: Read>(input: &mut Input) -> Result<Self, DecodeError> {
         let mut buffer = [0u8; 1];
         let mut extension: Option<operation::Extension> = None;
         let mut branch_likely_taken: Option<bool> = None;
         let mut execution_mode: Option<ExecutionMode> = None;
-        
+
         loop {
             input.read_exact(&mut buffer).map_err(DecodeError::ReadError)?;
-            
+
             let prefix_id = buffer[0];
             let code = Code::from_repr(prefix_id).ok_or(DecodeError::InvalidPrefixError(prefix_id))?;
             let prefix = Prefix::from(code);
-            
+
             match prefix {
                 Prefix::Escape(escape) => return Ok(Self { escape, extension, branch_likely_taken, execution_mode }),
                 Prefix::Extension(prefix_extension) => extension = Some(prefix_extension),

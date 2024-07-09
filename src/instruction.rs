@@ -1,3 +1,4 @@
+use std::io;
 use std::io::{Read, Write};
 use instruction::operand::GetConfiguration;
 use instruction::operand::register::Register;
@@ -19,7 +20,9 @@ pub struct Instruction {
 
 #[derive(Debug)]
 pub enum DecodeError {
-
+    Prefix(prefix::DecodeError),
+    Read(io::Error),
+    InvalidOperationCode
 }
 
 impl Instruction {
@@ -75,14 +78,36 @@ impl Instruction {
         }
         // endregion
     }
-    
+
     pub fn decode<Input: Read>(source: &mut Input) -> Result<Self, DecodeError> {
         // region: Backend.
-        let prefixes = Prefixes::decode(source);
-        
+        let prefixes = Prefixes::decode(source).map_err(DecodeError::Prefix)?;
+
         dbg!(prefixes);
         // endregion
         
+        // region: Front end.
+        
+        // Convert opcode to a word.
+        let opcode = match prefixes.escape {
+            LowSize::Byte => {
+                let mut buffer = [0u8; 1];
+                source.read_exact(&mut buffer).map_err(DecodeError::Read)?;
+                buffer[0] as u16
+            },
+            LowSize::Word => {
+                let mut buffer = [0u8; 2];
+                source.read_exact(&mut buffer).map_err(DecodeError::Read)?;
+                u16::from_le_bytes(buffer)
+            }
+        };
+        
+        let extension = prefixes.extension.unwrap_or(Extension::default());
+        let operation = operation::Code::from_extension_and_operation(extension, opcode).ok_or(DecodeError::InvalidOperationCode)?;
+        
+        dbg!(operation);
+        
+        // endregion
         todo!()
     }
 }
