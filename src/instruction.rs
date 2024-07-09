@@ -58,9 +58,7 @@ impl EncodeDynamic for Instruction {
             output.push(registers.encode());
             
             // Immediate.
-            if let Some(dynamic) = dynamic {
-                if let Some(address_constant) = dynamic.get_address_constant() { output.extend(address_constant.to_le_bytes()); }
-            }
+            if let Some(dynamic) = dynamic { if let Some(constant) = dynamic.get_constant() { output.extend(constant.to_le_bytes()); } }
         }
         // endregion
     }
