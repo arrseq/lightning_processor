@@ -32,7 +32,7 @@ impl Encode for Registers {
 }
 
 impl Registers {
-    fn decode(input: u8) -> Self {
+    pub fn decode(input: u8) -> Self {
         let r#static = Register::from_code(input >> register::INDEX_BITS);
         let dynamic = Register::from_code(input);
         

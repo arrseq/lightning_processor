@@ -1,11 +1,8 @@
-use utility::{Encode, EncodeDynamic, MaxCode, ToCode, TryCoded, TryFromCode};
-use strum::{EnumCount};
-use instruction::operand::dynamic::Dynamic;
-use instruction::operand::{dynamic, GetConfiguration, register};
+use instruction::operand::GetConfiguration;
 use instruction::operation::{Extension, Operation};
 use instruction::prefix::{ExecutionMode, Prefixes};
-use number;
 use number::low::{LowNumber, LowSize};
+use utility::{Encode, EncodeDynamic};
 
 pub mod operand;
 pub mod operation;
@@ -21,10 +18,10 @@ impl EncodeDynamic for Instruction {
     fn encode_dyn(&self, output: &mut Vec<u8>) {
         // Backend.
         let op_code =  self.operation.to_smallest_code();
-        let extension = Extension::from(&self.operation);
+        let extension = Extension::from(self.operation);
         
         let prefixes = Prefixes {
-            escape: LowSize::from(&op_code),
+            escape: LowSize::from(op_code),
             // The default extension is always the basic extension, so to avoid adding unnecessary prefixes, add the
             // extension prefix indicator only if It's something other than the default.
             extension: if !matches!(extension, Extension::Basic) { Some(extension) } else { None },

@@ -4,6 +4,9 @@
 #![feature(effects)]
 #![feature(iter_collect_into)]
 
+// TODO: Temporary
+#![allow(incomplete_features)]
+
 extern crate num_traits;
 extern crate strum;
 extern crate strum_macros;

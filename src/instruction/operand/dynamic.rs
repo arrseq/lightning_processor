@@ -1,6 +1,5 @@
 use strum_macros::FromRepr;
 use instruction::operand::SizedOperand;
-use number::high::HighNumber;
 use utility::ToCode;
 use crate::number::Number;
 
@@ -39,14 +38,15 @@ pub enum Code {
     AddressAddByte,
     AddressAddWord,
     AddressAddDual,
-    AddressAddQuad,AddressSubtractByte,
+    AddressAddQuad,
+    AddressSubtractByte,
     AddressSubtractWord,
     AddressSubtractDual,
     AddressSubtractQuad
 }
 
-impl From<&Dynamic> for Code {
-    fn from(value: &Dynamic) -> Self {
+impl From<Dynamic> for Code {
+    fn from(value: Dynamic) -> Self {
         match value {
             Dynamic::Register(_) => Self::Register,
             Dynamic::Constant(_) => Self::Constant,
@@ -86,7 +86,7 @@ impl ToCode for Dynamic {
     type Code = u8;
 
     fn to_code(&self) -> Self::Code {
-        Code::from(self) as Self::Code
+        Code::from(*self) as Self::Code
     }
 }
 
