@@ -109,6 +109,22 @@ impl Dynamic {
         })
     }
 
+    /// Decode dynamic operand modes that exclusively contain a constant that are in the address top level mode. If the
+    /// operand type is invalid, doesn't exclusively support a constant or isn't part of the address top level mode,
+    /// then [Err(InvalidCodeError)] is returned.
+    ///
+    /// The address modes that involve a constant are designed for a specific sized constant. If the dynamic number will
+    /// be constrained with [dynamic_number::Unsigned::resize] to fit that requirement.
+    pub fn decode_constant_address_based(input: u8, constant: dynamic_number::Unsigned) -> Result<Self, InvalidCodeError> {
+        Ok(Self::Address(match input {
+            Self::CONSTANT_BYTE_ADDRESS => Address::Constant(constant.resize(dynamic_number::Size::Byte)),
+            Self::CONSTANT_WORD_ADDRESS => Address::Constant(constant.resize(dynamic_number::Size::Word)),
+            Self::CONSTANT_DOUBLE_WORD_ADDRESS => Address::Constant(constant.resize(dynamic_number::Size::DoubleWord)),
+            Self::CONSTANT_QUAD_WORD_ADDRESS => Address::Constant(constant.resize(dynamic_number::Size::QuadWord)),
+            _ => return Err(InvalidCodeError)
+        }))
+    }
+
     /// Whether this dynamic operand contains a constant in its current state.
     pub fn contains_constant(self) -> bool {
         match self {
