@@ -9,18 +9,18 @@ pub struct Calculated {
     pub base: dynamic_number::Unsigned
 }
 
-/// A dynamic address dereferencing source target. 
+/// A dynamic address dereferencing source target.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum AddressTarget {
     /// Address memory with the dynamic operand's register field.
     Register(Register),
-    
+
     /// Address memory with the instruction constant field.
     Constant(dynamic_number::Unsigned),
-    
+
     /// Address memory with the sum of the dynamic operand's register field.
     Add(Calculated),
-    
+
     /// Address memory with the difference of the dynamic operand's register field.
     Subtract(Calculated)
 }

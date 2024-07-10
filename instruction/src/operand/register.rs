@@ -125,3 +125,50 @@ impl Register {
         })
     }
 }
+
+/// Encode a byte with 2 registers. 
+/// - Encode the first register in the upper half of this byte.
+/// - Encode the second register in the lower half of this byte.
+pub trait DualRegisterEncoding: Sized + Clone {
+    fn encode_first(&mut self, first: Register) -> Self;
+    fn decode_first(&self) -> Register;
+    fn encode_second(&mut self, second: Register) -> Self;
+    fn decode_second(&self) -> Register;
+    
+    fn encode(&mut self, first: Register, second: Register) -> Self;
+    
+    /// Decode the 2 registers and get them back as a tuple.
+    fn decode(&self) -> (Register, Register) {
+        (self.decode_first(), self.decode_second())
+    }
+}
+
+impl DualRegisterEncoding for u8 {
+    // It is safe to unwrap on these methods. The register packing uses 4 bits and register codes also use 4 bits, for 
+    // this reason, an [InvalidRegisterCodeError] is impossible.
+    
+    fn encode_first(&mut self, first: Register) -> Self {
+        *self |= first.encode() << 4;
+        *self
+    }
+
+    fn decode_first(&self) -> Register {
+        Register::decode(self >> 4).unwrap()
+    }
+
+    fn encode_second(&mut self, second: Register) -> Self {
+        *self |= second.encode();
+        *self
+    }
+
+    fn decode_second(&self) -> Register {
+        // Ensure that bits from the first register do not increase the value of the second.
+        Register::decode(self & 0b0000_1111).unwrap()
+    }
+
+    fn encode(&mut self, first: Register, second: Register) -> Self {
+        self.encode_first(first);
+        self.encode_second(second);
+        *self
+    }
+}
