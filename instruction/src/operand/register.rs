@@ -126,49 +126,41 @@ impl Register {
     }
 }
 
-/// Encode a byte with 2 registers. 
-/// - Encode the first register in the upper half of this byte.
-/// - Encode the second register in the lower half of this byte.
-pub trait DualRegisterEncoding: Sized + Clone {
-    fn encode_first(&mut self, first: Register) -> Self;
-    fn decode_first(&self) -> Register;
-    fn encode_second(&mut self, second: Register) -> Self;
-    fn decode_second(&self) -> Register;
-    
-    fn encode(&mut self, first: Register, second: Register) -> Self;
-    
-    /// Decode the 2 registers and get them back as a tuple.
-    fn decode(&self) -> (Register, Register) {
-        (self.decode_first(), self.decode_second())
-    }
-}
+// Encode a byte with 2 registers. 
+// - Encode the first register in the upper half of this byte.
+// - Encode the second register in the lower half of this byte.
+//
+// It is safe to unwrap on these methods. The register packing uses 4 bits and register codes also use 4 bits, for 
+// this reason, an [InvalidRegisterCodeError] is impossible.
+pub mod dual_registers_encoding {
+    use crate::operand::register::Register;
 
-impl DualRegisterEncoding for u8 {
-    // It is safe to unwrap on these methods. The register packing uses 4 bits and register codes also use 4 bits, for 
-    // this reason, an [InvalidRegisterCodeError] is impossible.
-    
-    fn encode_first(&mut self, first: Register) -> Self {
-        *self |= first.encode() << 4;
-        *self
+    pub fn encode_first(mut encoded: u8, first: Register) -> u8 {
+        encoded |= first.encode() << 4;
+        encoded
     }
 
-    fn decode_first(&self) -> Register {
-        Register::decode(self >> 4).unwrap()
+    pub fn decode_first(encoded: u8) -> Register {
+        Register::decode(encoded >> 4).unwrap()
     }
 
-    fn encode_second(&mut self, second: Register) -> Self {
-        *self |= second.encode();
-        *self
+    pub fn encode_second(mut encoded: u8, second: Register) -> u8 {
+        encoded |= second.encode();
+        encoded
     }
 
-    fn decode_second(&self) -> Register {
+    pub fn decode_second(encoded: u8) -> Register {
         // Ensure that bits from the first register do not increase the value of the second.
-        Register::decode(self & 0b0000_1111).unwrap()
+        Register::decode(encoded & 0b0000_1111).unwrap()
     }
 
-    fn encode(&mut self, first: Register, second: Register) -> Self {
-        self.encode_first(first);
-        self.encode_second(second);
-        *self
+    pub fn encode(mut encoded: u8, first: Register, second: Register) -> u8 {
+        encoded = encode_first(encoded, first);
+        encoded = encode_second(encoded, second);
+        encoded
+    }
+
+    pub fn decode(encoded: u8) -> (Register, Register) {
+        (decode_first(encoded), decode_second(encoded))
     }
 }
