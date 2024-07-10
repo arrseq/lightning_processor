@@ -11,7 +11,7 @@ pub struct Calculated {
 
 /// A dynamic address dereferencing source target.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum AddressTarget {
+pub enum Address {
     /// Address memory with the dynamic operand's register field.
     Register(Register),
 
@@ -30,11 +30,60 @@ pub enum AddressTarget {
 pub enum Dynamic {
     Register(Register),
     Constant(dynamic_number::Unsigned),
-    AddressTarget(AddressTarget)
+    Address(Address)
 }
 
 impl Dynamic {
-    pub fn encode(input: &mut impl Read) -> Self {
+    pub const REGISTER: u8 = 0;
+    pub const CONSTANT: u8 = 1;
+    
+    pub const REGISTER_ADDRESS: u8 = 2;
+
+    pub const CONSTANT_BYTE_ADDRESS: u8 = 3;
+    pub const CONSTANT_WORD_ADDRESS: u8 = 4;
+    pub const CONSTANT_DOUBLE_WORD_ADDRESS: u8 = 5;
+    pub const CONSTANT_QUAD_WORD_ADDRESS: u8 = 6;
+    
+    pub const ADD_BYTE_ADDRESS: u8 = 7;
+    pub const ADD_WORD_ADDRESS: u8 = 8;
+    pub const ADD_DOUBLE_WORD_ADDRESS: u8 = 9;
+    pub const ADD_QUAD_WORD_ADDRESS: u8 = 10;
+    
+    pub const SUBTRACT_BYTE_ADDRESS: u8 = 11;
+    pub const SUBTRACT_WORD_ADDRESS: u8 = 12;
+    pub const SUBTRACT_DOUBLE_WORD_ADDRESS: u8 = 13;
+    pub const SUBTRACT_QUAD_WORD_ADDRESS: u8 = 14;
+    
+    /// Encode this dynamic operand into a 4 bit code.
+    pub fn encode(self) -> u8 {
+        match self {
+            Self::Register(_) => Self::REGISTER,
+            Self::Constant(_) => Self::CONSTANT,
+            Self::Address(address) => match address {
+                Address::Register(_) => Self::REGISTER_ADDRESS,
+                Address::Constant(size) => match size {
+                    dynamic_number::Unsigned::Byte(_) => Self::CONSTANT_BYTE_ADDRESS,
+                    dynamic_number::Unsigned::Word(_) => Self::CONSTANT_WORD_ADDRESS,
+                    dynamic_number::Unsigned::DoubleWord(_) => Self::CONSTANT_DOUBLE_WORD_ADDRESS,
+                    dynamic_number::Unsigned::QuadWord(_) => Self::CONSTANT_QUAD_WORD_ADDRESS
+                },
+                Address::Add(add) => match add.base {
+                    dynamic_number::Unsigned::Byte(_) => Self::ADD_BYTE_ADDRESS,
+                    dynamic_number::Unsigned::Word(_) => Self::ADD_WORD_ADDRESS,
+                    dynamic_number::Unsigned::DoubleWord(_) => Self::ADD_DOUBLE_WORD_ADDRESS,
+                    dynamic_number::Unsigned::QuadWord(_) => Self::ADD_QUAD_WORD_ADDRESS
+                },
+                Address::Subtract(subtract) => match subtract.base {
+                    dynamic_number::Unsigned::Byte(_) => Self::SUBTRACT_BYTE_ADDRESS, 
+                    dynamic_number::Unsigned::Word(_) => Self::SUBTRACT_WORD_ADDRESS,
+                    dynamic_number::Unsigned::DoubleWord(_) => Self::SUBTRACT_DOUBLE_WORD_ADDRESS,
+                    dynamic_number::Unsigned::QuadWord(_) => Self::SUBTRACT_QUAD_WORD_ADDRESS
+                }
+            }
+        }
+    }
+    
+    pub fn decode(input: u8) -> Self {
         todo!()
     }
 }
