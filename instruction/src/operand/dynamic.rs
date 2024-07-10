@@ -25,6 +25,18 @@ pub enum Address {
     Subtract(Calculated)
 }
 
+impl Address {
+    /// Whether this contains a constant to operate in its current state.
+    pub fn contains_constant(self) -> bool {
+        match self {
+            Self::Constant(_)
+                | Self::Add(_)
+                | Self::Subtract(_) => true,
+            Self::Register(_) => false
+        }
+    }
+}
+
 /// A dynamic source operand.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Dynamic {
@@ -85,5 +97,14 @@ impl Dynamic {
     
     pub fn decode(input: u8) -> Self {
         todo!()
+    }
+    
+    /// Whether this dynamic operand contains a constant in its current state.
+    pub fn contains_constant(self) -> bool {
+        match self {
+            Self::Constant(_) => true,
+            Self::Address(address) => address.contains_constant(),
+            Self::Register(_) => false
+        }
     }
 }
