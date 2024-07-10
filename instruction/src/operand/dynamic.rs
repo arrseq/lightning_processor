@@ -32,7 +32,7 @@ impl Address {
             Self::Constant(_)
                 | Self::Add(_)
                 | Self::Subtract(_) => true,
-            Self::Register(_) => false
+            _ => false
         }
     }
 }
@@ -45,27 +45,31 @@ pub enum Dynamic {
     Address(Address)
 }
 
+/// An invalid dynamic code was used for the specific task.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct InvalidCodeError;
+
 impl Dynamic {
     pub const REGISTER: u8 = 0;
     pub const CONSTANT: u8 = 1;
-    
+
     pub const REGISTER_ADDRESS: u8 = 2;
 
     pub const CONSTANT_BYTE_ADDRESS: u8 = 3;
     pub const CONSTANT_WORD_ADDRESS: u8 = 4;
     pub const CONSTANT_DOUBLE_WORD_ADDRESS: u8 = 5;
     pub const CONSTANT_QUAD_WORD_ADDRESS: u8 = 6;
-    
+
     pub const ADD_BYTE_ADDRESS: u8 = 7;
     pub const ADD_WORD_ADDRESS: u8 = 8;
     pub const ADD_DOUBLE_WORD_ADDRESS: u8 = 9;
     pub const ADD_QUAD_WORD_ADDRESS: u8 = 10;
-    
+
     pub const SUBTRACT_BYTE_ADDRESS: u8 = 11;
     pub const SUBTRACT_WORD_ADDRESS: u8 = 12;
     pub const SUBTRACT_DOUBLE_WORD_ADDRESS: u8 = 13;
     pub const SUBTRACT_QUAD_WORD_ADDRESS: u8 = 14;
-    
+
     /// Encode this dynamic operand into a 4 bit code.
     pub fn encode(self) -> u8 {
         match self {
@@ -86,7 +90,7 @@ impl Dynamic {
                     dynamic_number::Unsigned::QuadWord(_) => Self::ADD_QUAD_WORD_ADDRESS
                 },
                 Address::Subtract(subtract) => match subtract.base {
-                    dynamic_number::Unsigned::Byte(_) => Self::SUBTRACT_BYTE_ADDRESS, 
+                    dynamic_number::Unsigned::Byte(_) => Self::SUBTRACT_BYTE_ADDRESS,
                     dynamic_number::Unsigned::Word(_) => Self::SUBTRACT_WORD_ADDRESS,
                     dynamic_number::Unsigned::DoubleWord(_) => Self::SUBTRACT_DOUBLE_WORD_ADDRESS,
                     dynamic_number::Unsigned::QuadWord(_) => Self::SUBTRACT_QUAD_WORD_ADDRESS
@@ -94,11 +98,17 @@ impl Dynamic {
             }
         }
     }
-    
-    pub fn decode(input: u8) -> Self {
-        todo!()
+
+    /// Decode dynamic operands that exclusively contain a register. If an invalid dynamic code or a code that refers to
+    /// a dynamic operand mode that does not exclusively use a register, then [Err(InvalidCodeError)] is returned.
+    pub fn decode_register_based(input: u8, register: Register) -> Result<Self, InvalidCodeError> {
+        Ok(match input {
+            Self::REGISTER => Self::Register(register),
+            Self::REGISTER_ADDRESS => Self::Address(Address::Register(register)),
+            _ => return Err(InvalidCodeError)
+        })
     }
-    
+
     /// Whether this dynamic operand contains a constant in its current state.
     pub fn contains_constant(self) -> bool {
         match self {

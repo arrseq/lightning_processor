@@ -41,7 +41,7 @@ pub enum Register {
 
 /// The encoded register code used was invalid. 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct InvalidRegisterCodeError;
+pub struct InvalidCodeError;
 
 impl Register {
     pub const ACCUMULATOR: u8 = 0;
@@ -97,14 +97,14 @@ impl Register {
     }
     
     /// Decode a register code into a register. An invalid code that ranges beyond what 4 bits can represent will return
-    /// [InvalidRegisterCodeError].
+    /// [InvalidCodeError].
     /// ```
     /// use arrseq_instruction::operand::register::{GeneralPurpose, Register};
     /// 
     /// assert_eq!(Register::decode(Register::GENERAL_PURPOSE_8).unwrap(), Register::GeneralPurpose(GeneralPurpose::G8));
     /// assert_eq!(Register::decode(Register::GENERAL_PURPOSE_4).unwrap(), Register::GeneralPurpose(GeneralPurpose::G4));
     /// ```
-    pub fn decode(encoded: u8) -> Result<Self, InvalidRegisterCodeError> {
+    pub fn decode(encoded: u8) -> Result<Self, InvalidCodeError> {
         Ok(match encoded {
             Self::ACCUMULATOR => Self::Accumulator,
             Self::STACK_POINTER => Self::Pointer(Pointer::Stack),
@@ -121,7 +121,7 @@ impl Register {
             Self::GENERAL_PURPOSE_7 => Self::GeneralPurpose(GeneralPurpose::G7),
             Self::GENERAL_PURPOSE_8 => Self::GeneralPurpose(GeneralPurpose::G8),
             Self::GENERAL_PURPOSE_9 => Self::GeneralPurpose(GeneralPurpose::G9),
-            _ => return Err(InvalidRegisterCodeError)
+            _ => return Err(InvalidCodeError)
         })
     }
 }
