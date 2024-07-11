@@ -75,7 +75,8 @@ pub struct Operands {
     pub size: dynamic_number::Size,
     pub result: Name,
     pub register: Register,
-    pub dynamic: Dynamic
+    pub dynamic: Dynamic,
+    pub custom_data: bool
 }
 
 #[derive(Debug)]
@@ -129,7 +130,8 @@ impl Operands {
             size: meta.size,
             result: meta.result,
             register: registers.first,
-            dynamic
+            dynamic,
+            custom_data: meta.custom_data
         })
     }
     
@@ -148,7 +150,7 @@ impl Operands {
     
     pub fn encode(self, output: &mut impl Write) -> Result<(), io::Error> {
         // This will not fail because the dynamic operand is being encoded from a valid dynamic operand.
-        let meta = Meta::new(self.size, self.result, false, self.dynamic.encode()).unwrap();
+        let meta = Meta::new(self.size, self.result, self.custom_data, self.dynamic.encode()).unwrap();
         let registers = register::Dual {
             first: self.register,
             second: self.dynamic.register().unwrap_or_default()
