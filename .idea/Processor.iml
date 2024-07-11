@@ -21,6 +21,7 @@
       <sourceFolder url="file://$MODULE_DIR$/binary_encoding/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/instruction/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/memory/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/instruction/examples" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
