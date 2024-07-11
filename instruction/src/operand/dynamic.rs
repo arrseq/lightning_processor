@@ -25,18 +25,6 @@ pub enum Address {
     Subtract(Calculated)
 }
 
-impl Address {
-    /// Whether this contains a constant to operate in its current state.
-    pub fn contains_constant(self) -> bool {
-        match self {
-            Self::Constant(_)
-                | Self::Add(_)
-                | Self::Subtract(_) => true,
-            _ => false
-        }
-    }
-}
-
 /// A dynamic source operand.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Dynamic {
@@ -125,12 +113,25 @@ impl Dynamic {
         }))
     }
 
-    /// Whether this dynamic operand contains a constant in its current state.
-    pub fn contains_constant(self) -> bool {
-        match self {
-            Self::Constant(_) => true,
-            Self::Address(address) => address.contains_constant(),
-            Self::Register(_) => false
+    /// Whether the specified dynamic operand code requires a constant.
+    pub fn requires_constant(encoded: u8) -> bool {
+        match encoded {
+            Self::CONSTANT
+                | Self::CONSTANT_BYTE_ADDRESS
+                | Self::CONSTANT_WORD_ADDRESS
+                | Self::CONSTANT_DOUBLE_WORD_ADDRESS
+                | Self::CONSTANT_QUAD_WORD_ADDRESS
+                | Self::ADD_BYTE_ADDRESS
+                | Self::ADD_WORD_ADDRESS
+                | Self::ADD_DOUBLE_WORD_ADDRESS
+                | Self::ADD_QUAD_WORD_ADDRESS
+                | Self::SUBTRACT_BYTE_ADDRESS
+                | Self::SUBTRACT_WORD_ADDRESS
+                | Self::SUBTRACT_DOUBLE_WORD_ADDRESS
+                | Self::SUBTRACT_QUAD_WORD_ADDRESS => true,
+            _ => false
         }
     }
+
+    /// Whether
 }
