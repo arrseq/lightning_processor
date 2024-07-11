@@ -46,13 +46,12 @@ impl<T, D> Read<D> for Cursor<T, D> where
     D: Copy
 {
     fn read(&mut self, output: &mut [D]) -> Result<u64, Error> {
-        let len = output.len();
         let mut moved = 0u64;
-        
-        for index in 0..len {
+
+        for out_val in output {
             match self.inner.as_ref().get(self.position as usize) {
-                Some(value) => output[index] = *value,
-                None => break
+                Some(value) => *out_val = *value,
+                None => break,
             }
             
             self.position += 1;
