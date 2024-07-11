@@ -46,7 +46,7 @@ impl Meta {
     }
 
     pub fn encode(self) -> u8 {
-        let mut encoded = dynamic_number::Size::from(self.size).exponent_representation() << 6;
+        let mut encoded = self.size.exponent_representation() << 6;
         encoded |= (matches!(self.result, Name::Dynamic) as u8) << 5;
         encoded |= self.dynamic_code << 1;
         encoded |= self.custom_data as u8;
@@ -144,12 +144,12 @@ impl Operands {
     }
     
     pub fn decode_constant(input: &mut impl Read, size: dynamic_number::Size) -> Result<dynamic_number::Unsigned, io::Error> {
-        let mut quad_word_buffer = [0u8; dynamic_number::Size::QUAD_WORD_BYTES as usize];
+        let mut quad_word_buffer = [0u8; dynamic_number::Size::QUAD_WORD_BYTES];
         let buffer = match size {
             dynamic_number::Size::Byte => &mut quad_word_buffer[0..1],
-            dynamic_number::Size::Word => &mut quad_word_buffer[0..dynamic_number::Size::WORD_BYTES as usize],
-            dynamic_number::Size::DoubleWord => &mut quad_word_buffer[0..dynamic_number::Size::DOUBLE_WORD_BYTES as usize],
-            dynamic_number::Size::QuadWord => &mut quad_word_buffer[0..dynamic_number::Size::QUAD_WORD_BYTES as usize]
+            dynamic_number::Size::Word => &mut quad_word_buffer[0..dynamic_number::Size::WORD_BYTES],
+            dynamic_number::Size::DoubleWord => &mut quad_word_buffer[0..dynamic_number::Size::DOUBLE_WORD_BYTES],
+            dynamic_number::Size::QuadWord => &mut quad_word_buffer[0..dynamic_number::Size::QUAD_WORD_BYTES]
         };
         
         input.read_exact(buffer)?;
