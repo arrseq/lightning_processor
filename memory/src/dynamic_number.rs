@@ -15,6 +15,9 @@ pub struct InvalidExponentRepresentationError;
 impl Size {
     /// Get the exponent that needs to be put to the power of 2 to represent the number of bytes used to store
     /// this number.
+    ///
+    /// # Result
+    /// The exponent representation is at most 2 bits.
     pub fn exponent_representation(self) -> u8 {
         match self {
             Self::Byte => 0,
@@ -24,6 +27,8 @@ impl Size {
         }
     }
 
+    /// # Result
+    /// The exponent representation is at most 2 bits.
     pub fn from_exponent_representation(exponent: u8) -> Result<Self, InvalidExponentRepresentationError> {
         Ok(match exponent {
             0 => Self::Byte,
