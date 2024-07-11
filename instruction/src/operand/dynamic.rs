@@ -63,6 +63,9 @@ impl Requirement {
 #[derive(Debug)]
 pub struct InvalidCodeError;
 
+#[derive(Debug)]
+pub struct NotIncludedError;
+
 impl Dynamic {
     pub const REGISTER: u8 = 0;
     pub const CONSTANT: u8 = 1;
@@ -83,6 +86,19 @@ impl Dynamic {
     pub const SUBTRACT_WORD_ADDRESS: u8 = 12;
     pub const SUBTRACT_DOUBLE_WORD_ADDRESS: u8 = 13;
     pub const SUBTRACT_QUAD_WORD_ADDRESS: u8 = 14;
+    
+    pub fn register(self) -> Result<Register, NotIncludedError> {
+        Ok(match self {
+            Self::Register(register) => register,
+            Self::Address(address) => match address {
+                Address::Register(register) => register,
+                Address::Add(calculated)
+                | Address::Subtract(calculated) => calculated.base,
+                _ => return Err(NotIncludedError)
+            },
+            _ => return Err(NotIncludedError)
+        })
+    }
 
     /// Encode this dynamic operand into a 4 bit code.
     pub fn encode(self) -> u8 {

@@ -1,5 +1,5 @@
 use std::io;
-use std::io::Read;
+use std::io::{Read, Write};
 use arrseq_memory::dynamic_number;
 use crate::operand;
 use crate::operand::dynamic::Dynamic;
@@ -144,5 +144,19 @@ impl Operands {
         
         input.read_exact(buffer)?;
         Ok(dynamic_number::Unsigned::from_le_bytes(buffer).unwrap())
+    }
+    
+    pub fn encode(self, output: &mut impl Write) -> Result<(), io::Error> {
+        // This will not fail because the dynamic operand is being encoded from a valid dynamic operand.
+        let meta = Meta::new(self.size, self.result, false, self.dynamic.encode()).unwrap();
+        let registers = register::Dual {
+            first: self.register,
+            second: self.dynamic.register().unwrap_or_default()
+        };
+        
+        let buffer = [meta.encode(), registers.encode()];
+        output.write_all(&buffer)?;
+        
+        Ok(())
     }
 }

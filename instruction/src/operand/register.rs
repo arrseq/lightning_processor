@@ -30,9 +30,10 @@ pub enum GeneralPurpose {
 }
 
 /// Register references to processor registers. Registers are encoded with 4 bits. 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub enum Register {
     /// General purpose register for finalizing results or final computation.
+    #[default]
     Accumulator,
     Pointer(Pointer),
     SideInput(SideInput),
