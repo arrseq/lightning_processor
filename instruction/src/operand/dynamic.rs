@@ -28,6 +28,9 @@ pub enum Address {
 ///
 /// The address modes that involve a constant and are designed for a specific sized constant will have the constant
 /// be constrained with [dynamic_number::Unsigned::resize] to fit that requirement.
+///
+/// # Encoding
+/// A dynamic code refers to the specific algorithm or mode of the operand. The largest valid code is 15.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Dynamic {
     Register(Register),
@@ -187,5 +190,9 @@ impl Dynamic {
             | Self::SUBTRACT_QUAD_WORD_ADDRESS => Requirement::RegisterAndConstant,
             _ => return Err(InvalidCodeError)
         })
+    }
+
+    pub fn is_valid(encoded: u8) -> bool {
+        encoded <= 15
     }
 }
