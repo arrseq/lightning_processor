@@ -1,4 +1,3 @@
-use std::io::Read;
 use arrseq_memory::dynamic_number;
 use crate::operand::register::Register;
 
@@ -31,6 +30,19 @@ pub enum Dynamic {
     Register(Register),
     Constant(dynamic_number::Unsigned),
     Address(Address)
+}
+
+/// Which combination of the register or constant is required.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Requirement {
+    /// The operand requires both a register and constant.
+    RegisterAndConstant,
+
+    /// The operand exclusively requires the register.
+    Register,
+
+    /// The operand exclusively requires the constant.
+    Constant
 }
 
 /// An invalid dynamic code was used for the specific task.
@@ -113,40 +125,26 @@ impl Dynamic {
         }))
     }
 
-    /// Whether the specified dynamic operand code requires a constant. Invalid dynamic codes result in [false] return.
-    pub fn requires_constant(encoded: u8) -> bool {
-        match encoded {
+    /// Get the requirements of a specific dynamic operand. If the dynamic operand is invalid, then
+    /// [Err(InvalidCodeError)] is returned.
+    pub fn requirement(encoded: u8) -> Result<Requirement, InvalidCodeError> {
+        Ok(match encoded {
+            Self::REGISTER
+                | Self::REGISTER_ADDRESS => Requirement::Register,
             Self::CONSTANT
                 | Self::CONSTANT_BYTE_ADDRESS
                 | Self::CONSTANT_WORD_ADDRESS
                 | Self::CONSTANT_DOUBLE_WORD_ADDRESS
-                | Self::CONSTANT_QUAD_WORD_ADDRESS
-                | Self::ADD_BYTE_ADDRESS
+                | Self::CONSTANT_QUAD_WORD_ADDRESS => Requirement::Constant,
+            Self::ADD_BYTE_ADDRESS
                 | Self::ADD_WORD_ADDRESS
                 | Self::ADD_DOUBLE_WORD_ADDRESS
                 | Self::ADD_QUAD_WORD_ADDRESS
                 | Self::SUBTRACT_BYTE_ADDRESS
                 | Self::SUBTRACT_WORD_ADDRESS
                 | Self::SUBTRACT_DOUBLE_WORD_ADDRESS
-                | Self::SUBTRACT_QUAD_WORD_ADDRESS => true,
-            _ => false
-        }
-    }
-
-    /// Whether the specified dynamic operand code requires a register. Invalid dynamic codes result in [false] return.
-    pub fn requires_register(encoded: u8) -> bool {
-        match encoded {
-            Self::REGISTER
-                | Self::REGISTER_ADDRESS
-                | Self::ADD_BYTE_ADDRESS
-                | Self::ADD_WORD_ADDRESS
-                | Self::ADD_DOUBLE_WORD_ADDRESS
-                | Self::ADD_QUAD_WORD_ADDRESS
-                | Self::SUBTRACT_BYTE_ADDRESS
-                | Self::SUBTRACT_WORD_ADDRESS
-                | Self::SUBTRACT_DOUBLE_WORD_ADDRESS
-                | Self::SUBTRACT_QUAD_WORD_ADDRESS => true,
-            _ => false
-        }
+                | Self::SUBTRACT_QUAD_WORD_ADDRESS => Requirement::RegisterAndConstant,
+            _ => return Err(InvalidCodeError)
+        })
     }
 }
