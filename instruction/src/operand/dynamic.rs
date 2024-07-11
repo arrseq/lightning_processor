@@ -41,14 +41,22 @@ pub enum Dynamic {
 /// Which combination of the register or constant is required.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Requirement {
-    /// The operand requires both a register and constant.
-    RegisterAndConstant,
+    /// The operand requires both a register and constant. This includes the size of the constant if determined by the 
+    /// dynamic operand.
+    RegisterAndConstant(Option<dynamic_number::Size>),
 
     /// The operand exclusively requires the register.
     Register,
 
-    /// The operand exclusively requires the constant.
-    Constant
+    /// The operand exclusively requires the constant. This includes the size of the constant if determined by the 
+    /// dynamic operand.
+    Constant(Option<dynamic_number::Size>)
+}
+
+impl Requirement {
+    pub fn requires_constant(self) -> bool {
+        !matches!(self, Self::Register)
+    }
 }
 
 /// An invalid dynamic code was used for the specific task.
@@ -179,15 +187,15 @@ impl Dynamic {
             | Self::CONSTANT_BYTE_ADDRESS
             | Self::CONSTANT_WORD_ADDRESS
             | Self::CONSTANT_DOUBLE_WORD_ADDRESS
-            | Self::CONSTANT_QUAD_WORD_ADDRESS => Requirement::Constant,
+            | Self::CONSTANT_QUAD_WORD_ADDRESS => Requirement::Constant(None),
             Self::ADD_BYTE_ADDRESS
-            | Self::ADD_WORD_ADDRESS
-            | Self::ADD_DOUBLE_WORD_ADDRESS
-            | Self::ADD_QUAD_WORD_ADDRESS
-            | Self::SUBTRACT_BYTE_ADDRESS
-            | Self::SUBTRACT_WORD_ADDRESS
-            | Self::SUBTRACT_DOUBLE_WORD_ADDRESS
-            | Self::SUBTRACT_QUAD_WORD_ADDRESS => Requirement::RegisterAndConstant,
+            | Self::SUBTRACT_BYTE_ADDRESS => Requirement::RegisterAndConstant(Some(dynamic_number::Size::Byte)),
+            Self::ADD_WORD_ADDRESS
+            | Self::SUBTRACT_WORD_ADDRESS => Requirement::RegisterAndConstant(Some(dynamic_number::Size::Word)),
+            Self::ADD_DOUBLE_WORD_ADDRESS
+            | Self::SUBTRACT_DOUBLE_WORD_ADDRESS => Requirement::RegisterAndConstant(Some(dynamic_number::Size::DoubleWord)),
+            Self::ADD_QUAD_WORD_ADDRESS
+            | Self::SUBTRACT_QUAD_WORD_ADDRESS => Requirement::RegisterAndConstant(Some(dynamic_number::Size::QuadWord)),
             _ => return Err(InvalidCodeError)
         })
     }
