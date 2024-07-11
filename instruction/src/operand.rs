@@ -1,5 +1,5 @@
 use std::io;
-use std::io::Read;
+use std::io::{Read, Write};
 use arrseq_memory::dynamic_number;
 use crate::operand;
 use crate::operand::dynamic::Dynamic;
@@ -75,7 +75,8 @@ pub struct Operands {
     pub size: dynamic_number::Size,
     pub result: Name,
     pub register: Register,
-    pub dynamic: Dynamic
+    pub dynamic: Dynamic,
+    pub custom_data: bool
 }
 
 #[derive(Debug)]
@@ -129,7 +130,8 @@ impl Operands {
             size: meta.size,
             result: meta.result,
             register: registers.first,
-            dynamic
+            dynamic,
+            custom_data: meta.custom_data
         })
     }
     
@@ -144,5 +146,26 @@ impl Operands {
         
         input.read_exact(buffer)?;
         Ok(dynamic_number::Unsigned::from_le_bytes(buffer).unwrap())
+    }
+    
+    pub fn encode(self, output: &mut impl Write) -> Result<(), io::Error> {
+        // This will not fail because the dynamic operand is being encoded from a valid dynamic operand.
+        let meta = Meta::new(self.size, self.result, self.custom_data, self.dynamic.encode()).unwrap();
+        let registers = register::Dual {
+            first: self.register,
+            second: self.dynamic.register().unwrap_or_default()
+        };
+        
+        let buffer = [meta.encode(), registers.encode()];
+        output.write_all(&buffer)?;
+        
+        if let Ok(constant) = self.dynamic.constant() { Self::encode_constant(output, constant)?; }
+        Ok(())
+    }
+    
+    pub fn encode_constant(output: &mut impl Write, constant: dynamic_number::Unsigned) -> Result<(), io::Error> {
+        let bytes = constant.to_le_bytes();
+        let buffer = bytes.as_slice();
+        output.write_all(buffer)
     }
 }

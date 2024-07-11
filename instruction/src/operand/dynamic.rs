@@ -24,6 +24,26 @@ pub enum Address {
     Subtract(Calculated)
 }
 
+impl Address {
+    pub fn register(self) -> Result<Register, NotIncludedError> {
+        Ok(match self {
+            Self::Register(register) => register,
+            Self::Add(calculated)
+            | Self::Subtract(calculated) => calculated.base,
+            _ => return Err(NotIncludedError)
+        }) 
+    }
+    
+    pub fn constant(self) -> Result<dynamic_number::Unsigned, NotIncludedError> {
+        Ok(match self {
+            Self::Constant(constant) => constant,
+            Self::Add(calculated) 
+            | Self::Subtract(calculated) => calculated.offset,
+            _ => return Err(NotIncludedError)
+        })
+    }
+}
+
 /// A dynamic source operand.
 ///
 /// The address modes that involve a constant and are designed for a specific sized constant will have the constant
@@ -63,6 +83,9 @@ impl Requirement {
 #[derive(Debug)]
 pub struct InvalidCodeError;
 
+#[derive(Debug)]
+pub struct NotIncludedError;
+
 impl Dynamic {
     pub const REGISTER: u8 = 0;
     pub const CONSTANT: u8 = 1;
@@ -83,6 +106,22 @@ impl Dynamic {
     pub const SUBTRACT_WORD_ADDRESS: u8 = 12;
     pub const SUBTRACT_DOUBLE_WORD_ADDRESS: u8 = 13;
     pub const SUBTRACT_QUAD_WORD_ADDRESS: u8 = 14;
+    
+    pub fn register(self) -> Result<Register, NotIncludedError> {
+        Ok(match self {
+            Self::Register(register) => register,
+            Self::Address(address) => return address.register(),
+            _ => return Err(NotIncludedError)
+        })
+    }
+    
+    pub fn constant(self) -> Result<dynamic_number::Unsigned, NotIncludedError> {
+        Ok(match self {
+            Self::Constant(constant) => constant,
+            Self::Address(address) => return address.constant(),
+            _ => return Err(NotIncludedError)
+        })
+    }
 
     /// Encode this dynamic operand into a 4 bit code.
     pub fn encode(self) -> u8 {

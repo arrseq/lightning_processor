@@ -1,47 +1,60 @@
-use crate::operand::dynamic::Dynamic;
-use crate::operand::Name;
-use crate::operand::register::Register;
+use std::io;
+use std::io::Read;
+use arrseq_memory::dynamic_number;
+use crate::operand::Operands;
+use crate::operation::Operation;
+use crate::prefix::Prefixes;
 
 pub mod operand;
+pub mod operation;
+pub mod prefix;
 
-/// The register and dynamic operand in one structure.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct RegisterAndDynamic {
-    /// The operand in which the result should be copied to.
-    result: Name,
-    register: Register,
-    dynamic: Dynamic,
+pub struct Instruction {
+    pub execution: Option<prefix::Execution>,
+    pub branch_likely_taken: Option<bool>,
+    pub operands: Operands,
+    pub operation: Operation
 }
 
-/// Error caused a result is set to point to a dynamic operand which is set to [Dynamic::Constant(_)].
 #[derive(Debug)]
-pub struct ConstantResultError;
-
-impl RegisterAndDynamic {
-    pub fn new(result: Name, register: Register, dynamic: Dynamic) -> Result<Self, ConstantResultError> {
-        if matches!(result, Name::Dynamic) && matches!(dynamic, Dynamic::Constant(_)) { return Err(ConstantResultError) }
-        Ok(Self { result, register, dynamic })
-    }
-
-    pub fn result(self) -> Name {
-        self.result
-    }
-
-    pub fn register(self) -> Register {
-        self.register
-    }
-
-    pub fn dynamic(self) -> Dynamic {
-        self.dynamic
-    }
+pub enum DecodeError {
+    Prefix(prefix::DecodeError),
+    Operands(operand::DecodeError),
+    Operation(OperationError)
 }
 
-/// Enum containing the valid combinations of the operand.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Combination {
-    RegisterAndDynamic(RegisterAndDynamic),
-    /// Exclusively the register operand.
-    Register(Register),
-    /// Exclusively the dynamic  operand.
-    Dynamic(Dynamic)
+#[derive(Debug)]
+pub enum OperationError {
+    Stream(io::Error),
+    Operation(operation::InvalidCodeError)
+}
+
+impl Instruction {
+    pub fn decode(input: &mut impl Read) -> Result<Self, DecodeError> {
+        let prefixes = Prefixes::decode(input).map_err(DecodeError::Prefix)?;
+        let operation = Self::decode_operation(input, prefixes.escape).map_err(DecodeError::Operation)?;
+        let operands = Operands::decode(input).map_err(DecodeError::Operands)?;
+        
+        Ok(Self {
+            operands, operation,
+            execution: prefixes.execution,
+            branch_likely_taken: prefixes.branch_likely_taken
+        })
+    }
+    
+    pub fn decode_operation(input: &mut impl Read, escape: prefix::Escape) -> Result<Operation, OperationError> {
+        Ok(match escape {
+            prefix::Escape::Byte => {
+                let mut buffer = [0u8; 1];
+                input.read_exact(&mut buffer).map_err(OperationError::Stream)?;
+                Operation::decode(buffer[0] as u16).map_err(OperationError::Operation)?
+            },
+            prefix::Escape::Word => {
+                let mut buffer = [0u8; dynamic_number::Size::WORD_BYTES];
+                input.read_exact(&mut buffer).map_err(OperationError::Stream)?;
+                Operation::decode(u16::from_le_bytes(buffer)).map_err(OperationError::Operation)?
+            }
+        })
+    }
 }

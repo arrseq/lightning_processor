@@ -164,6 +164,22 @@ macro_rules! implement_from_le_bytes {
         }
     };
 }
-
 implement_from_le_bytes!(Unsigned, u8, u16, u32, u64);
 implement_from_le_bytes!(Signed, i8, i16, i32, i64);
+
+macro_rules! implement_to_le_bytes {
+    ($target: ident) => {
+        impl $target {
+            pub fn to_le_bytes(self) -> Vec<u8> {
+                match self {
+                    $target::Byte(byte) => Vec::from(byte.to_le_bytes()),
+                    $target::Word(byte) => Vec::from(byte.to_le_bytes()),
+                    $target::DoubleWord(byte) => Vec::from(byte.to_le_bytes()),
+                    $target::QuadWord(byte) => Vec::from(byte.to_le_bytes())
+                }
+            }
+        }
+    };
+}
+implement_to_le_bytes!(Unsigned);
+implement_to_le_bytes!(Signed);

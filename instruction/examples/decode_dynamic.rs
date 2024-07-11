@@ -18,6 +18,12 @@ fn main() {
         100
     ]);
 
-    let decoded = Operands::decode(&mut cursor);
+    let decoded = Operands::decode(&mut cursor).unwrap();
     dbg!(decoded);
+    
+    let mut encoded = Vec::new();
+    decoded.encode(&mut encoded).unwrap();
+    
+    dbg!(cursor.get_ref());
+    dbg!(encoded);
 }
