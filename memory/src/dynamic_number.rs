@@ -12,7 +12,14 @@ pub enum Size {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct InvalidExponentRepresentationError;
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct InvalidByteCountError;
+
 impl Size {
+    pub const WORD_BYTES: u8 = 2;
+    pub const DOUBLE_WORD_BYTES: u8 = 4;
+    pub const QUAD_WORD_BYTES: u8 = 8;
+
     /// Get the exponent that needs to be put to the power of 2 to represent the number of bytes used to store
     /// this number.
     ///
@@ -36,6 +43,25 @@ impl Size {
             2 => Self::DoubleWord,
             3 => Self::QuadWord,
             _ => return Err(InvalidExponentRepresentationError)
+        })
+    }
+
+    pub fn byte_count(self) -> u8 {
+        match self {
+            Self::Byte => 1,
+            Self::Word => Self::WORD_BYTES,
+            Self::DoubleWord => Self::DOUBLE_WORD_BYTES,
+            Self::QuadWord => Self::QUAD_WORD_BYTES
+        }
+    }
+
+    pub fn from_byte_count(byte_count: u8) -> Result<Self, InvalidByteCountError> {
+        Ok(match byte_count {
+            1 => Self::Byte,
+            Self::WORD_BYTES => Self::Word,
+            Self::DOUBLE_WORD_BYTES => Self::DoubleWord,
+            Self::QUAD_WORD_BYTES => Self::QuadWord,
+            _ => return Err(InvalidByteCountError)
         })
     }
 }
