@@ -73,9 +73,32 @@ impl Meta {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct RegisterAndDynamic {
     /// The operand in which the result should be copied to.
-    pub result: Name,
-    pub register: Register,
-    pub dynamic: Dynamic,
+    result: Name,
+    register: Register,
+    dynamic: Dynamic,
+}
+
+/// Error caused a result is set to point to a dynamic operand which is set to [Dynamic::Constant(_)].
+#[derive(Debug)]
+pub struct ConstantResultError;
+
+impl RegisterAndDynamic {
+    pub fn new(result: Name, register: Register, dynamic: Dynamic) -> Result<Self, ConstantResultError> {
+        if matches!(result, Name::Dynamic) && matches!(dynamic, Dynamic::Constant(_)) { return Err(ConstantResultError) }
+        Ok(Self { result, register, dynamic })
+    }
+    
+    pub fn result(self) -> Name {
+        self.result
+    }
+    
+    pub fn register(self) -> Register {
+        self.register
+    }
+    
+    pub fn dynamic(self) -> Dynamic {
+        self.dynamic
+    } 
 }
 
 /// Enum containing the valid combinations of the operand.
@@ -100,7 +123,8 @@ pub struct Operands {
 #[derive(Debug)]
 pub enum DecodeError {
     InvalidDynamicCode(dynamic::InvalidCodeError),
-    Read(io::Error)
+    Read(io::Error),
+    ConstantResultError(ConstantResultError)
 }
 
 impl Operands {
@@ -132,7 +156,16 @@ impl Operands {
         let dynamic = match Dynamic::requirement(meta.dynamic_code).unwrap() {
             dynamic::Requirement::Register => Dynamic::decode_register(meta.dynamic_code, registers.second),
             dynamic::Requirement::Constant(size) => Dynamic::decode_constant(meta.dynamic_code, Self::decode_constant(input, size.unwrap_or(meta.size)).map_err(DecodeError::Read)?),
-            _ => todo!()
+            // There is no dynamic operand mode with this requirement that uses [None] for its constant size here. It is
+            // acceptable to unwrap here.
+            dynamic::Requirement::RegisterAndConstant(size) => {
+                let calculated = dynamic::Calculated {
+                    base: registers.second,
+                    offset: Self::decode_constant(input, size.unwrap_or(meta.size)).map_err(DecodeError::Read)?
+                };
+                
+                Dynamic::decode_calculated(meta.dynamic_code, calculated)
+            }
         }.unwrap();
 
         dbg!(dynamic);
