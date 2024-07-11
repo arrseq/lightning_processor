@@ -1,3 +1,6 @@
+use std::io;
+use std::io::{Read, Write};
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Escape {
     Byte,
@@ -75,4 +78,51 @@ pub struct Prefixes {
     pub escape: Escape,
     pub execution: Option<Execution>,
     pub branch_likely_taken: Option<bool>
+}
+
+#[derive(Debug)]
+pub enum DecodeError {
+    Read(io::Error),
+    InvalidCode(InvalidCodeError),
+    MissingEscape
+}
+
+impl Prefixes {
+    pub fn encode(self, output: &mut impl Write) -> Result<(), io::Error> {
+        let mut buffer = [Prefix::Escape(self.escape).encode(); 1];
+        output.write_all(&buffer)?;
+        
+        if let Some(execution) = self.execution {
+            buffer[0] = Prefix::Execution(execution).encode();
+            output.write_all(&buffer)?;
+        }
+        
+        if let Some(likely) = self.branch_likely_taken {
+            buffer[0] = Prefix::BranchLikelyTaken(likely).encode();
+            output.write_all(&buffer)?;
+        }
+        
+        Ok(())
+    }
+    
+    pub fn decode(input: &mut impl Read) -> Result<Self, DecodeError> {
+        let mut escape: Option<Escape> = None;
+        let mut execution: Option<Execution> = None;
+        let mut branch_likely_taken: Option<bool> = None;
+        
+        let mut buffer = [0u8; 1];
+        loop {
+            input.read_exact(&mut buffer).map_err(DecodeError::Read)?;
+            let prefix = Prefix::decode(buffer[0]).map_err(DecodeError::InvalidCode)?;
+            
+            match prefix {
+                Prefix::Escape(value) => break escape = Some(value),
+                Prefix::Execution(value) => execution = Some(value),
+                Prefix::BranchLikelyTaken(value) => branch_likely_taken = Some(value)
+            }
+        }
+        
+        if let Some(escape) = escape { return Ok(Self { escape, execution, branch_likely_taken }); }
+        Err(DecodeError::MissingEscape)
+    }
 }
