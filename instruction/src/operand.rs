@@ -69,62 +69,19 @@ impl Meta {
     }
 }
 
-/// The register and dynamic operand in one structure.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct RegisterAndDynamic {
-    /// The operand in which the result should be copied to.
-    result: Name,
-    register: Register,
-    dynamic: Dynamic,
-}
-
-/// Error caused a result is set to point to a dynamic operand which is set to [Dynamic::Constant(_)].
-#[derive(Debug)]
-pub struct ConstantResultError;
-
-impl RegisterAndDynamic {
-    pub fn new(result: Name, register: Register, dynamic: Dynamic) -> Result<Self, ConstantResultError> {
-        if matches!(result, Name::Dynamic) && matches!(dynamic, Dynamic::Constant(_)) { return Err(ConstantResultError) }
-        Ok(Self { result, register, dynamic })
-    }
-    
-    pub fn result(self) -> Name {
-        self.result
-    }
-    
-    pub fn register(self) -> Register {
-        self.register
-    }
-    
-    pub fn dynamic(self) -> Dynamic {
-        self.dynamic
-    } 
-}
-
-/// Enum containing the valid combinations of the operand.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Combination {
-    RegisterAndDynamic(RegisterAndDynamic),
-    /// Exclusively the register operand.
-    Register(Register),
-    /// Exclusively the dynamic  operand.
-    Dynamic(Dynamic)
-}
-
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Operands {
     /// The size of the data that the operands refer to.
     pub size: dynamic_number::Size,
-    
-    /// The operands in their valid combination.
-    pub combination: Combination
+    pub result: Name,
+    pub register: Register,
+    pub dynamic: Dynamic
 }
 
 #[derive(Debug)]
 pub enum DecodeError {
     InvalidDynamicCode(dynamic::InvalidCodeError),
-    Read(io::Error),
-    ConstantResultError(ConstantResultError)
+    Read(io::Error)
 }
 
 impl Operands {
@@ -167,12 +124,12 @@ impl Operands {
                 Dynamic::decode_calculated(meta.dynamic_code, calculated)
             }
         }.unwrap();
-
-        dbg!(dynamic);
         
         Ok(Self {
             size: meta.size,
-            combination: todo!()
+            result: meta.result,
+            register: registers.first,
+            dynamic
         })
     }
     
