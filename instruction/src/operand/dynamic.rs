@@ -30,7 +30,7 @@ pub enum Address {
 /// be constrained with [dynamic_number::Unsigned::resize] to fit that requirement.
 ///
 /// # Encoding
-/// A dynamic code refers to the specific algorithm or mode of the operand. The largest valid code is 15.
+/// A dynamic code refers to the specific algorithm or mode of the operand. The largest valid code is 14.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Dynamic {
     Register(Register),
@@ -193,6 +193,6 @@ impl Dynamic {
     }
 
     pub fn is_valid(encoded: u8) -> bool {
-        encoded <= 15
+        encoded <= 14
     }
 }

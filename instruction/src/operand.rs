@@ -55,12 +55,13 @@ impl Meta {
 
     /// # Result
     /// This function has no error because the dynamic code is never invalid. Valid dynamic codes are 4 bits.
-    pub fn decode(encoded: u8) -> Self {
+    pub fn decode(encoded: u8) -> Result<Self, dynamic::InvalidCodeError> {
         let size = dynamic_number::Size::from_exponent_representation(encoded >> 6).unwrap();
         let result = if (encoded >> 5) & 0b0000000_1 == 1 { Name::Dynamic } else { Name::Register };
-        let dynamic_code = encoded >> 1 & 0b000_1111_0;
+        let dynamic_code = (encoded & 0b000_1111_0) >> 1;
+        if !Dynamic::is_valid(dynamic_code) { return Err(dynamic::InvalidCodeError); }
         let custom_data = encoded & 0b0000000_1 == 1;
-        Self { size, result, dynamic_code, custom_data }
+        Ok(Self { size, result, dynamic_code, custom_data })
     }
 
     pub fn dynamic_code(self) -> u8 {
@@ -120,8 +121,15 @@ impl Operands {
     /// };
     /// ```
     pub fn decode(input: &mut impl Read) -> Result<Self, DecodeError> {
-        let mut buffer = [0u8; 1];
-        let meta = Meta::decode(input.read_exact(&mut buffer).map)
+        /// Contains the meta and registers bytes.
+        let mut buffer = [0u8; 2];
+        input.read_exact(&mut buffer).map_err(DecodeError::Read)?;
+
+        let meta = Meta::decode(buffer[0]);
+        let registers = register::Dual::decode(buffer[1]);
+
+        dbg!(meta, registers);
+
         todo!()
     }
 }
