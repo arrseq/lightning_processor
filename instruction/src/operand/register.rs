@@ -64,6 +64,8 @@ impl Register {
     pub const GENERAL_PURPOSE_9: u8 = Self::GENERAL_PURPOSE_8 + 1;
     
     /// Encode the register into a 4 bit code.
+    ///
+    /// # Example
     /// ```
     /// use arrseq_instruction::operand::register::{GeneralPurpose, Register};
     /// 
@@ -96,8 +98,12 @@ impl Register {
         }
     }
     
-    /// Decode a register code into a register. An invalid code that ranges beyond what 4 bits can represent will return
-    /// [InvalidCodeError].
+    /// Decode a register code into a register.
+    ///
+    /// # Result
+    /// An invalid code that ranges beyond what 4 bits can represent will return [InvalidCodeError].
+    ///
+    /// # Example
     /// ```
     /// use arrseq_instruction::operand::register::{GeneralPurpose, Register};
     /// 

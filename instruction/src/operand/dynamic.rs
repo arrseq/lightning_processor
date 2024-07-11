@@ -4,8 +4,8 @@ use crate::operand::register::Register;
 /// A tuple containing a register and a constant which will be operated on and then used to address memory.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Calculated {
-    pub register: Register,
-    pub base: dynamic_number::Unsigned
+    pub base: Register,
+    pub offset: dynamic_number::Unsigned
 }
 
 /// A dynamic address dereferencing source target.
@@ -86,13 +86,13 @@ impl Dynamic {
                     dynamic_number::Unsigned::DoubleWord(_) => Self::CONSTANT_DOUBLE_WORD_ADDRESS,
                     dynamic_number::Unsigned::QuadWord(_) => Self::CONSTANT_QUAD_WORD_ADDRESS
                 },
-                Address::Add(add) => match add.base {
+                Address::Add(add) => match add.offset {
                     dynamic_number::Unsigned::Byte(_) => Self::ADD_BYTE_ADDRESS,
                     dynamic_number::Unsigned::Word(_) => Self::ADD_WORD_ADDRESS,
                     dynamic_number::Unsigned::DoubleWord(_) => Self::ADD_DOUBLE_WORD_ADDRESS,
                     dynamic_number::Unsigned::QuadWord(_) => Self::ADD_QUAD_WORD_ADDRESS
                 },
-                Address::Subtract(subtract) => match subtract.base {
+                Address::Subtract(subtract) => match subtract.offset {
                     dynamic_number::Unsigned::Byte(_) => Self::SUBTRACT_BYTE_ADDRESS,
                     dynamic_number::Unsigned::Word(_) => Self::SUBTRACT_WORD_ADDRESS,
                     dynamic_number::Unsigned::DoubleWord(_) => Self::SUBTRACT_DOUBLE_WORD_ADDRESS,
@@ -155,6 +155,19 @@ impl Dynamic {
     ///
     /// # Result
     /// If the dynamic operand is invalid, then [Err(InvalidCodeError)] is returned.
+    ///
+    /// # Example
+    /// ```
+    /// use arrseq_instruction::operand::dynamic::{Address, Calculated, Dynamic, Requirement};
+    /// use arrseq_instruction::operand::register::{Register, SideInput};
+    /// use arrseq_memory::dynamic_number;
+    ///
+    /// assert_eq!(Dynamic::requirement(Dynamic::Constant(dynamic_number::Unsigned::Word(u16::MAX)).encode()).unwrap(), Requirement::Constant);
+    /// assert_eq!(Dynamic::requirement(Dynamic::Address(Address::Add(Calculated {
+    ///     base: Register::SideInput(SideInput::First),
+    ///     offset: dynamic_number::Unsigned::Word(u16::MAX)
+    /// })).encode()).unwrap(), Requirement::RegisterAndConstant);
+    /// ```
     pub fn requirement(encoded: u8) -> Result<Requirement, InvalidCodeError> {
         Ok(match encoded {
             Self::REGISTER
