@@ -159,6 +159,13 @@ impl Operands {
         let buffer = [meta.encode(), registers.encode()];
         output.write_all(&buffer)?;
         
+        if let Ok(constant) = self.dynamic.constant() { Self::encode_constant(output, constant)?; }
         Ok(())
+    }
+    
+    pub fn encode_constant(output: &mut impl Write, constant: dynamic_number::Unsigned) -> Result<(), io::Error> {
+        let bytes = constant.to_le_bytes();
+        let buffer = bytes.as_slice();
+        output.write_all(buffer)
     }
 }

@@ -24,6 +24,26 @@ pub enum Address {
     Subtract(Calculated)
 }
 
+impl Address {
+    pub fn register(self) -> Result<Register, NotIncludedError> {
+        Ok(match self {
+            Self::Register(register) => register,
+            Self::Add(calculated)
+            | Self::Subtract(calculated) => calculated.base,
+            _ => return Err(NotIncludedError)
+        }) 
+    }
+    
+    pub fn constant(self) -> Result<dynamic_number::Unsigned, NotIncludedError> {
+        Ok(match self {
+            Self::Constant(constant) => constant,
+            Self::Add(calculated) 
+            | Self::Subtract(calculated) => calculated.offset,
+            _ => return Err(NotIncludedError)
+        })
+    }
+}
+
 /// A dynamic source operand.
 ///
 /// The address modes that involve a constant and are designed for a specific sized constant will have the constant
@@ -90,12 +110,15 @@ impl Dynamic {
     pub fn register(self) -> Result<Register, NotIncludedError> {
         Ok(match self {
             Self::Register(register) => register,
-            Self::Address(address) => match address {
-                Address::Register(register) => register,
-                Address::Add(calculated)
-                | Address::Subtract(calculated) => calculated.base,
-                _ => return Err(NotIncludedError)
-            },
+            Self::Address(address) => return address.register(),
+            _ => return Err(NotIncludedError)
+        })
+    }
+    
+    pub fn constant(self) -> Result<dynamic_number::Unsigned, NotIncludedError> {
+        Ok(match self {
+            Self::Constant(constant) => constant,
+            Self::Address(address) => return address.constant(),
             _ => return Err(NotIncludedError)
         })
     }
