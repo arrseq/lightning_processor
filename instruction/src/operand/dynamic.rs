@@ -25,6 +25,9 @@ pub enum Address {
 }
 
 /// A dynamic source operand.
+///
+/// The address modes that involve a constant and are designed for a specific sized constant will have the constant
+/// be constrained with [dynamic_number::Unsigned::resize] to fit that requirement.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Dynamic {
     Register(Register),
@@ -99,24 +102,26 @@ impl Dynamic {
         }
     }
 
-    /// Decode dynamic operands that exclusively contain a register. If an invalid dynamic code or a code that refers to
-    /// a dynamic operand mode that does not exclusively use a register, then [Err(InvalidCodeError)] is returned.
-    pub fn decode_register_based(input: u8, register: Register) -> Result<Self, InvalidCodeError> {
-        Ok(match input {
+    /// Decode dynamic operands that exclusively contain a register.
+    ///
+    /// # Result
+    /// If an invalid dynamic code or a code that refers to a dynamic operand mode that does not exclusively use a
+    /// register or is invalid, then [Err(InvalidCodeError)] is returned.
+    pub fn decode_register(encoded: u8, register: Register) -> Result<Self, InvalidCodeError> {
+        Ok(match encoded {
             Self::REGISTER => Self::Register(register),
             Self::REGISTER_ADDRESS => Self::Address(Address::Register(register)),
             _ => return Err(InvalidCodeError)
         })
     }
 
-    /// Decode dynamic operand modes that exclusively contain a constant that are in the address top level mode. If the
-    /// operand type is invalid, doesn't exclusively support a constant or isn't part of the address top level mode,
-    /// then [Err(InvalidCodeError)] is returned.
+    /// Decode dynamic operand modes that exclusively contain a constant that are in the address top level mode.
     ///
-    /// The address modes that involve a constant are designed for a specific sized constant. If the dynamic number will
-    /// be constrained with [dynamic_number::Unsigned::resize] to fit that requirement.
-    pub fn decode_constant_address_based(input: u8, constant: dynamic_number::Unsigned) -> Result<Self, InvalidCodeError> {
-        Ok(Self::Address(match input {
+    /// # Result
+    /// If the operand type is invalid, doesn't exclusively support a constant or isn't part of the address top level
+    /// mode, then [Err(InvalidCodeError)] is returned.
+    pub fn decode_constant_address(encoded: u8, constant: dynamic_number::Unsigned) -> Result<Self, InvalidCodeError> {
+        Ok(Self::Address(match encoded {
             Self::CONSTANT_BYTE_ADDRESS => Address::Constant(constant.resize(dynamic_number::Size::Byte)),
             Self::CONSTANT_WORD_ADDRESS => Address::Constant(constant.resize(dynamic_number::Size::Word)),
             Self::CONSTANT_DOUBLE_WORD_ADDRESS => Address::Constant(constant.resize(dynamic_number::Size::DoubleWord)),
@@ -125,25 +130,48 @@ impl Dynamic {
         }))
     }
 
-    /// Get the requirements of a specific dynamic operand. If the dynamic operand is invalid, then
+    /// Decode dynamic operand mode that exclusively contains a calculated structure. This always returns an instance
+    /// containing [Address] because the address mode is the only one which has modes which contain a [Calculated]
+    /// structure.
+    ///
+    /// # Result
+    /// If the operand type is invalid or doesn't exclusively support a calculated structure, then
     /// [Err(InvalidCodeError)] is returned.
+    pub fn decode_calculated(encoded: u8, calculated: Calculated) -> Result<Self, InvalidCodeError> {
+        Ok(Self::Address(match encoded {
+            Self::ADD_BYTE_ADDRESS
+            | Self::ADD_WORD_ADDRESS
+            | Self::ADD_DOUBLE_WORD_ADDRESS
+            | Self::ADD_QUAD_WORD_ADDRESS => Address::Add(calculated),
+            Self::SUBTRACT_BYTE_ADDRESS
+            | Self::SUBTRACT_WORD_ADDRESS
+            | Self::SUBTRACT_DOUBLE_WORD_ADDRESS
+            | Self::SUBTRACT_QUAD_WORD_ADDRESS => Address::Subtract(calculated),
+            _ => return Err(InvalidCodeError)
+        }))
+    }
+
+    /// Get the requirements of a specific dynamic operand.
+    ///
+    /// # Result
+    /// If the dynamic operand is invalid, then [Err(InvalidCodeError)] is returned.
     pub fn requirement(encoded: u8) -> Result<Requirement, InvalidCodeError> {
         Ok(match encoded {
             Self::REGISTER
-                | Self::REGISTER_ADDRESS => Requirement::Register,
+            | Self::REGISTER_ADDRESS => Requirement::Register,
             Self::CONSTANT
-                | Self::CONSTANT_BYTE_ADDRESS
-                | Self::CONSTANT_WORD_ADDRESS
-                | Self::CONSTANT_DOUBLE_WORD_ADDRESS
-                | Self::CONSTANT_QUAD_WORD_ADDRESS => Requirement::Constant,
+            | Self::CONSTANT_BYTE_ADDRESS
+            | Self::CONSTANT_WORD_ADDRESS
+            | Self::CONSTANT_DOUBLE_WORD_ADDRESS
+            | Self::CONSTANT_QUAD_WORD_ADDRESS => Requirement::Constant,
             Self::ADD_BYTE_ADDRESS
-                | Self::ADD_WORD_ADDRESS
-                | Self::ADD_DOUBLE_WORD_ADDRESS
-                | Self::ADD_QUAD_WORD_ADDRESS
-                | Self::SUBTRACT_BYTE_ADDRESS
-                | Self::SUBTRACT_WORD_ADDRESS
-                | Self::SUBTRACT_DOUBLE_WORD_ADDRESS
-                | Self::SUBTRACT_QUAD_WORD_ADDRESS => Requirement::RegisterAndConstant,
+            | Self::ADD_WORD_ADDRESS
+            | Self::ADD_DOUBLE_WORD_ADDRESS
+            | Self::ADD_QUAD_WORD_ADDRESS
+            | Self::SUBTRACT_BYTE_ADDRESS
+            | Self::SUBTRACT_WORD_ADDRESS
+            | Self::SUBTRACT_DOUBLE_WORD_ADDRESS
+            | Self::SUBTRACT_QUAD_WORD_ADDRESS => Requirement::RegisterAndConstant,
             _ => return Err(InvalidCodeError)
         })
     }
