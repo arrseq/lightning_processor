@@ -40,7 +40,7 @@ pub enum Register {
 }
 
 /// The encoded register code used was invalid. 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug)]
 pub struct InvalidCodeError;
 
 impl Register {

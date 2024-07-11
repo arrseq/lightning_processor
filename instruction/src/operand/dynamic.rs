@@ -52,7 +52,7 @@ pub enum Requirement {
 }
 
 /// An invalid dynamic code was used for the specific task.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug)]
 pub struct InvalidCodeError;
 
 impl Dynamic {

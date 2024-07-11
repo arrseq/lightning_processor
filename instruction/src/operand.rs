@@ -1,3 +1,4 @@
+use std::io;
 use std::io::Read;
 use arrseq_memory::dynamic_number;
 use crate::operand;
@@ -95,9 +96,10 @@ pub struct Operands {
     pub combination: Combination
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug)]
 pub enum DecodeError {
-    InvalidDynamicCode(dynamic::InvalidCodeError)
+    InvalidDynamicCode(dynamic::InvalidCodeError),
+    Read(io::Error)
 }
 
 impl Operands {
@@ -118,7 +120,8 @@ impl Operands {
     /// };
     /// ```
     pub fn decode(input: &mut impl Read) -> Result<Self, DecodeError> {
-        let meta = Meta::decode()
+        let mut buffer = [0u8; 1];
+        let meta = Meta::decode(input.read_exact(&mut buffer).map)
         todo!()
     }
 }

@@ -9,10 +9,10 @@ pub enum Size {
 }
 
 /// An invalid exponent representation for a numeric size was used.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug)]
 pub struct InvalidExponentRepresentationError;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug)]
 pub struct InvalidByteCountError;
 
 impl Size {
