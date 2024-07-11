@@ -8,6 +8,33 @@ pub enum Size {
     QuadWord
 }
 
+/// An invalid exponent representation for a numeric size was used.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct InvalidExponentRepresentationError;
+
+impl Size {
+    /// Get the exponent that needs to be put to the power of 2 to represent the number of bytes used to store
+    /// this number.
+    pub fn exponent_representation(self) -> u8 {
+        match self {
+            Self::Byte => 0,
+            Self::Word => 1,
+            Self::DoubleWord => 2,
+            Self::QuadWord => 3
+        }
+    }
+
+    pub fn from_exponent_representation(exponent: u8) -> Result<Self, InvalidExponentRepresentationError> {
+        Ok(match exponent {
+            0 => Self::Byte,
+            1 => Self::Word,
+            2 => Self::DoubleWord,
+            3 => Self::QuadWord,
+            _ => return Err(InvalidExponentRepresentationError)
+        })
+    }
+}
+
 impl From<Unsigned> for Size {
     fn from(value: Unsigned) -> Self {
         match value {
@@ -88,6 +115,5 @@ macro_rules! implement_resize {
         }
     };
 }
-
 implement_resize!(Unsigned);
 implement_resize!(Signed);
