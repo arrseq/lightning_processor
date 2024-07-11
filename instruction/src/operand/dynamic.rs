@@ -113,7 +113,7 @@ impl Dynamic {
         }))
     }
 
-    /// Whether the specified dynamic operand code requires a constant.
+    /// Whether the specified dynamic operand code requires a constant. Invalid dynamic codes result in [false] return.
     pub fn requires_constant(encoded: u8) -> bool {
         match encoded {
             Self::CONSTANT
@@ -133,5 +133,20 @@ impl Dynamic {
         }
     }
 
-    /// Whether
+    /// Whether the specified dynamic operand code requires a register. Invalid dynamic codes result in [false] return.
+    pub fn requires_register(encoded: u8) -> bool {
+        match encoded {
+            Self::REGISTER
+                | Self::REGISTER_ADDRESS
+                | Self::ADD_BYTE_ADDRESS
+                | Self::ADD_WORD_ADDRESS
+                | Self::ADD_DOUBLE_WORD_ADDRESS
+                | Self::ADD_QUAD_WORD_ADDRESS
+                | Self::SUBTRACT_BYTE_ADDRESS
+                | Self::SUBTRACT_WORD_ADDRESS
+                | Self::SUBTRACT_DOUBLE_WORD_ADDRESS
+                | Self::SUBTRACT_QUAD_WORD_ADDRESS => true,
+            _ => false
+        }
+    }
 }
