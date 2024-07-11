@@ -16,9 +16,9 @@ pub struct InvalidExponentRepresentationError;
 pub struct InvalidByteCountError;
 
 impl Size {
-    pub const WORD_BYTES: u8 = 2;
-    pub const DOUBLE_WORD_BYTES: u8 = 4;
-    pub const QUAD_WORD_BYTES: u8 = 8;
+    pub const WORD_BYTES: usize = 2;
+    pub const DOUBLE_WORD_BYTES: usize = 4;
+    pub const QUAD_WORD_BYTES: usize = 8;
 
     /// Get the exponent that needs to be put to the power of 2 to represent the number of bytes used to store
     /// this number.
@@ -49,14 +49,14 @@ impl Size {
     pub fn byte_count(self) -> u8 {
         match self {
             Self::Byte => 1,
-            Self::Word => Self::WORD_BYTES,
-            Self::DoubleWord => Self::DOUBLE_WORD_BYTES,
-            Self::QuadWord => Self::QUAD_WORD_BYTES
+            Self::Word => Self::WORD_BYTES as u8,
+            Self::DoubleWord => Self::DOUBLE_WORD_BYTES as u8,
+            Self::QuadWord => Self::QUAD_WORD_BYTES as u8
         }
     }
 
     pub fn from_byte_count(byte_count: u8) -> Result<Self, InvalidByteCountError> {
-        Ok(match byte_count {
+        Ok(match byte_count as usize {
             1 => Self::Byte,
             Self::WORD_BYTES => Self::Word,
             Self::DOUBLE_WORD_BYTES => Self::DoubleWord,
@@ -96,10 +96,10 @@ pub enum Unsigned {
 }
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Signed {
-    Byte(u8),
-    Word(u16),
-    DoubleWord(u32),
-    QuadWord(u64)
+    Byte(i8),
+    Word(i16),
+    DoubleWord(i32),
+    QuadWord(i64)
 }
 
 macro_rules! implement_conversion {
@@ -132,19 +132,38 @@ implement_primitive_conversion!(Unsigned);
 implement_primitive_conversion!(Signed);
 
 macro_rules! implement_resize {
-    ($target: ident) => {
+    ($target: ident, $byte: ident, $word: ident, $dword: ident, $qword: ident) => {
         impl $target {
             pub fn resize(self, new_size: Size) -> Self {
                 if Size::from(self) == new_size { return self }
                 match new_size {
-                    Size::Byte => Self::Byte(u8::from(self)),
-                    Size::Word => Self::Word(u16::from(self)),
-                    Size::DoubleWord => Self::DoubleWord(u32::from(self)),
-                    Size::QuadWord => Self::QuadWord(u64::from(self))
+                    Size::Byte => Self::Byte($byte::from(self)),
+                    Size::Word => Self::Word($word::from(self)),
+                    Size::DoubleWord => Self::DoubleWord($dword::from(self)),
+                    Size::QuadWord => Self::QuadWord($qword::from(self))
                 }
             }
         }
     };
 }
-implement_resize!(Unsigned);
-implement_resize!(Signed);
+implement_resize!(Unsigned, u8, u16, u32, u64);
+implement_resize!(Signed, i8, i16, i32, i64);
+
+macro_rules! implement_from_le_bytes {
+    ($target: ident, $byte: ty, $word: ident, $dword: ident, $qword: ident) => {
+        impl $target {
+            pub fn from_le_bytes(bytes: &[u8]) -> Result<Self, InvalidByteCountError> {
+                Ok(match bytes.len() {
+                    1 => $target::Byte(bytes[0] as $byte),
+                    Size::WORD_BYTES => $target::Word($word::from_le_bytes(bytes[..2].try_into().unwrap())),
+                    Size::DOUBLE_WORD_BYTES => $target::DoubleWord($dword::from_le_bytes(bytes[..4].try_into().unwrap())),
+                    Size::QUAD_WORD_BYTES => $target::QuadWord($qword::from_le_bytes(bytes[..8].try_into().unwrap())),
+                    _ => return Err(InvalidByteCountError)
+                })
+            }
+        }
+    };
+}
+
+implement_from_le_bytes!(Unsigned, u8, u16, u32, u64);
+implement_from_le_bytes!(Signed, i8, i16, i32, i64);

@@ -121,15 +121,38 @@ impl Operands {
     /// };
     /// ```
     pub fn decode(input: &mut impl Read) -> Result<Self, DecodeError> {
-        /// Contains the meta and registers bytes.
+        // Contains the meta and registers bytes.
         let mut buffer = [0u8; 2];
         input.read_exact(&mut buffer).map_err(DecodeError::Read)?;
 
-        let meta = Meta::decode(buffer[0]);
+        // Code after this should unwrap on things that return [Err(dynamic::InvalidCodeError)] due to this.
+        let meta = Meta::decode(buffer[0]).map_err(DecodeError::InvalidDynamicCode)?;
         let registers = register::Dual::decode(buffer[1]);
+        
+        let dynamic = match Dynamic::requirement(meta.dynamic_code).unwrap() {
+            dynamic::Requirement::Register => Dynamic::decode_register(meta.dynamic_code, registers.second),
+            dynamic::Requirement::Constant(size) => Dynamic::decode_constant(meta.dynamic_code, Self::decode_constant(input, size.unwrap_or(meta.size)).map_err(DecodeError::Read)?),
+            _ => todo!()
+        }.unwrap();
 
-        dbg!(meta, registers);
-
-        todo!()
+        dbg!(dynamic);
+        
+        Ok(Self {
+            size: meta.size,
+            combination: todo!()
+        })
+    }
+    
+    pub fn decode_constant(input: &mut impl Read, size: dynamic_number::Size) -> Result<dynamic_number::Unsigned, io::Error> {
+        let mut quad_word_buffer = [0u8; dynamic_number::Size::QUAD_WORD_BYTES as usize];
+        let buffer = match size {
+            dynamic_number::Size::Byte => &mut quad_word_buffer[0..1],
+            dynamic_number::Size::Word => &mut quad_word_buffer[0..dynamic_number::Size::WORD_BYTES as usize],
+            dynamic_number::Size::DoubleWord => &mut quad_word_buffer[0..dynamic_number::Size::DOUBLE_WORD_BYTES as usize],
+            dynamic_number::Size::QuadWord => &mut quad_word_buffer[0..dynamic_number::Size::QUAD_WORD_BYTES as usize]
+        };
+        
+        input.read_exact(buffer)?;
+        Ok(dynamic_number::Unsigned::from_le_bytes(buffer).unwrap())
     }
 }
