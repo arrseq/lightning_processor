@@ -1,2 +1,2 @@
 [workspace]
-members = [ "assembly", "instruction", "memory", "syntax"]
+members = [ "assembly", "instruction", "memory", "syntax", "text"]

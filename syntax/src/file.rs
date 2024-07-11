@@ -17,11 +17,16 @@ impl Range {
     /// use arrseq_syntax::file::{Position, Range};
     ///
     /// let word = Range {
-    ///     first: Position { line: 0, column: 0, index: 0 },
+    ///     first: Position { line: 0, column: 1, index: 1 },
     ///     second: Position { line: 0, column: 5, index: 5 }
     /// };
+    /// assert_eq!(word.len(), 4);
     /// 
-    /// assert_eq!(word.len(), 5);
+    /// let word = Range {
+    ///     first: Position { line: 0, column: 5, index: 5 },
+    ///     second: Position { line: 0, column: 1, index: 1 }
+    /// };
+    /// assert_eq!(word.len(), 4);
     /// ```
     pub fn len(self) -> usize {
         if self.second.index > self.first.index { return self.second.index - self.first.index; }
