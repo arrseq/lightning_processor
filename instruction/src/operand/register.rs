@@ -132,41 +132,32 @@ impl Register {
     }
 }
 
-// Encode a byte with 2 registers. 
-// - Encode the first register in the upper half of this byte.
-// - Encode the second register in the lower half of this byte.
-//
-// It is safe to unwrap on these methods. The register packing uses 4 bits and register codes also use 4 bits, for 
-// this reason, an [InvalidRegisterCodeError] is impossible.
-pub mod dual_registers_encoding {
-    use crate::operand::register::Register;
+/// Representation of two registers.
+///
+/// # Encoding
+/// The first register is encoded in the upper half of the encoded byte and the second register is encoded in the lower
+/// half of the byte.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Dual {
+    pub first: Register,
+    pub second: Register
+}
 
-    pub fn encode_first(mut encoded: u8, first: Register) -> u8 {
-        encoded |= first.encode() << 4;
+impl Dual {
+    /// # Result
+    /// Decoding will always work because the register division involves 4 bits and a valid register code must be 4 bits.
+    pub fn decode(encoded: u8) -> Self {
+        let first_encoded = encoded >> 4;
+        let second_encoded = encoded & 0b0000_1111;
+        Self {
+            first: Register::decode(first_encoded).unwrap(),
+            second: Register::decode(second_encoded).unwrap()
+        }
+    }
+
+    pub fn encode(self) -> u8 {
+        let mut encoded = self.second.encode();
+        encoded |= self.first.encode() << 4;
         encoded
-    }
-
-    pub fn decode_first(encoded: u8) -> Register {
-        Register::decode(encoded >> 4).unwrap()
-    }
-
-    pub fn encode_second(mut encoded: u8, second: Register) -> u8 {
-        encoded |= second.encode();
-        encoded
-    }
-
-    pub fn decode_second(encoded: u8) -> Register {
-        // Ensure that bits from the first register do not increase the value of the second.
-        Register::decode(encoded & 0b0000_1111).unwrap()
-    }
-
-    pub fn encode(mut encoded: u8, first: Register, second: Register) -> u8 {
-        encoded = encode_first(encoded, first);
-        encoded = encode_second(encoded, second);
-        encoded
-    }
-
-    pub fn decode(encoded: u8) -> (Register, Register) {
-        (decode_first(encoded), decode_second(encoded))
     }
 }
