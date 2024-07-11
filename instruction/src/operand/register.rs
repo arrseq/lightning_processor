@@ -26,7 +26,8 @@ pub enum GeneralPurpose {
     G6,
     G7,
     G8,
-    G9
+    G9,
+    G10
 }
 
 /// Register references to processor registers. Registers are encoded with 4 bits. 
@@ -63,6 +64,7 @@ impl Register {
     pub const GENERAL_PURPOSE_7: u8 = Self::GENERAL_PURPOSE_6 + 1;
     pub const GENERAL_PURPOSE_8: u8 = Self::GENERAL_PURPOSE_7 + 1;
     pub const GENERAL_PURPOSE_9: u8 = Self::GENERAL_PURPOSE_8 + 1;
+    pub const GENERAL_PURPOSE_10: u8 = Self::GENERAL_PURPOSE_9 + 1;
     
     /// Encode the register into a 4 bit code.
     ///
@@ -94,7 +96,8 @@ impl Register {
                 GeneralPurpose::G6 => Self::GENERAL_PURPOSE_6,
                 GeneralPurpose::G7 => Self::GENERAL_PURPOSE_7,
                 GeneralPurpose::G8 => Self::GENERAL_PURPOSE_8,
-                GeneralPurpose::G9 => Self::GENERAL_PURPOSE_9
+                GeneralPurpose::G9 => Self::GENERAL_PURPOSE_9,
+                GeneralPurpose::G10 => Self::GENERAL_PURPOSE_10
             }
         }
     }
@@ -128,6 +131,7 @@ impl Register {
             Self::GENERAL_PURPOSE_7 => Self::GeneralPurpose(GeneralPurpose::G7),
             Self::GENERAL_PURPOSE_8 => Self::GeneralPurpose(GeneralPurpose::G8),
             Self::GENERAL_PURPOSE_9 => Self::GeneralPurpose(GeneralPurpose::G9),
+            Self::GENERAL_PURPOSE_10 => Self::GeneralPurpose(GeneralPurpose::G10),
             _ => return Err(InvalidCodeError)
         })
     }
