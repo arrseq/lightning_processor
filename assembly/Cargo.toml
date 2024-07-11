@@ -1,0 +1,8 @@
+[package]
+name = "arrseq_assembly"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+arrseq_instruction = { path = "../instruction" }
+arrseq_syntax = { path = "../syntax" }
