@@ -1,2 +1,2 @@
 [workspace]
-members = [ "emulator","instruction", "memory"]
+members = ["execution", "instruction", "memory"]
