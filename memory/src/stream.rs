@@ -1,9 +1,24 @@
 use std::io;
-use std::io::{Error, Seek, SeekFrom};
+use std::io::{Error, ErrorKind, Seek, SeekFrom};
 use std::marker::PhantomData;
 
 pub trait Read<T> {
     fn read(&mut self, output: &mut [T]) -> Result<u64, Error>;
+    
+    fn read_exact(&mut self, output: &mut [T]) -> Result<u64, Error> {
+        match self.read(output) {
+            Ok(length) => if length != output.len() as u64 { Err(Error::from(ErrorKind::UnexpectedEof)) } else { Ok(length) },
+            Err(error) => Err(error)
+        }
+    }
+    
+    fn match_strings(&mut self, output: &mut Vec<T>, strings: &[&String]) -> Result<String, Error> {
+        let st
+    }
+}
+
+pub trait Peek<T> {
+    fn peek(&self, output: &mut [T]) -> Result<u64, Error>;
 }
 
 #[derive(Debug, PartialEq)]
@@ -58,6 +73,26 @@ impl<T, D> Read<D> for Cursor<T, D> where
             moved += 1;
         }
         
+        Ok(moved)
+    }
+}
+
+impl<T, D> Peek<D> for Cursor<T, D> where
+    T: AsRef<[D]>,
+    D: Copy
+{
+    fn peek(&self, output: &mut [D]) -> Result<u64, Error> {
+        let mut moved = 0u64;
+
+        for out_val in output {
+            match self.inner.as_ref().get(self.position as usize) {
+                Some(value) => *out_val = *value,
+                None => break,
+            }
+
+            moved += 1;
+        }
+
         Ok(moved)
     }
 }

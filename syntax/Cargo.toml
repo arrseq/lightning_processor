@@ -1,7 +1,0 @@
-[package]
-name = "arrseq_syntax"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-arrseq_memory = { path = "../memory" }
