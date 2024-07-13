@@ -48,23 +48,23 @@ pub struct InvalidCodeError;
 impl Register {
     pub const ACCUMULATOR: u8 = 0;
     
-    pub const STACK_POINTER: u8 = Self::ACCUMULATOR + 1;
-    pub const BASE_POINTER: u8 = Self::STACK_POINTER + 1;
+    pub const STACK_POINTER: u8 = 1;
+    pub const BASE_POINTER: u8 = 2;
     
-    pub const FIRST_SIDE_INPUT: u8 = Self::BASE_POINTER + 1;
-    pub const SECOND_SIDE_INPUT: u8 = Self::FIRST_SIDE_INPUT + 1;
+    pub const FIRST_SIDE_INPUT: u8 = 3;
+    pub const SECOND_SIDE_INPUT: u8 = 4;
     
-    pub const GENERAL_PURPOSE_0: u8 = Self::SECOND_SIDE_INPUT + 1;
-    pub const GENERAL_PURPOSE_1: u8 = Self::GENERAL_PURPOSE_0 + 1;
-    pub const GENERAL_PURPOSE_2: u8 = Self::GENERAL_PURPOSE_1 + 1;
-    pub const GENERAL_PURPOSE_3: u8 = Self::GENERAL_PURPOSE_2 + 1;
-    pub const GENERAL_PURPOSE_4: u8 = Self::GENERAL_PURPOSE_3 + 1;
-    pub const GENERAL_PURPOSE_5: u8 = Self::GENERAL_PURPOSE_4 + 1;
-    pub const GENERAL_PURPOSE_6: u8 = Self::GENERAL_PURPOSE_5 + 1;
-    pub const GENERAL_PURPOSE_7: u8 = Self::GENERAL_PURPOSE_6 + 1;
-    pub const GENERAL_PURPOSE_8: u8 = Self::GENERAL_PURPOSE_7 + 1;
-    pub const GENERAL_PURPOSE_9: u8 = Self::GENERAL_PURPOSE_8 + 1;
-    pub const GENERAL_PURPOSE_10: u8 = Self::GENERAL_PURPOSE_9 + 1;
+    pub const GENERAL_PURPOSE_0: u8 = 5;
+    pub const GENERAL_PURPOSE_1: u8 = 6;
+    pub const GENERAL_PURPOSE_2: u8 = 7;
+    pub const GENERAL_PURPOSE_3: u8 = 8;
+    pub const GENERAL_PURPOSE_4: u8 = 9;
+    pub const GENERAL_PURPOSE_5: u8 = 10;
+    pub const GENERAL_PURPOSE_6: u8 = 11;
+    pub const GENERAL_PURPOSE_7: u8 = 12;
+    pub const GENERAL_PURPOSE_8: u8 = 13;
+    pub const GENERAL_PURPOSE_9: u8 = 14;
+    pub const GENERAL_PURPOSE_10: u8 = 15;
     
     /// Encode the register into a 4 bit code.
     ///
