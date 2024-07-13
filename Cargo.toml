@@ -1,2 +1,6 @@
-[workspace]
-members = [ "emulator","instruction", "memory"]
+[package]
+name = "arrseq_lightning"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]

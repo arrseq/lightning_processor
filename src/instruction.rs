@@ -1,6 +1,6 @@
 use std::io;
 use std::io::Read;
-use arrseq_memory::dynamic_number;
+use crate::dynamic_number;
 use crate::operand::Operands;
 use crate::operation::Operation;
 use crate::prefix::Prefixes;

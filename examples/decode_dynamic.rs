@@ -1,9 +1,7 @@
 extern crate arrseq_instruction;
-extern crate arrseq_memory;
 
 use std::io::Cursor;
-use arrseq_instruction::Instruction;
-use arrseq_instruction::operand::Operands;
+use arrseq_instruction::instruction::Instruction;
 
 fn main() {
     let mut cursor = Cursor::new([

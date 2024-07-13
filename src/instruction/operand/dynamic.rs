@@ -1,5 +1,5 @@
-use arrseq_memory::dynamic_number;
-use crate::operand::register::Register;
+use crate::dynamic_number;
+use super::operand::register::Register;
 
 /// A tuple containing a register and a constant which will be operated on and then used to address memory.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -14,7 +14,7 @@ pub enum Address {
     /// Address memory with the dynamic operand's register field.
     Register(Register),
 
-    /// Address memory with the instruction constant field.
+    /// Address memory with the emulator constant field.
     Constant(dynamic_number::Unsigned),
 
     /// Address memory with the sum of the dynamic operand's register field.
@@ -214,7 +214,7 @@ impl Dynamic {
     /// ```
     /// use arrseq_instruction::operand::dynamic::{Address, Calculated, Dynamic, Requirement};
     /// use arrseq_instruction::operand::register::{Register, SideInput};
-    /// use arrseq_memory::dynamic_number;
+    /// use crate::dynamic_number;
     ///
     /// assert_eq!(Dynamic::requirement(Dynamic::Constant(dynamic_number::Unsigned::Word(u16::MAX)).encode()).unwrap(), Requirement::Constant);
     /// assert_eq!(Dynamic::requirement(Dynamic::Address(Address::Add(Calculated {

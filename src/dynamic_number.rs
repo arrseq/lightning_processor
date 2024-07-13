@@ -1,4 +1,4 @@
-/// Refers to a specific size that a dynamic number could have. These are based on the 4 data sizes a processor can 
+/// Refers to a specific size that a dynamic number could have. These are based on the 4 data sizes a processor can
 /// address.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Size {

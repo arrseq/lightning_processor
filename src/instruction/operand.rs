@@ -1,9 +1,9 @@
 use std::io;
 use std::io::{Read, Write};
-use arrseq_memory::dynamic_number;
-use crate::operand;
-use crate::operand::dynamic::Dynamic;
-use crate::operand::register::Register;
+use crate::dynamic_number;
+use super::operand;
+use super::operand::dynamic::Dynamic;
+use super::operand::register::Register;
 
 pub mod dynamic;
 pub mod register;
@@ -91,7 +91,7 @@ impl Operands {
     /// use arrseq_instruction::operand::{Combination, Operands, RegisterAndDynamic};
     /// use arrseq_instruction::operand::dynamic::Dynamic;
     /// use arrseq_instruction::operand::register::Register;
-    /// use arrseq_memory::dynamic_number;
+    /// use crate::dynamic_number;
     ///
     /// let operands = Operands {
     ///     size: dynamic_number::Size::Word,
