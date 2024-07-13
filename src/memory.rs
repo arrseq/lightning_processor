@@ -1,8 +1,9 @@
 use std::collections::HashMap;
-use std::io::{Read, Seek, Write};
+use std::io;
+use std::io::{ErrorKind, Read, Seek, SeekFrom, Write};
 
 #[derive(Debug, PartialEq)]
-pub struct Paged<'a, Memory: Read + Write + Seek> {
+pub struct Paged<'a, Memory: Seek> {
     /// Mappings from page's page to physical page.
     pub mappings: HashMap<u64, u64>,
     memory: &'a mut Memory
@@ -11,7 +12,7 @@ pub struct Paged<'a, Memory: Read + Write + Seek> {
 #[derive(Debug)]
 pub struct InvalidPageError;
 
-impl<'a, Memory: Read + Write + Seek> Paged<'a, Memory> {
+impl<'a, Memory: Seek> Paged<'a, Memory> {
     pub const PAGE_ITEM_BITS: u8 = 12;
     pub const PAGE_BITS: u8 = 52;
     pub const PAGE_MASK: u64 = 0x0000_0000_0000_0FFF;
@@ -58,6 +59,17 @@ impl<'a, Memory: Read + Write + Seek> Paged<'a, Memory> {
     }
 }
 
-// impl<'a, Memory: Read + Write + Seek> Seek for Paged<'a, Memory> {
-// 
-// }
+impl<'a, Memory: Seek> Seek for Paged<'a, Memory> {
+    fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
+        let (base, offset) = match pos {
+            SeekFrom::Start(pos) => (pos, 0),
+            SeekFrom::Current(pos) => (self.memory.stream_position()?, pos),
+            SeekFrom::End(pos) => (self.memory.stream_len()?, pos)
+        };
+        
+        let address = base.checked_add_signed(offset).ok_or(io::Error::new(ErrorKind::InvalidInput, "Invalid address overflow"))?;
+        let translated = self.translate_address(address).map_err(|_| io::Error::new(ErrorKind::InvalidInput, "Invalid address after translation"))?;
+        
+        self.memory.seek(SeekFrom::Start(translated))
+    }
+}

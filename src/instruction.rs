@@ -1,9 +1,9 @@
 use std::io;
 use std::io::Read;
 use crate::dynamic_number;
-use crate::operand::Operands;
-use crate::operation::Operation;
-use crate::prefix::Prefixes;
+use self::operand::Operands;
+use self::operation::Operation;
+use self::prefix::Prefixes;
 
 pub mod operand;
 pub mod operation;
