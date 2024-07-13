@@ -4,7 +4,7 @@ use std::io::{ErrorKind, Read, Seek, SeekFrom, Write};
 use crate::dynamic_number;
 
 #[derive(Debug, PartialEq)]
-pub struct Paged<'a, Memory: Seek> {
+pub struct Paged<'a, Memory: Seek + Read + Write> {
     /// Mappings from page's page to physical page.
     pub mappings: HashMap<u64, u64>,
     memory: &'a mut Memory
@@ -13,7 +13,7 @@ pub struct Paged<'a, Memory: Seek> {
 #[derive(Debug)]
 pub struct InvalidPageError;
 
-impl<'a, Memory: Seek> Paged<'a, Memory> {
+impl<'a, Memory: Seek + Read + Write> Paged<'a, Memory> {
     pub const PAGE_ITEM_BITS: u8 = 12;
     pub const PAGE_BITS: u8 = 52;
     pub const PAGE_MASK: u64 = 0x0000_0000_0000_0FFF;
@@ -72,17 +72,22 @@ impl<'a, Memory: Seek> Paged<'a, Memory> {
     }
 }
 
-impl<'a, Memory: Seek> Seek for Paged<'a, Memory> {
+impl<'a, Memory: Seek + Read + Write> Read for Paged<'a, Memory> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        let address = self.memory.stream_position()?;
+        let translated_address = self.translate_address(address).map_err(|_| io::Error::new(ErrorKind::InvalidInput, "Invalid virtual address page."))?;
+        
+        // Read data then return stream position to original.
+        self.memory.seek(SeekFrom::Start(translated_address))?;
+        let result = self.memory.read(buf)?;
+        self.memory.seek(SeekFrom::Start(address))?;
+        
+        Ok(result)
+    }
+}
+
+impl<'a, Memory: Seek + Read + Write> Seek for Paged<'a, Memory> {
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
-        let (base, offset) = match pos {
-            SeekFrom::Start(pos) => (pos, 0),
-            SeekFrom::Current(pos) => (self.memory.stream_position()?, pos),
-            SeekFrom::End(pos) => (self.memory.stream_len()?, pos)
-        };
-        
-        let address = base.checked_add_signed(offset).ok_or(io::Error::new(ErrorKind::InvalidInput, "Invalid address overflow"))?;
-        let translated = self.translate_address(address).map_err(|_| io::Error::new(ErrorKind::InvalidInput, "Invalid address after translation"))?;
-        
-        self.memory.seek(SeekFrom::Start(translated))
+        self.memory.seek(pos)
     }
 }
