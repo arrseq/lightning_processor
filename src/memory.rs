@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::io;
 use std::io::{ErrorKind, Read, Seek, SeekFrom, Write};
+use crate::dynamic_number;
 
 #[derive(Debug, PartialEq)]
 pub struct Paged<'a, Memory: Seek> {
@@ -19,6 +20,18 @@ impl<'a, Memory: Seek> Paged<'a, Memory> {
     
     pub fn new(mappings: HashMap<u64, u64>, memory: &'a mut Memory) -> Self {
         Self { mappings, memory }
+    }
+    
+    pub fn is_word_aligned(address: u64) -> bool {
+        address % dynamic_number::Size::WORD_BYTES as u64 == 0
+    }
+
+    pub fn is_double_word_aligned(address: u64) -> bool {
+        address % dynamic_number::Size::DOUBLE_WORD_BYTES as u64 == 0
+    }
+
+    pub fn is_quad_word_aligned(address: u64) -> bool {
+        address % dynamic_number::Size::QUAD_WORD_BYTES as u64 == 0
     }
     
     /// Extract the page code from an address.
