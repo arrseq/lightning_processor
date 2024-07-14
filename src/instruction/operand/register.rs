@@ -166,3 +166,26 @@ impl Dual {
         encoded
     }
 }
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Collection {
+    pub accumulator: u64,
+    
+    pub stack_pointer: u64,
+    pub base_pointer: u64,
+    
+    pub first_side_input: u64,
+    pub second_side_input: u64,
+
+    pub general_purpose_0: u64,
+    pub general_purpose_1: u64,
+    pub general_purpose_2: u64,
+    pub general_purpose_3: u64,
+    pub general_purpose_4: u64,
+    pub general_purpose_5: u64,
+    pub general_purpose_6: u64,
+    pub general_purpose_7: u64,
+    pub general_purpose_8: u64,
+    pub general_purpose_9: u64,
+    pub general_purpose_10: u64
+}
