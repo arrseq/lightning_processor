@@ -86,6 +86,23 @@ impl<'a, Memory: Seek + Read + Write> Read for Paged<'a, Memory> {
     }
 }
 
+impl<'a, Memory: Seek + Read + Write> Write for Paged<'a, Memory> {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        let address = self.memory.stream_position()?;
+        let translated_address = self.translate_address(address).map_err(|_| io::Error::new(ErrorKind::InvalidInput, "Invalid virtual address page."))?;
+
+        self.memory.seek(SeekFrom::Start(translated_address))?;
+        let result = self.memory.write(buf)?;
+        self.memory.seek(SeekFrom::Start(address))?;
+        
+        Ok(result)
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        self.memory.flush()
+    }
+}
+
 impl<'a, Memory: Seek + Read + Write> Seek for Paged<'a, Memory> {
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
         self.memory.seek(pos)
