@@ -3,3 +3,4 @@
 pub mod dynamic_number;
 pub mod instruction;
 pub mod memory;
+pub mod core;

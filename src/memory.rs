@@ -94,7 +94,7 @@ impl<'a, Memory: Seek + Read + Write> Write for Paged<'a, Memory> {
         self.memory.seek(SeekFrom::Start(translated_address))?;
         let result = self.memory.write(buf)?;
         self.memory.seek(SeekFrom::Start(address))?;
-        
+
         Ok(result)
     }
 
