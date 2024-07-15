@@ -167,7 +167,7 @@ impl Dual {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Collection {
     pub accumulator: u64,
     
@@ -188,4 +188,60 @@ pub struct Collection {
     pub general_purpose_8: u64,
     pub general_purpose_9: u64,
     pub general_purpose_10: u64
+}
+
+impl Collection {
+    pub fn get_mut(&mut self, register: Register) -> &mut u64 {
+        match register {
+            Register::Accumulator => &mut self.accumulator,
+            Register::Pointer(pointer) => match pointer {
+                Pointer::Stack => &mut self.stack_pointer,
+                Pointer::Base => &mut self.base_pointer
+            },
+            Register::SideInput(side_input) => match side_input {
+                SideInput::First => &mut self.first_side_input,
+                SideInput::Second => &mut self.second_side_input
+            },
+            Register::GeneralPurpose(general_purpose) => match general_purpose {
+                GeneralPurpose::G0 => &mut self.general_purpose_0,
+                GeneralPurpose::G1 => &mut self.general_purpose_1,
+                GeneralPurpose::G2 => &mut self.general_purpose_2,
+                GeneralPurpose::G3 => &mut self.general_purpose_3,
+                GeneralPurpose::G4 => &mut self.general_purpose_4,
+                GeneralPurpose::G5 => &mut self.general_purpose_5,
+                GeneralPurpose::G6 => &mut self.general_purpose_6,
+                GeneralPurpose::G7 => &mut self.general_purpose_7,
+                GeneralPurpose::G8 => &mut self.general_purpose_8,
+                GeneralPurpose::G9 => &mut self.general_purpose_9,
+                GeneralPurpose::G10 => &mut self.general_purpose_10,
+            }
+        }
+    }
+
+    pub fn get(self, register: Register) -> u64 {
+        match register {
+            Register::Accumulator => self.accumulator,
+            Register::Pointer(pointer) => match pointer {
+                Pointer::Stack => self.stack_pointer,
+                Pointer::Base => self.base_pointer
+            },
+            Register::SideInput(side_input) => match side_input {
+                SideInput::First => self.first_side_input,
+                SideInput::Second => self.second_side_input
+            },
+            Register::GeneralPurpose(general_purpose) => match general_purpose {
+                GeneralPurpose::G0 => self.general_purpose_0,
+                GeneralPurpose::G1 => self.general_purpose_1,
+                GeneralPurpose::G2 => self.general_purpose_2,
+                GeneralPurpose::G3 => self.general_purpose_3,
+                GeneralPurpose::G4 => self.general_purpose_4,
+                GeneralPurpose::G5 => self.general_purpose_5,
+                GeneralPurpose::G6 => self.general_purpose_6,
+                GeneralPurpose::G7 => self.general_purpose_7,
+                GeneralPurpose::G8 => self.general_purpose_8,
+                GeneralPurpose::G9 => self.general_purpose_9,
+                GeneralPurpose::G10 => self.general_purpose_10,
+            }
+        }
+    }
 }

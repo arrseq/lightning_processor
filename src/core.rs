@@ -53,3 +53,15 @@ impl Core {
         todo!()
     }
 }
+
+impl Default for Core {
+    fn default() -> Self {
+        Self {
+            context: Context {
+                instruction_pointer: 0,
+                privilege: Privilege::High,
+                registers: register::Collection::default()
+            }
+        }
+    }
+}
