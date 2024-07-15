@@ -4,7 +4,7 @@ use std::io::{ErrorKind, Read, Seek, SeekFrom, Write};
 use crate::dynamic_number;
 
 #[derive(Debug, PartialEq)]
-pub struct Paged<'a, Memory: Seek + Read + Write> {
+pub struct Paged<'a, Memory> {
     /// Mappings from page's page to physical page.
     pub mappings: HashMap<u64, u64>,
     memory: &'a mut Memory
@@ -13,7 +13,7 @@ pub struct Paged<'a, Memory: Seek + Read + Write> {
 #[derive(Debug)]
 pub struct InvalidPageError;
 
-impl<'a, Memory: Seek + Read + Write> Paged<'a, Memory> {
+impl<'a, Memory> Paged<'a, Memory> {
     pub const PAGE_ITEM_BITS: u8 = 12;
     pub const PAGE_BITS: u8 = 52;
     pub const PAGE_MASK: u64 = 0x0000_0000_0000_0FFF;
@@ -72,7 +72,7 @@ impl<'a, Memory: Seek + Read + Write> Paged<'a, Memory> {
     }
 }
 
-impl<'a, Memory: Seek + Read + Write> Read for Paged<'a, Memory> {
+impl<'a, Memory: Seek + Read> Read for Paged<'a, Memory> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         let address = self.memory.stream_position()?;
         let translated_address = self.translate_address(address).map_err(|_| io::Error::new(ErrorKind::InvalidInput, "Invalid virtual address page."))?;
@@ -86,7 +86,7 @@ impl<'a, Memory: Seek + Read + Write> Read for Paged<'a, Memory> {
     }
 }
 
-impl<'a, Memory: Seek + Read + Write> Write for Paged<'a, Memory> {
+impl<'a, Memory: Seek + Write> Write for Paged<'a, Memory> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         let address = self.memory.stream_position()?;
         let translated_address = self.translate_address(address).map_err(|_| io::Error::new(ErrorKind::InvalidInput, "Invalid virtual address page."))?;
@@ -103,7 +103,7 @@ impl<'a, Memory: Seek + Read + Write> Write for Paged<'a, Memory> {
     }
 }
 
-impl<'a, Memory: Seek + Read + Write> Seek for Paged<'a, Memory> {
+impl<'a, Memory: Seek> Seek for Paged<'a, Memory> {
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
         self.memory.seek(pos)
     }

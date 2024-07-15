@@ -41,7 +41,7 @@ impl Core {
             Privilege::High => Instruction::decode(input).map_err(DecodeError::Instruction)?,
             Privilege::Low(mapping) => {
                 let mut paged = Paged::new(mapping.clone(), input);
-                Instruction::decode(&mut paged).map_err(DecodeError::Instruction)?// REMOVE USELESS WRITE
+                Instruction::decode(&mut paged).map_err(DecodeError::Instruction)?
             }
         };
         self.context.instruction_pointer = input.stream_position().map_err(DecodeError::Read)?;
