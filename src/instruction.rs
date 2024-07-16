@@ -71,7 +71,8 @@ impl Instruction {
     }
     
     pub fn encode(self, output: &mut impl Write) -> Result<(), EncodeError> {
-        let operation_escape = Self::get_operation_escape(self.operation).map_err(EncodeError::Write)?;
+        let encoded_operation = self.operation.encode();
+        let operation_escape = Self::get_operation_escape(encoded_operation);
         
         let prefixes = Prefixes {
             escape: operation_escape,
@@ -91,17 +92,29 @@ impl Instruction {
         prefixes
             .encode(output)
             .map_err(EncodeError::Write)?;
-        Self::encode_operation(output, self.operation, operation_escape).map_err(EncodeError::Write)?;
+        Self::encode_operation(output, encoded_operation, operation_escape).map_err(EncodeError::Write)?;
         self.operands.encode(output).map_err(EncodeError::Operands)?;
         
         Ok(())
     }
     
-    pub fn get_operation_escape(operation: Operation) -> Result<prefix::Escape, io::Error> {
-        todo!()        
+    pub fn get_operation_escape(operation: u16) -> prefix::Escape {
+        if operation > u8::MAX as u16 { return prefix::Escape::Word };
+        prefix::Escape::Byte
     }
     
-    pub fn encode_operation(output: &mut impl Write, operation: Operation, escape: prefix::Escape) -> Result<(), io::Error> {
-        todo!()
+    pub fn encode_operation(output: &mut impl Write, operation: u16, escape: prefix::Escape) -> Result<(), io::Error> {
+        match escape {
+            prefix::Escape::Byte => {
+                let buffer = [operation as u8];
+                output.write_all(&buffer)?;
+            },
+            prefix::Escape::Word => {
+                let buffer = operation.to_le_bytes();
+                output.write_all(&buffer)?;
+            }
+        }
+        
+        Ok(())
     }
 }

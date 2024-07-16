@@ -22,7 +22,9 @@ fn main() {
     let instruction = Instruction::decode(&mut cursor)
         .unwrap();
     dbg!(instruction);
+    
     let mut target = Cursor::new(vec![0u8; 0]);
-    instruction.encode(&mut target);
-    dbg!(target);
+    instruction.encode(&mut target).expect("Failed to encode instruction.");
+    
+    assert_eq!(target.get_ref(), cursor.get_ref());
 }
