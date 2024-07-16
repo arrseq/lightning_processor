@@ -42,8 +42,8 @@ impl Core {
         input.seek(SeekFrom::Start(self.context.instruction_pointer)).map_err(DecodeError::Read)?;
         let result = match &self.context.privilege {
             Privilege::High => Instruction::decode(input).map_err(DecodeError::Instruction)?,
-            Privilege::Low(mapping) => {
-                let mut paged = Paged::new(mapping.clone(), input);
+            Privilege::Low(mappings) => {
+                let mut paged = Paged { mappings, memory: input };
                 Instruction::decode(&mut paged).map_err(DecodeError::Instruction)?
             }
         };

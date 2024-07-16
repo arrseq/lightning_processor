@@ -42,13 +42,13 @@ pub struct ResultToConstantError;
 
 impl Meta {
     /// # Result
-    /// Instance of [Self] as long as the dynamic operand isn't constant with the result of this metadata being set to 
+    /// Instance of [Self] as long as the dynamic operand isn't constant with the result of this metadata being set to
     /// the dynamic operand.
     pub fn new(size: dynamic_number::Size, result: Name, custom_data: bool, dynamic: Dynamic) -> Result<Self, ResultToConstantError> {
         if matches!(dynamic, Dynamic::Constant(_)) && matches!(result, Name::Dynamic) { return Err(ResultToConstantError) }
-        Ok(Self { 
-            size, result, custom_data, 
-            dynamic_code: dynamic.encode() 
+        Ok(Self {
+            size, result, custom_data,
+            dynamic_code: dynamic.encode()
         })
     }
 

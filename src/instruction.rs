@@ -2,7 +2,6 @@ use std::io;
 use std::io::{Read, Write};
 use crate::dynamic_number;
 use crate::instruction::operand::dynamic::Dynamic;
-use crate::instruction::operand::Meta;
 use self::operand::Operands;
 use self::operation::Operation;
 use self::prefix::Prefixes;
@@ -63,7 +62,7 @@ impl Instruction {
                 Operation::decode(buffer[0] as u16).map_err(OperationError::Operation)?
             },
             prefix::Escape::Word => {
-                let mut buffer = [0u8; dynamic_number::Size::WORD_BYTES];
+                let mut buffer = [0u8; dynamic_number::Size::WORD_BYTES as usize];
                 input.read_exact(&mut buffer).map_err(OperationError::Stream)?;
                 Operation::decode(u16::from_le_bytes(buffer)).map_err(OperationError::Operation)?
             }

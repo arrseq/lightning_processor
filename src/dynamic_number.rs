@@ -55,8 +55,8 @@ impl Size {
         }
     }
 
-    pub fn from_byte_count(byte_count: u8) -> Result<Self, InvalidByteCountError> {
-        Ok(match byte_count as usize {
+    pub fn from_byte_count(byte_count: usize) -> Result<Self, InvalidByteCountError> {
+        Ok(match byte_count {
             1 => Self::Byte,
             Self::WORD_BYTES => Self::Word,
             Self::DOUBLE_WORD_BYTES => Self::DoubleWord,

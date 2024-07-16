@@ -106,7 +106,7 @@ impl Prefixes {
     }
     
     pub fn decode(input: &mut impl Read) -> Result<Self, DecodeError> {
-        let mut escape: Option<Escape> = None;
+        let escape: Option<Escape>;
         let mut execution: Option<Execution> = None;
         let mut branch_likely_taken: Option<bool> = None;
         
