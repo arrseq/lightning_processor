@@ -36,13 +36,20 @@ pub struct Meta {
     dynamic_code: u8,
 }
 
+/// The result of the meta points to the dynamic operand but the dynamic operand is constant data.
+#[derive(Debug)]
+pub struct ResultToConstantError;
+
 impl Meta {
     /// # Result
-    /// Instance of [Self] as long as the dynamic code is valid otherwise [Err(operand::dynamic::InvalidCodeError)] is
-    /// returned.
-    pub fn new(size: dynamic_number::Size, result: Name, custom_data: bool, dynamic_code: u8) -> Result<Self, dynamic::InvalidCodeError> {
-        if !Dynamic::is_valid(dynamic_code) { return Err(dynamic::InvalidCodeError) }
-        Ok(Self { size, result, custom_data, dynamic_code })
+    /// Instance of [Self] as long as the dynamic operand isn't constant with the result of this metadata being set to 
+    /// the dynamic operand.
+    pub fn new(size: dynamic_number::Size, result: Name, custom_data: bool, dynamic: Dynamic) -> Result<Self, ResultToConstantError> {
+        if matches!(dynamic, Dynamic::Constant(_)) && matches!(result, Name::Dynamic) { return Err(ResultToConstantError) }
+        Ok(Self { 
+            size, result, custom_data, 
+            dynamic_code: dynamic.encode() 
+        })
     }
 
     pub fn encode(self) -> u8 {
@@ -83,6 +90,12 @@ pub struct Operands {
 pub enum DecodeError {
     InvalidDynamicCode(dynamic::InvalidCodeError),
     Read(io::Error)
+}
+
+#[derive(Debug)]
+pub enum EncodeError {
+    Write(io::Error),
+    ResultToConstant(ResultToConstantError)
 }
 
 impl Operands {
@@ -148,18 +161,17 @@ impl Operands {
         Ok(dynamic_number::Unsigned::from_le_bytes(buffer).unwrap())
     }
     
-    pub fn encode(self, output: &mut impl Write) -> Result<(), io::Error> {
-        // This will not fail because the dynamic operand is being encoded from a valid dynamic operand.
-        let meta = Meta::new(self.size, self.result, self.custom_data, self.dynamic.encode()).unwrap();
+    pub fn encode(self, output: &mut impl Write) -> Result<(), EncodeError> {
+        let meta = Meta::new(self.size, self.result, self.custom_data, self.dynamic).map_err(EncodeError::ResultToConstant)?;
         let registers = register::Dual {
             first: self.register,
             second: self.dynamic.register().unwrap_or_default()
         };
         
         let buffer = [meta.encode(), registers.encode()];
-        output.write_all(&buffer)?;
+        output.write_all(&buffer).map_err(EncodeError::Write)?;
         
-        if let Ok(constant) = self.dynamic.constant() { Self::encode_constant(output, constant)?; }
+        if let Ok(constant) = self.dynamic.constant() { Self::encode_constant(output, constant).map_err(EncodeError::Write)?; }
         Ok(())
     }
     

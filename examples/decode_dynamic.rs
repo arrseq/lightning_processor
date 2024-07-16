@@ -22,4 +22,7 @@ fn main() {
     let instruction = Instruction::decode(&mut cursor)
         .unwrap();
     dbg!(instruction);
+    let mut target = Cursor::new(vec![0u8; 0]);
+    instruction.encode(&mut target);
+    dbg!(target);
 }

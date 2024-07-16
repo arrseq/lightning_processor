@@ -1,6 +1,7 @@
 use std::io;
-use std::io::Read;
+use std::io::{Read, Write};
 use crate::dynamic_number;
+use crate::instruction::operand::Meta;
 use self::operand::Operands;
 use self::operation::Operation;
 use self::prefix::Prefixes;
@@ -22,6 +23,12 @@ pub enum DecodeError {
     Prefix(prefix::DecodeError),
     Operands(operand::DecodeError),
     Operation(OperationError)
+}
+
+#[derive(Debug)]
+pub enum EncodeError {
+    Write(io::Error),
+    Operands(operand::EncodeError)
 }
 
 #[derive(Debug)]
@@ -56,5 +63,30 @@ impl Instruction {
                 Operation::decode(u16::from_le_bytes(buffer)).map_err(OperationError::Operation)?
             }
         })
+    }
+    
+    pub fn encode(self, output: &mut impl Write) -> Result<(), EncodeError> {
+        let operation_escape = Self::get_operation_escape(self.operation).map_err(EncodeError::Write)?;
+        
+        Prefixes {
+            escape: operation_escape,
+            execution: self.execution,
+            branch_likely_taken: self.branch_likely_taken
+        }
+            .encode(output)
+            .map_err(EncodeError::Write)?;
+        
+        Self::encode_operation(output, self.operation, operation_escape).map_err(EncodeError::Write)?;
+        self.operands.encode(output).map_err(EncodeError::Operands)?;
+        
+        Ok(())
+    }
+    
+    pub fn get_operation_escape(operation: Operation) -> Result<prefix::Escape, io::Error> {
+        todo!()        
+    }
+    
+    pub fn encode_operation(output: &mut impl Write, operation: Operation, escape: prefix::Escape) -> Result<(), io::Error> {
+        todo!()
     }
 }

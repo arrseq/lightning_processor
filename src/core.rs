@@ -6,6 +6,8 @@ use crate::instruction::Instruction;
 use crate::instruction::operand::register;
 use crate::memory::Paged;
 
+pub mod decode_cache;
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Privilege {
     High,
