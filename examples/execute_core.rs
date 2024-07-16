@@ -12,7 +12,7 @@ use arrseq_lightning::instruction::operation::{Arithmetic, Operation};
 fn main() {
 	let core = Core::default();
 	let mut memory: Cursor<Vec<u8>> = Cursor::new(Vec::new());
-	
+
 	let add = Instruction {
 		branch_likely_taken: None,
 		execution: None,
@@ -25,6 +25,6 @@ fn main() {
 			custom_data: false
 		}
 	};
-	
-	add.
+
+	add.encode(&mut memory).unwrap();
 }

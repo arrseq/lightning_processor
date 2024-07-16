@@ -30,7 +30,7 @@ pub enum DecodeError {
 pub enum EncodeError {
     Write(io::Error),
     Operands(operand::EncodeError),
-    
+
     /// The instruction was set to execute synchronously but there was no address operand. Synchronous execution is used
     /// to access a memory address without a race condition.
     SynchronizedWithNoAddress
@@ -55,7 +55,7 @@ impl Instruction {
         })
     }
     
-    pub fn decode_operation(input: &mut impl Read, escape: prefix::Escape) -> Result<Operation, OperationError> {
+    fn decode_operation(input: &mut impl Read, escape: prefix::Escape) -> Result<Operation, OperationError> {
         Ok(match escape {
             prefix::Escape::Byte => {
                 let mut buffer = [0u8; 1];
@@ -69,17 +69,19 @@ impl Instruction {
             }
         })
     }
-    
+
+    /// # Note
+    /// The output may be written to before an error is encountered thus leaving incoming encoded bytes on the output.
     pub fn encode(self, output: &mut impl Write) -> Result<(), EncodeError> {
         let encoded_operation = self.operation.encode();
         let operation_escape = Self::get_operation_escape(encoded_operation);
-        
+
         let prefixes = Prefixes {
             escape: operation_escape,
             execution: self.execution,
             branch_likely_taken: self.branch_likely_taken
         };
-        
+
         // Synchronized instructions must have the dynamic operand point to an address.
         if
             // Has an execution mode override.
@@ -88,22 +90,22 @@ impl Instruction {
             && let prefix::Execution::Synchronize = execution
             // The dynamic addressing mode is not address.
             && !matches!(self.operands.dynamic, Dynamic::Address(_)) { return Err(EncodeError::SynchronizedWithNoAddress) }
-        
+
         prefixes
             .encode(output)
             .map_err(EncodeError::Write)?;
         Self::encode_operation(output, encoded_operation, operation_escape).map_err(EncodeError::Write)?;
         self.operands.encode(output).map_err(EncodeError::Operands)?;
-        
+
         Ok(())
     }
-    
-    pub fn get_operation_escape(operation: u16) -> prefix::Escape {
+
+    fn get_operation_escape(operation: u16) -> prefix::Escape {
         if operation > u8::MAX as u16 { return prefix::Escape::Word };
         prefix::Escape::Byte
     }
-    
-    pub fn encode_operation(output: &mut impl Write, operation: u16, escape: prefix::Escape) -> Result<(), io::Error> {
+
+    fn encode_operation(output: &mut impl Write, operation: u16, escape: prefix::Escape) -> Result<(), io::Error> {
         match escape {
             prefix::Escape::Byte => {
                 let buffer = [operation as u8];
@@ -114,7 +116,7 @@ impl Instruction {
                 output.write_all(&buffer)?;
             }
         }
-        
+
         Ok(())
     }
 }
