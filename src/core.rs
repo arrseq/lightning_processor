@@ -38,7 +38,6 @@ pub enum DecodeError {
 
 impl Core {
     pub fn decode<Input: Read + Seek + Write>(&mut self, input: &mut Input) -> Result<Instruction, DecodeError> {
-        // FIXME: Access can be unaligned which is not realistic in hardware.
         input.seek(SeekFrom::Start(self.context.instruction_pointer)).map_err(DecodeError::Read)?;
         let result = match &self.context.privilege {
             Privilege::High => Instruction::decode(input).map_err(DecodeError::Instruction)?,

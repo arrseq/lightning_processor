@@ -18,21 +18,24 @@ pub struct Instruction {
     pub operation: Operation
 }
 
+/// The instruction was set to execute synchronously but there was no address operand. Synchronous execution is used
+/// to access a memory address without a race condition.
+#[derive(Debug)]
+pub struct SynchronizedWithNoAddress;
+
 #[derive(Debug)]
 pub enum DecodeError {
     Prefix(prefix::DecodeError),
     Operands(operand::DecodeError),
-    Operation(OperationError)
+    Operation(OperationError),
+    SynchronizedWithNoAddress(SynchronizedWithNoAddress)
 }
 
 #[derive(Debug)]
 pub enum EncodeError {
     Write(io::Error),
     Operands(operand::EncodeError),
-
-    /// The instruction was set to execute synchronously but there was no address operand. Synchronous execution is used
-    /// to access a memory address without a race condition.
-    SynchronizedWithNoAddress
+    SynchronizedWithNoAddress(SynchronizedWithNoAddress)
 }
 
 #[derive(Debug)]
@@ -42,10 +45,21 @@ pub enum OperationError {
 }
 
 impl Instruction {
+    /// Synchronized instructions must have the dynamic operand point to an address.
+    fn check_synchronous_error(execution: Option<prefix::Execution>, dynamic: Dynamic) -> Result<(), SynchronizedWithNoAddress> {
+        // Has an execution mode override.
+        if let Some(execution) = execution
+            && let prefix::Execution::Synchronize = execution
+            && !matches!(dynamic, Dynamic::Address(_)) { return Err(SynchronizedWithNoAddress) }
+        Ok(())
+    }
+    
     pub fn decode(input: &mut impl Read) -> Result<Self, DecodeError> {
         let prefixes = Prefixes::decode(input).map_err(DecodeError::Prefix)?;
         let operation = Self::decode_operation(input, prefixes.escape).map_err(DecodeError::Operation)?;
         let operands = Operands::decode(input).map_err(DecodeError::Operands)?;
+
+        Self::check_synchronous_error(prefixes.execution, operands.dynamic).map_err(DecodeError::SynchronizedWithNoAddress)?;
         
         Ok(Self {
             operands, operation,
@@ -62,7 +76,7 @@ impl Instruction {
                 Operation::decode(buffer[0] as u16).map_err(OperationError::Operation)?
             },
             prefix::Escape::Word => {
-                let mut buffer = [0u8; dynamic_number::Size::WORD_BYTES as usize];
+                let mut buffer = [0u8; dynamic_number::Size::WORD_BYTES];
                 input.read_exact(&mut buffer).map_err(OperationError::Stream)?;
                 Operation::decode(u16::from_le_bytes(buffer)).map_err(OperationError::Operation)?
             }
@@ -81,14 +95,7 @@ impl Instruction {
             branch_likely_taken: self.branch_likely_taken
         };
 
-        // Synchronized instructions must have the dynamic operand point to an address.
-        if
-            // Has an execution mode override.
-            let Some(execution) = self.execution
-            // The execution mode is synchronous.
-            && let prefix::Execution::Synchronize = execution
-            // The dynamic addressing mode is not address.
-            && !matches!(self.operands.dynamic, Dynamic::Address(_)) { return Err(EncodeError::SynchronizedWithNoAddress) }
+        Self::check_synchronous_error(self.execution, self.operands.dynamic).map_err(EncodeError::SynchronizedWithNoAddress)?;
 
         prefixes
             .encode(output)
