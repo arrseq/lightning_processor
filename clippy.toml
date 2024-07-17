@@ -1,0 +1,3 @@
+trivial-copy-size-limit = 64
+pass-by-value-size-limit = 64
+avoid-breaking-exported-api = false

@@ -51,7 +51,7 @@ impl Core {
         Ok(result)
     }
     
-    pub fn execute(&mut self, instruction: Instruction) -> Result<(), ExecuteError>{
+    pub fn execute(&mut self, _instruction: Instruction) -> Result<(), ExecuteError>{
         todo!()
     }
 }

@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::io;
 use std::io::{ErrorKind, Read, Seek, SeekFrom, Write};
-use crate::dynamic_number;
 
 #[derive(Debug, PartialEq)]
 pub struct Paged<'a, Memory> {
