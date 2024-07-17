@@ -1,3 +1,5 @@
+use thiserror::Error;
+
 /// Pointer to the boundaries of the stack or the current stack frame.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Pointer {
@@ -42,7 +44,8 @@ pub enum Register {
 }
 
 /// The encoded register code used was invalid. 
-#[derive(Debug)]
+#[derive(Debug, Error)]
+#[error("Referring code does not map to a register")]
 pub struct InvalidCodeError;
 
 impl Register {
