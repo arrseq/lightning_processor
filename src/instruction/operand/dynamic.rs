@@ -1,3 +1,4 @@
+use thiserror::Error;
 use crate::dynamic_number;
 use super::operand::register::Register;
 
@@ -80,10 +81,12 @@ impl Requirement {
 }
 
 /// An invalid dynamic code was used for the specific task.
-#[derive(Debug)]
+#[derive(Debug, Error)]
+#[error("Invalid code was used to refer to a dynamic operand")]
 pub struct InvalidCodeError;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
+#[error("Does not contain a reference to a register")]
 pub struct NotIncludedError;
 
 impl Dynamic {
