@@ -1,5 +1,6 @@
 use std::io;
 use std::io::{Read, Write};
+use thiserror::Error;
 use crate::dynamic_number;
 use super::operand;
 use super::operand::dynamic::Dynamic;
@@ -37,7 +38,8 @@ pub struct Meta {
 }
 
 /// The result of the meta points to the dynamic operand but the dynamic operand is constant data.
-#[derive(Debug)]
+#[derive(Debug, Error)]
+#[error("The result points to a constant")]
 pub struct ResultToConstantError;
 
 impl Meta {
@@ -86,10 +88,12 @@ pub struct Operands {
     pub custom_data: bool
 }
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum DecodeError {
-    InvalidDynamicCode(dynamic::InvalidCodeError),
-    Read(io::Error)
+    #[error("")]
+    InvalidDynamicCode(#[source] dynamic::InvalidCodeError),
+    #[error("")]
+    Read(#[source] io::Error)
 }
 
 #[derive(Debug)]
