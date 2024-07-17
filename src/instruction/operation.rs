@@ -1,3 +1,5 @@
+use thiserror::Error;
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Arithmetic {
     Add,
@@ -13,7 +15,8 @@ pub enum Operation {
     Arithmetic(Arithmetic)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
+#[error("Invalid operation code")]
 pub struct InvalidCodeError;
 
 impl Operation {

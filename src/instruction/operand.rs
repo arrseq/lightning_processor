@@ -92,6 +92,7 @@ pub struct Operands {
 pub enum DecodeError {
     #[error("")]
     InvalidDynamicCode(#[source] dynamic::InvalidCodeError),
+    
     #[error("")]
     Read(#[source] io::Error)
 }

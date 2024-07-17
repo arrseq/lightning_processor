@@ -1,5 +1,6 @@
 use std::io;
 use std::io::{Read, Write};
+use thiserror::Error;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Escape {
@@ -27,7 +28,8 @@ pub enum Prefix {
     BranchLikelyTaken(bool)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
+#[error("Invalid prefix code")]
 pub struct InvalidCodeError;
 
 impl Prefix {
@@ -80,10 +82,15 @@ pub struct Prefixes {
     pub branch_likely_taken: Option<bool>
 }
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum DecodeError {
+    #[error("")]
     Read(io::Error),
+    
+    #[error("")]
     InvalidCode(InvalidCodeError),
+    
+    #[error("Escape never provided")]
     MissingEscape
 }
 
