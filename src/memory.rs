@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fs::rename;
 use std::io;
 use std::io::{ErrorKind, Read, Seek, SeekFrom, Write};
 use thiserror::Error;
@@ -31,6 +32,10 @@ impl<'a, Memory> Paged<'a, Memory> {
     /// Extract the item code from an address.
     pub fn extract_item(address: u64) -> u64 {
         address & Self::PAGE_ITEM_MASK
+    }
+
+    pub fn page_to_layer(page: u64) -> u64 {
+        page << Self::PAGE_ITEM_BITS
     }
     
     /// Translate an addresses page bits from a virtual page to a physical page.
@@ -71,40 +76,77 @@ impl<'a, Memory> Paged<'a, Memory> {
     }
 }
 
-impl<'a, Memory: Seek + Read> Read for Paged<'a, Memory> {
+// FIXME: Rust compiler error forces "+ 'a". issue opened by x4exr on github. Should be removed when resolved.
+impl<'a, Memory: Seek + Read + 'a> Read for Paged<'a, Memory> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        let address = self.memory.stream_position()?;
-        let mut count = 0;
-        let mut offset_address = address;
-        let mut temporary_output = [0u8; 1];
-        
+        let mut address = self.memory.stream_position()?;
+        let mut frame = [0u8; Self::PAGE_ITEM_MASK as usize + 1];
+        let mut bytes_read = 0;
+        let max = buf.len() as u64;
+
         // Ensure the address doesn't overflow.
         address.checked_add(buf.len() as u64).ok_or(io::Error::new(ErrorKind::UnexpectedEof, "Buffer with stream position overflows"))?;
-        
-        for element in buf.iter_mut() {
-            let translated_address = self.translate_address(offset_address).map_err(|_| {
-                self.invalid_page_error = true;
-                io::Error::new(ErrorKind::UnexpectedEof, "Invalid virtual address page. This does not mean you reached the end, there may be gap in the paging")
-            })?;
-            self.invalid_page_error = false;
-            
-            self.memory.seek(SeekFrom::Start(translated_address))?;
-            if self.memory.read(&mut temporary_output)? == 0 { break; }
-                        
-            *element = temporary_output[0];
-            
-            // Starts at zero, so no chance for overflow.
-            count += 1;
-            
-            // Safe to do because the overflow address was already checked.
-            offset_address = address + count;
+
+        loop {
+            dbg!(bytes_read);
+            dbg!(address);
+
+            let item = Self::extract_item(address);
+            let end = Self::PAGE_ITEM_MASK.saturating_sub(max - 1);
+            let read_length = Self::PAGE_ITEM_MASK + 1 - end - item;
+            let translated = self.translate_address(address).unwrap();
+            self.memory.seek(SeekFrom::Start(translated)).unwrap();
+
+            println!("Read {} bytes from {} physical", read_length, translated);
+
+            let mut limited = self.memory.take(read_length);
+            let received = limited.read(&mut frame)? as u64;
+            let with_prefix_start = &frame[..read_length as usize];
+            buf[(bytes_read as u64) as usize..(read_length + bytes_read) as usize].copy_from_slice(with_prefix_start);
+
+
+            bytes_read += received;
+            dbg!(received);
+
+            if bytes_read == max {
+                break;
+            }
+
+            address = Self::page_to_layer(Self::extract_page(address) + 1);
         }
-        
-        // To keep the illusion of this being seamless, this sets the position of the real stream position to what would 
-        // be expected.
-        self.memory.seek(SeekFrom::Start(offset_address))?;
-        
-        Ok(count as usize)
+
+
+        // loop {
+        //     let limited =
+        //     break;
+        // }
+        //
+        // for element in buf.iter_mut() {
+        //     let translated_address = self.translate_address(offset_address).map_err(|_| {
+        //         self.invalid_page_error = true;
+        //         io::Error::new(ErrorKind::UnexpectedEof, "Invalid virtual address page. This does not mean you reached the end, there may be gap in the paging")
+        //     })?;
+        //     self.invalid_page_error = false;
+        //
+        //     self.memory.seek(SeekFrom::Start(translated_address))?;
+        //     if self.memory.read(&mut temporary_output)? == 0 { break; }
+        //
+        //     *element = temporary_output[0];
+        //
+        //     // Starts at zero, so no chance for overflow.
+        //     count += 1;
+        //
+        //     // Safe to do because the overflow address was already checked.
+        //     offset_address = address + count;
+        // }
+        //
+        // // To keep the illusion of this being seamless, this sets the position of the real stream position to what would
+        // // be expected.
+        // self.memory.seek(SeekFrom::Start(offset_address))?;
+        //
+        // Ok(count as usize)
+
+        Ok(bytes_read as usize)
     }
 }
 
