@@ -46,11 +46,15 @@ impl<'a, Memory> Paged<'a, Memory> {
     ///
     /// assert_eq!(paged.translate_address(0x00_00_00_00_00_00_A_F00).unwrap(), 0x00_00_00_00_00_00_B_F00); 
     /// ```
-    pub fn translate_address(&self, address: u64) -> Result<u64, InvalidPageError> {
+    pub fn translate_address(&self, address: u64, buf_len: usize) -> Result<u64, InvalidPageError> {
         let page = Self::extract_page(address);
         let mapping = *self.mappings.get(&page).ok_or(InvalidPageError)?;
         let physical_page_layer = mapping << Self::PAGE_ITEM_BITS;
         let item_layer = Self::extract_item(address);
+        
+        // FIXME: If a buffer is to start at the last byte of a page, and the length is 2+ then this causes a page 
+        // FIXME: overflow and the translation will not happen correctly.
+        
         Ok(physical_page_layer | item_layer)
     }
 }
@@ -58,7 +62,7 @@ impl<'a, Memory> Paged<'a, Memory> {
 impl<'a, Memory: Seek + Read> Read for Paged<'a, Memory> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         let address = self.memory.stream_position()?;
-        let translated_address = self.translate_address(address).map_err(|_| io::Error::new(ErrorKind::InvalidInput, "Invalid virtual address page."))?;
+        let translated_address = self.translate_address(address, buf.len()).map_err(|_| io::Error::new(ErrorKind::InvalidInput, "Invalid virtual address page."))?;
         
         // Read data then return stream position to original.
         self.memory.seek(SeekFrom::Start(translated_address))?;
@@ -72,7 +76,7 @@ impl<'a, Memory: Seek + Read> Read for Paged<'a, Memory> {
 impl<'a, Memory: Seek + Write> Write for Paged<'a, Memory> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         let address = self.memory.stream_position()?;
-        let translated_address = self.translate_address(address).map_err(|_| io::Error::new(ErrorKind::InvalidInput, "Invalid virtual address page."))?;
+        let translated_address = self.translate_address(address, buf.len()).map_err(|_| io::Error::new(ErrorKind::InvalidInput, "Invalid virtual address page."))?;
 
         self.memory.seek(SeekFrom::Start(translated_address))?;
         let result = self.memory.write(buf)?;
