@@ -10,6 +10,8 @@ Sequence.
 
 A discord community is hosted at https://discord.gg/4zt8sUEbNy.
 
+Projects made to work on the array sequence lightning processor architecture may be tagged with `light_proarch`.
+
 # Emulator
 Includes an emulator and a crate for dealing with anything related to this processor and its instruction architecture.
 
