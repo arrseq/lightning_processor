@@ -7,19 +7,14 @@ use thiserror::Error;
 pub struct Paged<'a, Memory> {
     /// Mappings from page's page to physical page.
     pub mappings: HashMap<u64, u64>,
-    pub memory: &'a mut Memory
+    pub memory: &'a mut Memory,
+    pub invalid_page_error: bool
 }
 
+/// The page mapping does not exist in the mappings.
 #[derive(Debug, Error)]
-pub enum AddressTranslationError {
-    /// The page mapping does not exist in the mappings.
-    #[error("Mapping for page not found")]
-    InvalidPage,
-    
-    /// The address and buffer length together overflow the page.
-    #[error("Address and buffer length overflow page")]
-    Overflow
-}
+#[error("Mapping for page not found")]
+pub struct InvalidPageError;
 
 impl<'a, Memory> Paged<'a, Memory> {
     pub const PAGE_ITEM_BITS: u8 = 12;
@@ -67,16 +62,11 @@ impl<'a, Memory> Paged<'a, Memory> {
     /// assert!(matches!(paged.translate_address(0x0000_0000_0000_A_FFF, 1).unwrap_err(), AddressTranslationError::Overflow));
     /// assert_eq!(paged.translate_address(0x0000_0000_0000_A_FFF, 0).unwrap(), 0x0000_0000_0000_B_FFF);
     /// ```
-    pub fn translate_address(&self, address: u64, buf_len: u64) -> Result<u64, AddressTranslationError> {
+    pub fn translate_address(&self, address: u64) -> Result<u64, InvalidPageError> {
         let page = Self::extract_page(address);
-        let mapping = *self.mappings.get(&page).ok_or(AddressTranslationError::InvalidPage)?;
+        let mapping = *self.mappings.get(&page).ok_or(InvalidPageError)?;
         let physical_page_layer = mapping << Self::PAGE_ITEM_BITS;
         let item_layer = Self::extract_item(address);
-        
-        // Check if the end address of the target (address and buffer length) does not overflow the page.
-        let end_index = item_layer.checked_add(buf_len).ok_or(AddressTranslationError::Overflow)?;
-        if end_index > Self::PAGE_ITEM_MASK { return Err(AddressTranslationError::Overflow); }
-        
         Ok(physical_page_layer | item_layer)
     }
 }
@@ -84,27 +74,43 @@ impl<'a, Memory> Paged<'a, Memory> {
 impl<'a, Memory: Seek + Read> Read for Paged<'a, Memory> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         let address = self.memory.stream_position()?;
-        let translated_address = self.translate_address(address, buf.len() as u64).map_err(|_| io::Error::new(ErrorKind::InvalidInput, "Invalid virtual address page."))?;
+        let mut count = 0;
+        let mut offset_address = address;
+        let mut temporary_output = [0u8; 1];
         
-        // Read data then return stream position to original.
-        self.memory.seek(SeekFrom::Start(translated_address))?;
-        let result = self.memory.read(buf)?;
-        self.memory.seek(SeekFrom::Start(address))?;
+        // Ensure the address doesn't overflow.
+        address.checked_add(buf.len() as u64).ok_or(io::Error::new(ErrorKind::UnexpectedEof, "Buffer with stream position overflows"))?;
         
-        Ok(result)
+        for element in buf.iter_mut() {
+            let translated_address = self.translate_address(offset_address).map_err(|_| {
+                self.invalid_page_error = true;
+                io::Error::new(ErrorKind::UnexpectedEof, "Invalid virtual address page. This does not mean you reached the end, there may be gap in the paging")
+            })?;
+            self.invalid_page_error = false;
+            
+            self.memory.seek(SeekFrom::Start(translated_address))?;
+            if self.memory.read(&mut temporary_output)? == 0 { break; }
+                        
+            *element = temporary_output[0];
+            
+            // Starts at zero, so no chance for overflow.
+            count += 1;
+            
+            // Safe to do because the overflow address was already checked.
+            offset_address = address + count;
+        }
+        
+        // To keep the illusion of this being seamless, this sets the position of the real stream position to what would 
+        // be expected.
+        self.memory.seek(SeekFrom::Start(offset_address))?;
+        
+        Ok(count as usize)
     }
 }
 
 impl<'a, Memory: Seek + Write> Write for Paged<'a, Memory> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        let address = self.memory.stream_position()?;
-        let translated_address = self.translate_address(address, buf.len() as u64).map_err(|_| io::Error::new(ErrorKind::InvalidInput, "Invalid virtual address page."))?;
-
-        self.memory.seek(SeekFrom::Start(translated_address))?;
-        let result = self.memory.write(buf)?;
-        self.memory.seek(SeekFrom::Start(address))?;
-
-        Ok(result)
+        todo!()
     }
 
     fn flush(&mut self) -> io::Result<()> {
