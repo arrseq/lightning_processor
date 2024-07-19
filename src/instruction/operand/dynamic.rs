@@ -2,6 +2,9 @@ use thiserror::Error;
 use crate::dynamic_number;
 use super::operand::register::Register;
 
+#[cfg(test)]
+mod test;
+
 /// A tuple containing a register and a constant which will be operated on and then used to address paged.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Calculated {
@@ -212,19 +215,6 @@ impl Dynamic {
     ///
     /// # Result
     /// If the dynamic operand is invalid, then [Err(InvalidCodeError)] is returned.
-    ///
-    /// # Example
-    /// ```
-    /// use arrseq_instruction::operand::dynamic::{Address, Calculated, Dynamic, Requirement};
-    /// use arrseq_instruction::operand::register::{Register, SideInput};
-    /// use crate::dynamic_number;
-    ///
-    /// assert_eq!(Dynamic::requirement(Dynamic::Constant(dynamic_number::Unsigned::Word(u16::MAX)).encode()).unwrap(), Requirement::Constant);
-    /// assert_eq!(Dynamic::requirement(Dynamic::Address(Address::Add(Calculated {
-    ///     base: Register::SideInput(SideInput::First),
-    ///     offset: dynamic_number::Unsigned::Word(u16::MAX)
-    /// })).encode()).unwrap(), Requirement::RegisterAndConstant);
-    /// ```
     pub fn requirement(encoded: u8) -> Result<Requirement, InvalidCodeError> {
         Ok(match encoded {
             Self::REGISTER

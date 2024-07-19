@@ -1,5 +1,8 @@
 use thiserror::Error;
 
+#[cfg(test)]
+mod test;
+
 /// Pointer to the boundaries of the stack or the current stack frame.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Pointer {
@@ -70,14 +73,6 @@ impl Register {
     pub const GENERAL_PURPOSE_10: u8 = 15;
     
     /// Encode the register into a 4 bit code.
-    ///
-    /// # Example
-    /// ```
-    /// use arrseq_instruction::operand::register::{GeneralPurpose, Register};
-    /// 
-    /// assert_eq!(Register::GENERAL_PURPOSE_8, Register::GeneralPurpose(GeneralPurpose::G8).encode());
-    /// assert_eq!(Register::GENERAL_PURPOSE_4, Register::GeneralPurpose(GeneralPurpose::G4).encode());
-    /// ```
     pub fn encode(self) -> u8 {
         match self {
             Self::Accumulator => Self::ACCUMULATOR,
@@ -109,14 +104,6 @@ impl Register {
     ///
     /// # Result
     /// An invalid code that ranges beyond what 4 bits can represent will return [InvalidCodeError].
-    ///
-    /// # Example
-    /// ```
-    /// use arrseq_instruction::operand::register::{GeneralPurpose, Register};
-    /// 
-    /// assert_eq!(Register::decode(Register::GENERAL_PURPOSE_8).unwrap(), Register::GeneralPurpose(GeneralPurpose::G8));
-    /// assert_eq!(Register::decode(Register::GENERAL_PURPOSE_4).unwrap(), Register::GeneralPurpose(GeneralPurpose::G4));
-    /// ```
     pub fn decode(encoded: u8) -> Result<Self, InvalidCodeError> {
         Ok(match encoded {
             Self::ACCUMULATOR => Self::Accumulator,
