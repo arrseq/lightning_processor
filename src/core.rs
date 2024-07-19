@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::io;
 use std::io::{Read, Seek, SeekFrom, Write};
+use thiserror::Error;
+use crate::core::decode_cache::DecodeCache;
 use crate::instruction;
 use crate::instruction::Instruction;
 use crate::instruction::operand::register;
@@ -19,7 +21,10 @@ pub struct Context {
     pub instruction_pointer: u64,
     pub privilege: Privilege,
     pub registers: register::Collection,
-    pub page_mappings: Option<Mappings>
+    pub page_mappings: Option<Mappings>,
+    
+    /// None signifies that there will be no decoded instruction caching.
+    pub decode_cache: Option<DecodeCache>
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -31,10 +36,17 @@ pub struct Core {
 pub enum ExecuteError {
 }
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum DecodeError {
+    #[error("")]
     Read(io::Error),
-    Instruction(instruction::DecodeError)
+    
+    #[error("")]
+    Instruction(instruction::DecodeError),
+    
+    /// The mappings vector wasn't set and it may have been taken.
+    #[error("The mappings vector is None")]
+    MappingsUnavailable
 }
 
 impl Core {
@@ -45,7 +57,7 @@ impl Core {
             Privilege::Low => {
                 let mut paged = Paged { 
                     memory: input,
-                    mappings: self.context.page_mappings.take().unwrap(), // TODO: Maybe not a good idea
+                    mappings: self.context.page_mappings.take().ok_or(DecodeError::MappingsUnavailable)?,
                     invalid_page_error: false
                 };
                 
@@ -72,10 +84,8 @@ impl Default for Core {
                 instruction_pointer: 0,
                 privilege: Privilege::High,
                 registers: register::Collection::default(),
-                page_mappings: Some(vec![
-                    (0, 0),
-                    (1, 1)
-                ])
+                page_mappings: None,
+                decode_cache: Some(DecodeCache { decoded: Vec::new(), initial_lifetime: 2 })
             }
         }
     }
