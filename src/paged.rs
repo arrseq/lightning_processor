@@ -50,11 +50,16 @@ impl<'a, Memory: Seek + 'a> Paged<'a, Memory> {
     /// [Err(InvalidPageError)] is returned.
     pub fn translate_address(&self, address: u64) -> Result<u64, InvalidPageError> {
         let page = Self::extract_page(address);
+        
+        // It is most efficient to search for new pages from the end because on a page fault the new mapping may have 
+        // been appended as that is most efficient. Reverse finding will let you end up at that entry first and have an
+        // immediate hit.
         let mapping = self.mappings
             .iter()
             .rev()
             .find(|entry| entry.0 == page)
             .ok_or(InvalidPageError)?.1;
+        
         let physical_page_layer = mapping << Self::PAGE_ITEM_BITS;
         let item_layer = Self::extract_item(address);
         Ok(physical_page_layer | item_layer)
