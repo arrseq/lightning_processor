@@ -13,7 +13,7 @@ fn main() {
     
     let mut paged = Paged {
         memory: &mut cursor,
-        mappings: HashMap::from([
+        mappings: Vec::from([
             (1, 0),
             (0, 1),
             (2, 2)

@@ -8,7 +8,7 @@
 #![allow(clippy::unused_io_amount)]
 #![allow(soft_unstable)]
 
+pub mod core;
 pub mod dynamic_number;
 pub mod instruction;
 pub mod paged;
-pub mod core;

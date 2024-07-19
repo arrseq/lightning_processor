@@ -10,7 +10,7 @@ mod test;
 #[derive(Debug, PartialEq)]
 pub struct Paged<'a, Memory> {
     /// Mappings from page's page to physical page.
-    pub mappings: HashMap<u64, u64>,
+    pub mappings: Vec<(u64, u64)>,
     pub memory: &'a mut Memory,
     pub invalid_page_error: bool
 }
@@ -48,7 +48,11 @@ impl<'a, Memory: Seek + 'a> Paged<'a, Memory> {
     /// [Err(InvalidPageError)] is returned.
     pub fn translate_address(&self, address: u64) -> Result<u64, InvalidPageError> {
         let page = Self::extract_page(address);
-        let mapping = *self.mappings.get(&page).ok_or(InvalidPageError)?;
+        let mapping = self.mappings
+            .iter()
+            .rev()
+            .find(|entry| entry.0 == page)
+            .ok_or(InvalidPageError)?.1;
         let physical_page_layer = mapping << Self::PAGE_ITEM_BITS;
         let item_layer = Self::extract_item(address);
         Ok(physical_page_layer | item_layer)
@@ -63,11 +67,11 @@ impl<'a, Memory: Seek + 'a> Paged<'a, Memory> {
     fn operation_length(&mut self, physical_address: u64, remaining: u64) -> io::Result<u64> {
         let start = Self::extract_item(physical_address);
         let end = (remaining + start).min(Self::PAGE_ITEM_MASK + 1);
-        
+
         let operation_length = end
             .checked_sub(start)
             .expect("Bug resulted in end being smaller than the start");
-        
+
         let translated = self.translate_address(physical_address).map_err(|_| {
             self.invalid_page_error = true;
             io::Error::new(ErrorKind::UnexpectedEof, "Reached end of paged region. Page fault error.")

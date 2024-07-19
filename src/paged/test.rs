@@ -1,6 +1,5 @@
 extern crate test;
 
-use std::collections::HashMap;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use test::Bencher;
 use crate::paged::{Paged, InvalidPageError};
@@ -11,7 +10,7 @@ fn benchmarked_read(bencher: &mut Bencher) {
         let mut memory = Cursor::new(vec![0u8; 16]);
         let mut paged = Paged {
             memory: &mut memory,
-            mappings: HashMap::from([ (0, 0) ]),
+            mappings: Vec::from([ (0, 0) ]),
             invalid_page_error: false
         };
 
@@ -26,7 +25,7 @@ fn benchmarked_large_read(bencher: &mut Bencher) {
         let mut memory = Cursor::new(vec![0u8; 8192]);
         let mut paged = Paged {
             memory: &mut memory,
-            mappings: HashMap::from([
+            mappings: Vec::from([
                 (0, 1),
                 (1, 0)
             ]),
@@ -44,7 +43,7 @@ fn benchmarked_write(bencher: &mut Bencher) {
         let mut memory = Cursor::new(vec![0u8; 16]);
         let mut paged = Paged {
             memory: &mut memory,
-            mappings: HashMap::from([ (0, 0) ]),
+            mappings: Vec::from([ (0, 0) ]),
             invalid_page_error: false
         };
 
@@ -59,7 +58,7 @@ fn benchmarked_large_write(bencher: &mut Bencher) {
         let mut memory = Cursor::new(vec![0u8; 8192]);
         let mut paged = Paged {
             memory: &mut memory,
-            mappings: HashMap::from([
+            mappings: Vec::from([
                 (0, 1),
                 (1, 0)
             ]),
@@ -76,7 +75,7 @@ fn translate_address() {
     let mut mem = Cursor::new(vec![0u8; 1024]);
     let paged = Paged {
         memory: &mut mem,
-        mappings: HashMap::from([ (0xA, 0xB) ]),
+        mappings: Vec::from([ (0xA, 0xB) ]),
         invalid_page_error: false
     };
 
@@ -91,7 +90,7 @@ fn read() {
     let mut memory = Cursor::new(data);
     let mut paged = Paged {
         memory: &mut memory,
-        mappings: HashMap::from([ (0, 1), (1, 0) ]),
+        mappings: Vec::from([ (0, 1), (1, 0) ]),
         invalid_page_error: false
     };
 
@@ -122,7 +121,7 @@ fn write() {
     let mut memory: Cursor<Vec<u8>> = Cursor::new(Vec::new());
     let mut paged = Paged {
         memory: &mut memory,
-        mappings: HashMap::from([ (0, 0) ]),
+        mappings: Vec::from([ (0, 0) ]),
         invalid_page_error: false
     };
 
