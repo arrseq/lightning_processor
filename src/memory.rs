@@ -94,14 +94,10 @@ impl<'a, Memory: Seek + 'a> Paged<'a, Memory> {
         let start = Self::extract_item(physical_address);
         let end = (remaining + start).min(Self::PAGE_ITEM_MASK + 1);
         
-        dbg!(start, end);
-        
         let operation_length = end
             .checked_sub(start)
             .expect("Bug resulted in end being smaller than the start");
         
-        dbg!(operation_length);
-
         let translated = self.translate_address(physical_address).map_err(|_| {
             self.invalid_page_error = true;
             io::Error::new(ErrorKind::UnexpectedEof, "Reached end of paged region. Page fault error.")
