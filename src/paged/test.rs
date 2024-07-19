@@ -7,7 +7,22 @@ use test::Bencher;
 use crate::paged::Paged;
 
 #[bench]
-fn large_read(bencher: &mut Bencher) {
+fn benchmarked_read(bencher: &mut Bencher) {
+    bencher.iter(|| {
+        let mut memory = Cursor::new(vec![0u8; 16]);
+        let mut paged = Paged {
+            memory: &mut memory,
+            mappings: HashMap::from([ (0, 0) ]),
+            invalid_page_error: false
+        };
+
+        let mut buffer = test::black_box([0u8; 8]);
+        paged.read_exact(&mut buffer).unwrap();
+    });
+}
+
+#[bench]
+fn benchmarked_large_read(bencher: &mut Bencher) {
     bencher.iter(|| {
         let mut memory = Cursor::new(vec![0u8; 8192]);
         let mut paged = Paged {
@@ -25,7 +40,22 @@ fn large_read(bencher: &mut Bencher) {
 }
 
 #[bench]
-fn large_write(bencher: &mut Bencher) {
+fn benchmarked_write(bencher: &mut Bencher) {
+    bencher.iter(|| {
+        let mut memory = Cursor::new(vec![0u8; 16]);
+        let mut paged = Paged {
+            memory: &mut memory,
+            mappings: HashMap::from([ (0, 0) ]),
+            invalid_page_error: false
+        };
+
+        let buffer = [100u8; 8];
+        paged.write_all(&buffer).unwrap();
+    });
+}
+
+#[bench]
+fn benchmarked_large_write(bencher: &mut Bencher) {
     bencher.iter(|| {
         let mut memory = Cursor::new(vec![0u8; 8192]);
         let mut paged = Paged {
