@@ -17,11 +17,6 @@ pub struct Paged<'a, Memory> {
 #[error("Mapping for page not found")]
 pub struct InvalidPageError;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-struct OperationContext {
-    
-}
-
 impl<'a, Memory: Seek + 'a> Paged<'a, Memory> {
     pub const PAGE_ITEM_BITS: u8 = 12;
     pub const PAGE_ITEM_MASK: u64 = 0x0000_0000_0000_0FFF;
@@ -79,24 +74,32 @@ impl<'a, Memory: Seek + 'a> Paged<'a, Memory> {
         let item_layer = Self::extract_item(address);
         Ok(physical_page_layer | item_layer)
     }
-    
-    fn operate(&mut self, target: &[u8], action: impl Fn(OperationContext) -> io::Result<()>) -> io::Result<usize> {
+}
+
+// FIXME: Rust compiler error forces "+ 'a". issue opened by x4exr on github. Should be removed when resolved.
+impl<'a, Memory: Seek + Read + 'a> Read for Paged<'a, Memory> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         let mut address = self.memory.stream_position()?;
         let mut bytes_read = 0;
         let mut frame = [0u8; Self::PAGE_ITEM_MASK as usize + 1];
-        let mut remaining = target.len() as u64;
-        let max = target.len() as u64;
+        let mut remaining = buf.len() as u64;
+        let max = buf.len() as u64;
 
         // Ensure the address doesn't overflow.
-        address.checked_add(target.len() as u64).ok_or(io::Error::new(ErrorKind::UnexpectedEof, "Buffer with stream position overflows"))?;
+        address.checked_add(max).ok_or(io::Error::new(ErrorKind::UnexpectedEof, "Buffer with stream position overflows"))?;
 
         loop {
             // Read length
             let start = Self::extract_item(address);
             let end = remaining.min(Self::PAGE_ITEM_MASK + 1);
-            let read_length = end.checked_sub(start).unwrap();
+            let read_length = end.checked_sub(start).ok_or(io::Error::new(ErrorKind::InvalidInput, "End precedes the start."))?;
 
-            let translated = self.translate_address(address).expect("Could not translate address");
+            let translated = self.translate_address(address).map_err(|_| {
+                self.invalid_page_error = true;
+                io::Error::new(ErrorKind::UnexpectedEof, "Reached end of paged region. Page fault error.")
+            })?;
+            self.invalid_page_error = false;
+            
             self.memory.seek(SeekFrom::Start(translated))?;
 
             // Read only the length needed
@@ -107,7 +110,7 @@ impl<'a, Memory: Seek + 'a> Paged<'a, Memory> {
 
             // Write back to output buffer
             let received_data = &frame[0..read_length as usize];
-            target[bytes_read..read_length as usize + bytes_read].copy_from_slice(received_data);
+            buf[bytes_read..read_length as usize + bytes_read].copy_from_slice(received_data);
 
             if remaining == 0 { break; }
 
@@ -116,16 +119,7 @@ impl<'a, Memory: Seek + 'a> Paged<'a, Memory> {
             address = Self::page_to_layer(Self::extract_page(address) + 1);
         }
 
-        Ok(target.len() - remaining as usize)
-    }
-}
-
-// FIXME: Rust compiler error forces "+ 'a". issue opened by x4exr on github. Should be removed when resolved.
-impl<'a, Memory: Seek + Read + 'a> Read for Paged<'a, Memory> {
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.operate(buf, |context| {
-            todo!()
-        })
+        Ok((max - remaining) as usize)
     }
 }
 
