@@ -1,5 +1,5 @@
 use std::io;
-use std::io::{Cursor, Read, Seek};
+use std::io::{Read, Seek};
 use thiserror::Error;
 use crate::instruction;
 use crate::instruction::Instruction;
