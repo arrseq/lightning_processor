@@ -9,6 +9,9 @@ use super::operand::register::Register;
 pub mod dynamic;
 pub mod register;
 
+#[cfg(test)]
+mod test;
+
 /// Named of the 2 supported operands.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Name {
@@ -104,22 +107,6 @@ pub enum EncodeError {
 }
 
 impl Operands {
-    /// ```
-    /// use arrseq_instruction::operand;
-    /// use arrseq_instruction::operand::{Combination, Operands, RegisterAndDynamic};
-    /// use arrseq_instruction::operand::dynamic::Dynamic;
-    /// use arrseq_instruction::operand::register::Register;
-    /// use crate::dynamic_number;
-    ///
-    /// let operands = Operands {
-    ///     size: dynamic_number::Size::Word,
-    ///     combination: Combination::RegisterAndDynamic(RegisterAndDynamic {
-    ///         result: operand::Name::Register,
-    ///         register: Register::Accumulator,
-    ///         dynamic: Dynamic::Constant(dynamic_number::Unsigned::Word(10))
-    ///     })
-    /// };
-    /// ```
     pub fn decode(input: &mut impl Read) -> Result<Self, DecodeError> {
         // Contains the meta and registers bytes.
         let mut buffer = [0u8; 2];
