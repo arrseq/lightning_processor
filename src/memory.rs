@@ -116,8 +116,6 @@ impl<'a, Memory: Seek + 'a> Paged<'a, Memory> {
 
 // FIXME: Rust compiler error forces "+ 'a". issue opened by x4exr on github. Should be removed when resolved.
 impl<'a, Memory: Seek + Read + 'a> Read for Paged<'a, Memory> {
-    // FIXME: Stream position is not seamless
-
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         let buffer_length = buf.len() as u64;
         let mut physical_address = self.memory.stream_position()?;
