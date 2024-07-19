@@ -76,13 +76,11 @@ fn translate_address() {
     let mut mem = Cursor::new(vec![0u8; 1024]);
     let paged = Paged {
         memory: &mut mem,
-        mappings: HashMap::from([
-            (0xA, 0xB)
-        ]),
+        mappings: HashMap::from([ (0xA, 0xB) ]),
         invalid_page_error: false
     };
-    
-    assert_eq!(paged.translate_address(0x0000_0000_0000_A_F00).unwrap(), 0x0000_0000_0000_B_F00); 
+
+    assert_eq!(paged.translate_address(0x0000_0000_0000_A_F00).unwrap(), 0x0000_0000_0000_B_F00);
     assert!(matches!(paged.translate_address(0x0000_0000_0000_F_F00).unwrap_err(), InvalidPageError));
 }
 
@@ -98,15 +96,15 @@ fn read() {
     };
 
     let mut buffer = [0u8; 4096];
-    
+
     paged.read_exact(&mut buffer).unwrap();
     assert_eq!(buffer, [200u8; 4096]);
     assert_eq!(paged.stream_position().unwrap(), 4096);
-    
+
     paged.read_exact(&mut buffer).unwrap();
     assert_eq!(buffer, [100u8; 4096]);
     assert_eq!(paged.stream_position().unwrap(), 8192);
-    
+
     // Data between pages
     paged.seek(SeekFrom::Start(2048)).unwrap();
     paged.read_exact(&mut buffer).unwrap();
