@@ -180,17 +180,7 @@ pub struct Collection {
     pub first_side_input: u64,
     pub second_side_input: u64,
 
-    pub general_purpose_0: u64,
-    pub general_purpose_1: u64,
-    pub general_purpose_2: u64,
-    pub general_purpose_3: u64,
-    pub general_purpose_4: u64,
-    pub general_purpose_5: u64,
-    pub general_purpose_6: u64,
-    pub general_purpose_7: u64,
-    pub general_purpose_8: u64,
-    pub general_purpose_9: u64,
-    pub general_purpose_10: u64
+    pub general_purpose: [u64; 11]
 }
 
 impl Collection {
@@ -206,17 +196,17 @@ impl Collection {
                 SideInput::Second => &mut self.second_side_input
             },
             Register::GeneralPurpose(general_purpose) => match general_purpose {
-                GeneralPurpose::G0 => &mut self.general_purpose_0,
-                GeneralPurpose::G1 => &mut self.general_purpose_1,
-                GeneralPurpose::G2 => &mut self.general_purpose_2,
-                GeneralPurpose::G3 => &mut self.general_purpose_3,
-                GeneralPurpose::G4 => &mut self.general_purpose_4,
-                GeneralPurpose::G5 => &mut self.general_purpose_5,
-                GeneralPurpose::G6 => &mut self.general_purpose_6,
-                GeneralPurpose::G7 => &mut self.general_purpose_7,
-                GeneralPurpose::G8 => &mut self.general_purpose_8,
-                GeneralPurpose::G9 => &mut self.general_purpose_9,
-                GeneralPurpose::G10 => &mut self.general_purpose_10,
+                GeneralPurpose::G0 => &mut self.general_purpose[0],
+                GeneralPurpose::G1 => &mut self.general_purpose[1],
+                GeneralPurpose::G2 => &mut self.general_purpose[2],
+                GeneralPurpose::G3 => &mut self.general_purpose[3],
+                GeneralPurpose::G4 => &mut self.general_purpose[4],
+                GeneralPurpose::G5 => &mut self.general_purpose[5],
+                GeneralPurpose::G6 => &mut self.general_purpose[6],
+                GeneralPurpose::G7 => &mut self.general_purpose[7],
+                GeneralPurpose::G8 => &mut self.general_purpose[8],
+                GeneralPurpose::G9 => &mut self.general_purpose[9],
+                GeneralPurpose::G10 => &mut self.general_purpose[10],
             }
         }
     }
@@ -233,17 +223,17 @@ impl Collection {
                 SideInput::Second => self.second_side_input
             },
             Register::GeneralPurpose(general_purpose) => match general_purpose {
-                GeneralPurpose::G0 => self.general_purpose_0,
-                GeneralPurpose::G1 => self.general_purpose_1,
-                GeneralPurpose::G2 => self.general_purpose_2,
-                GeneralPurpose::G3 => self.general_purpose_3,
-                GeneralPurpose::G4 => self.general_purpose_4,
-                GeneralPurpose::G5 => self.general_purpose_5,
-                GeneralPurpose::G6 => self.general_purpose_6,
-                GeneralPurpose::G7 => self.general_purpose_7,
-                GeneralPurpose::G8 => self.general_purpose_8,
-                GeneralPurpose::G9 => self.general_purpose_9,
-                GeneralPurpose::G10 => self.general_purpose_10,
+                GeneralPurpose::G0 => self.general_purpose[0],
+                GeneralPurpose::G1 => self.general_purpose[1],
+                GeneralPurpose::G2 => self.general_purpose[2],
+                GeneralPurpose::G3 => self.general_purpose[3],
+                GeneralPurpose::G4 => self.general_purpose[4],
+                GeneralPurpose::G5 => self.general_purpose[5],
+                GeneralPurpose::G6 => self.general_purpose[6],
+                GeneralPurpose::G7 => self.general_purpose[7],
+                GeneralPurpose::G8 => self.general_purpose[8],
+                GeneralPurpose::G9 => self.general_purpose[9],
+                GeneralPurpose::G10 => self.general_purpose[10],
             }
         }
     }
