@@ -3,12 +3,13 @@ use std::io::{Cursor, Read, Seek, SeekFrom};
 use arrseq_lightning::memory::Paged;
 
 fn main() {
-    let mut cursor = Cursor::new(vec![100u8; 4096]);
-    cursor.get_mut().extend(vec![200u8; 4096]);
-    cursor.get_mut().push(5);
+    let mut vector = vec![0u8; 8192];
+    for el in vector.iter_mut().enumerate() {
+        *el.1 = el.0 as u8
+    }
     
+    let mut cursor = Cursor::new(vector);
     let mut position_bounds = [0usize; 2];
-    position_bounds[0] = cursor.stream_position().unwrap() as usize;
     
     let mut paged = Paged {
         memory: &mut cursor,
@@ -19,13 +20,14 @@ fn main() {
         ]),
         invalid_page_error: false
     };
+    paged.seek(SeekFrom::Start(1)).expect("TODO: panic message");
+    position_bounds[0] = paged.stream_position().unwrap() as usize;
 
-    let mut buf = [0u8; 8192 + 1];
+    let mut buf = [0u8; 9000];
     // let mut buf = [0u8; 4096];
-    paged.seek(SeekFrom::Start(0));
     
-    paged.read_exact(&mut buf).expect("Failed to read");
+    let read = paged.read(&mut buf).unwrap();
     position_bounds[1] = cursor.stream_position().unwrap() as usize;
     
-    dbg!(buf);
+    dbg!(read, buf, position_bounds);
 }

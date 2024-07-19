@@ -17,6 +17,12 @@ pub struct Paged<'a, Memory> {
 #[error("Mapping for page not found")]
 pub struct InvalidPageError;
 
+#[derive(Debug, PartialEq)]
+struct Context<'a, Memory> {
+    operation_length: usize,
+    memory: &'a mut Paged<'a, Memory>
+}
+
 impl<'a, Memory: Seek + 'a> Paged<'a, Memory> {
     pub const PAGE_ITEM_BITS: u8 = 12;
     pub const PAGE_ITEM_MASK: u64 = 0x0000_0000_0000_0FFF;
@@ -74,58 +80,102 @@ impl<'a, Memory: Seek + 'a> Paged<'a, Memory> {
         let item_layer = Self::extract_item(address);
         Ok(physical_page_layer | item_layer)
     }
+    
+    /// Ensure the address doesn't overflow.
+    fn check_overflow(physical_address: u64, buffer_length: u64) -> io::Result<()> {
+        physical_address.checked_add(buffer_length).ok_or(io::Error::new(ErrorKind::UnexpectedEof, "Buffer with stream position overflows"))?;
+        Ok(())
+    }
+    
+    fn operation_length(&mut self, physical_address: u64, remaining: u64) -> io::Result<u64> {
+        let start = Self::extract_item(physical_address);
+        let end = (remaining + start).min(Self::PAGE_ITEM_MASK + 1);
+        
+        dbg!(start, end);
+        
+        let operation_length = end
+            .checked_sub(start)
+            .expect("Bug resulted in end being smaller than the start");
+        
+        dbg!(operation_length);
+
+        let translated = self.translate_address(physical_address).map_err(|_| {
+            self.invalid_page_error = true;
+            io::Error::new(ErrorKind::UnexpectedEof, "Reached end of paged region. Page fault error.")
+        })?;
+        self.invalid_page_error = false;
+
+        self.memory.seek(SeekFrom::Start(translated))?;
+        Ok(operation_length)
+    }
+    
+    fn prepare_next(physical_address: &mut u64, bytes_handled: &mut u64, buffer_length: u64, remaining: u64) {
+        *bytes_handled = buffer_length - remaining;
+        *physical_address = Self::page_to_layer(Self::extract_page(*physical_address) + 1);
+    }
 }
 
 // FIXME: Rust compiler error forces "+ 'a". issue opened by x4exr on github. Should be removed when resolved.
 impl<'a, Memory: Seek + Read + 'a> Read for Paged<'a, Memory> {
+    // FIXME: Stream position is not seamless
+
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        let mut address = self.memory.stream_position()?;
-        let mut bytes_read = 0;
+        let buffer_length = buf.len() as u64;
+        let mut physical_address = self.memory.stream_position()?;
+        let start_address = physical_address;
+        let mut bytes_read: u64 = 0;
         let mut frame = [0u8; Self::PAGE_ITEM_MASK as usize + 1];
         let mut remaining = buf.len() as u64;
-        let max = buf.len() as u64;
 
-        // Ensure the address doesn't overflow.
-        address.checked_add(max).ok_or(io::Error::new(ErrorKind::UnexpectedEof, "Buffer with stream position overflows"))?;
-
+        Self::check_overflow(physical_address, buffer_length)?;
+        
         loop {
-            // Read length
-            let start = Self::extract_item(address);
-            let end = remaining.min(Self::PAGE_ITEM_MASK + 1);
-            let read_length = end.checked_sub(start).ok_or(io::Error::new(ErrorKind::InvalidInput, "End precedes the start."))?;
+            let operation_length = self.operation_length(physical_address, remaining)?;
 
-            let translated = self.translate_address(address).map_err(|_| {
-                self.invalid_page_error = true;
-                io::Error::new(ErrorKind::UnexpectedEof, "Reached end of paged region. Page fault error.")
-            })?;
-            self.invalid_page_error = false;
-            
-            self.memory.seek(SeekFrom::Start(translated))?;
-
-            // Read only the length needed
-            let mut capped_reader = self.memory.take(read_length);
+            // Read
+            let mut capped_reader = self.memory.take(operation_length);
             let received = capped_reader.read(&mut frame)? as u64;
             if received == 0 { break; }
             remaining -= received;
 
             // Write back to output buffer
-            let received_data = &frame[0..read_length as usize];
-            buf[bytes_read..read_length as usize + bytes_read].copy_from_slice(received_data);
+            let received_data = &frame[0..operation_length as usize];
+            buf[bytes_read as usize..(operation_length + bytes_read) as usize].copy_from_slice(received_data);
 
+            Self::prepare_next(&mut physical_address, &mut bytes_read, buffer_length, remaining);
             if remaining == 0 { break; }
-
-            // Prepare next frame
-            bytes_read = (max - remaining) as usize;
-            address = Self::page_to_layer(Self::extract_page(address) + 1);
         }
 
-        Ok((max - remaining) as usize)
+        self.memory.seek(SeekFrom::Start(start_address + bytes_read))?;
+        Ok(bytes_read as usize)
     }
 }
 
-impl<'a, Memory: Seek + Write> Write for Paged<'a, Memory> {
+impl<'a, Memory: Seek + Write + 'a> Write for Paged<'a, Memory> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        todo!()
+        let mut physical_address = self.memory.stream_position()?;
+        let start_address = physical_address;
+        let mut bytes_written: u64 = 0;
+        let mut remaining = buf.len() as u64;
+        let buffer_length = buf.len() as u64;
+
+        Self::check_overflow(physical_address, buffer_length)?;
+
+        loop {
+            let operation_length = self.operation_length(physical_address, remaining)?;
+
+            // Write data
+            let write_frame = &buf[bytes_written as usize..(operation_length + bytes_written) as usize];
+            let written = self.memory.write(write_frame)? as u64;
+            if written == 0 { break; }
+            remaining -= written;
+
+            Self::prepare_next(&mut physical_address, &mut bytes_written, buffer_length, remaining);
+            if remaining == 0 { break; }
+        }
+
+        self.memory.seek(SeekFrom::Start(start_address + bytes_written))?;
+        Ok(bytes_written as usize)
     }
 
     fn flush(&mut self) -> io::Result<()> {
