@@ -1,7 +1,7 @@
 extern crate test;
 
 use std::collections::HashMap;
-use std::io::{Cursor, Read, Write};
+use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use test::Bencher;
 use crate::paged::{Paged, InvalidPageError};
 
@@ -84,4 +84,37 @@ fn translate_address() {
     
     assert_eq!(paged.translate_address(0x0000_0000_0000_A_F00).unwrap(), 0x0000_0000_0000_B_F00); 
     assert!(matches!(paged.translate_address(0x0000_0000_0000_F_F00).unwrap_err(), InvalidPageError));
+}
+
+#[test]
+fn read() {
+    let mut data = vec![100u8; 4096];
+    data.extend(vec![200u8; 4096]);
+    let mut memory = Cursor::new(data);
+    let mut paged = Paged {
+        memory: &mut memory,
+        mappings: HashMap::from([ (0, 1), (1, 0) ]),
+        invalid_page_error: false
+    };
+
+    let mut buffer = [0u8; 4096];
+    
+    paged.read_exact(&mut buffer).unwrap();
+    assert_eq!(buffer, [200u8; 4096]);
+    assert_eq!(paged.stream_position().unwrap(), 4096);
+    
+    paged.read_exact(&mut buffer).unwrap();
+    assert_eq!(buffer, [100u8; 4096]);
+    assert_eq!(paged.stream_position().unwrap(), 8192);
+    
+    // Data between pages
+    paged.seek(SeekFrom::Start(2048)).unwrap();
+    paged.read_exact(&mut buffer).unwrap();
+    let mid_way_data = {
+        let mut mid_way_data = vec![200u8; 2048];
+        mid_way_data.extend(vec![100u8; 2048]);
+        mid_way_data
+    };
+    assert_eq!(buffer, mid_way_data.as_slice());
+    assert_eq!(paged.stream_position().unwrap(), 4096 + 2048);
 }
