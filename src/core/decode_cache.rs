@@ -93,3 +93,10 @@ impl DecodeCache {
         Ok(start_length - remaining)
     }
 }
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Manager {
+    pub cache: DecodeCache,
+    /// How many ticks should happen before the cache attempts to repopulate itself.
+    pub population_tick_interval: usize
+}

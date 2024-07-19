@@ -21,14 +21,13 @@ pub struct Context {
     pub privilege: Privilege,
     pub registers: register::Collection,
     pub page_mappings: Option<Mappings>,
-    
-    /// None signifies that there will be no decoded instruction caching.
-    pub decode_cache: Option<DecodeCache>
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Core {
-    pub context: Context
+    pub context: Context,
+    /// None signifies that there will be no decoded instruction caching.
+    pub decode_cache: Option<decode_cache::Manager>
 }
 
 #[derive(Debug)]
@@ -84,8 +83,11 @@ impl Default for Core {
                 privilege: Privilege::High,
                 registers: register::Collection::default(),
                 page_mappings: None,
-                decode_cache: Some(DecodeCache { decoded: Vec::new(), initial_lifetime: 2, chunk_size: 10 })
-            }
+            },
+            decode_cache: Some(decode_cache::Manager {
+                cache: DecodeCache { decoded: Vec::new(), initial_lifetime: 2, chunk_size: 10 },
+                population_tick_interval: 10/
+            })
         }
     }
 }
