@@ -85,7 +85,7 @@ impl Default for Core {
                 privilege: Privilege::High,
                 registers: register::Collection::default(),
                 page_mappings: None,
-                decode_cache: Some(DecodeCache { decoded: Vec::new(), initial_lifetime: 2 })
+                decode_cache: Some(DecodeCache { decoded: Vec::new(), initial_lifetime: 2, chunk_size: 10 })
             }
         }
     }
