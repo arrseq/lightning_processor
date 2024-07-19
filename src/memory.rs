@@ -57,24 +57,19 @@ impl<'a, Memory: Seek + 'a> Paged<'a, Memory> {
     /// ```
     /// use std::collections::HashMap;
     /// use std::io::Cursor;
-    /// use arrseq_lightning::memory::{AddressTranslationError, Paged};
+    /// use arrseq_lightning::memory::{Paged};
     ///
     /// let mut mem = Cursor::new(vec![0u8; 1024]);
     /// let paged = Paged {
     ///     memory: &mut mem,
     ///     mappings: HashMap::from([
     ///         (0xA, 0xB)
-    ///     ])
+    ///     ]),
+    ///     invalid_page_error: false
     /// };
     ///
-    /// assert_eq!(paged.translate_address(0x0000_0000_0000_A_F00, 4).unwrap(), 0x0000_0000_0000_B_F00); 
-    /// assert!(matches!(paged.translate_address(0x0000_0000_0000_F_F00, 4).unwrap_err(), AddressTranslationError::InvalidPage)); 
-    ///
-    /// // Test overflow.
-    /// assert_eq!(paged.translate_address(0x0000_0000_0000_A_FFE, 1).unwrap(), 0x0000_0000_0000_B_FFE);
-    /// 
-    /// assert!(matches!(paged.translate_address(0x0000_0000_0000_A_FFF, 1).unwrap_err(), AddressTranslationError::Overflow));
-    /// assert_eq!(paged.translate_address(0x0000_0000_0000_A_FFF, 0).unwrap(), 0x0000_0000_0000_B_FFF);
+    /// assert_eq!(paged.translate_address(0x0000_0000_0000_A_F00).unwrap(), 0x0000_0000_0000_B_F00); 
+    /// assert!(matches!(paged.translate_address(0x0000_0000_0000_F_F00).unwrap_err(), InvalidPageError));
     /// ```
     pub fn translate_address(&self, address: u64) -> Result<u64, InvalidPageError> {
         let page = Self::extract_page(address);
