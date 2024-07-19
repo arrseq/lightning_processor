@@ -84,10 +84,7 @@ impl Default for Core {
                 registers: register::Collection::default(),
                 page_mappings: None,
             },
-            decode_cache: Some(decode_cache::Manager {
-                cache: DecodeCache { decoded: Vec::new(), initial_lifetime: 2, chunk_size: 10 },
-                population_tick_interval: 10/
-            })
+            decode_cache: Some(decode_cache::Manager::new(DecodeCache { decoded: Vec::new(), initial_lifetime: 2, chunk_size: 10 }, 10))
         }
     }
 }

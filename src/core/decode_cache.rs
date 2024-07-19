@@ -15,7 +15,7 @@ pub struct Entry {
 }
 
 /// The cache should be cleared when a context switch occurs.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct DecodeCache {
     pub decoded: Vec<Entry>,
     pub initial_lifetime: usize,
@@ -98,5 +98,36 @@ impl DecodeCache {
 pub struct Manager {
     pub cache: DecodeCache,
     /// How many ticks should happen before the cache attempts to repopulate itself.
-    pub population_tick_interval: usize
+    pub population_tick_interval: usize,
+    current_tick: usize
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct TickResult {
+    pub did_populate: bool,
+    pub instruction_count: usize
+}
+
+impl Manager {
+    pub fn new(cache: DecodeCache, population_tick_interval: usize) -> Self {
+        Self { cache, population_tick_interval, current_tick: 0 }
+    }
+    
+    /// Execute a tick, once the population interval is reached, the cache will try to populate.
+    /// 
+    /// # Result
+    /// If [Err(_)] is returned, this means the tick loop attempted to populate the cache but failed. If [Ok(_)] is 
+    /// returned, then you must check the 'did_populate' field in the tick result.
+    /// 
+    /// If the cache was not to be populated, then the instruction count will also be 0.
+    pub fn tick<Memory: Seek + Read>(&mut self, memory: &mut Memory) -> Result<TickResult, PopulateError> {
+        self.current_tick += 1;
+        if self.current_tick < self.population_tick_interval { return Ok(TickResult { did_populate: false, instruction_count: 0 }); }
+        self.current_tick = 0;
+        
+        Ok(TickResult {
+            did_populate: true,
+            instruction_count: self.cache.populate(memory)?
+        })
+    }
 }

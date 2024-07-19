@@ -5,7 +5,7 @@ use crate::instruction::operand::{Name, Operands};
 use crate::instruction::operand::dynamic::Dynamic;
 use crate::instruction::operand::register::{GeneralPurpose, Register};
 use crate::instruction::operation::{Arithmetic, Operation};
-use super::DecodeCache;
+use super::{DecodeCache, Manager};
 
 const ADD: Instruction = Instruction {
     branch_likely_taken: None,
@@ -51,14 +51,17 @@ fn lifetime_aging() {
     }
 }
 
-#[test]
-fn populating() {
+fn memory_preset() -> Cursor<Vec<u8>> {
     let mut encoded_add = Cursor::new(vec![0u8; 0]);
     ADD.encode(&mut encoded_add).unwrap();
     let mut data = encoded_add.get_ref().clone();
-    data.extend(encoded_add.get_ref());
-    
-    let mut memory = Cursor::new(data);
+    data.extend(encoded_add.get_ref().clone());
+    Cursor::new(data)
+}
+
+#[test]
+fn populating() {
+    let mut memory = memory_preset();
     
     let mut cache = DecodeCache {
         decoded: Vec::new(),
@@ -67,4 +70,24 @@ fn populating() {
     };
     
     assert_eq!(cache.populate(&mut memory).unwrap(), 2);
+}
+
+#[test]
+fn manager_interval() {
+    let mut memory = memory_preset();
+
+    let mut manager = Manager::new(DecodeCache {
+        decoded: Vec::new(),
+        initial_lifetime: 4,
+        chunk_size: 1
+    }, 10);
+    
+    for index in 0..20 {
+        let result = manager.tick(&mut memory).unwrap();
+        assert_eq!(index % 10 == 9, result.did_populate);
+        if result.did_populate { assert_eq!(result.instruction_count, 1); }
+        
+        // Clear the cache to allow for new data to be read
+        manager.cache.decoded.clear();
+    }
 }
