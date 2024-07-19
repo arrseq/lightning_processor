@@ -3,8 +3,7 @@ extern crate test;
 use std::collections::HashMap;
 use std::io::{Cursor, Read, Write};
 use test::Bencher;
-
-use crate::paged::Paged;
+use crate::paged::{Paged, InvalidPageError};
 
 #[bench]
 fn benchmarked_read(bencher: &mut Bencher) {
@@ -70,4 +69,19 @@ fn benchmarked_large_write(bencher: &mut Bencher) {
         let buffer = [100u8; 8192];
         paged.write_all(&buffer).unwrap();
     });
+}
+
+#[test]
+fn translate_address() {
+    let mut mem = Cursor::new(vec![0u8; 1024]);
+    let paged = Paged {
+        memory: &mut mem,
+        mappings: HashMap::from([
+            (0xA, 0xB)
+        ]),
+        invalid_page_error: false
+    };
+    
+    assert_eq!(paged.translate_address(0x0000_0000_0000_A_F00).unwrap(), 0x0000_0000_0000_B_F00); 
+    assert!(matches!(paged.translate_address(0x0000_0000_0000_F_F00).unwrap_err(), InvalidPageError));
 }

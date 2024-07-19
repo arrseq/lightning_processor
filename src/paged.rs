@@ -20,12 +20,6 @@ pub struct Paged<'a, Memory> {
 #[error("Mapping for page not found")]
 pub struct InvalidPageError;
 
-#[derive(Debug, PartialEq)]
-struct Context<'a, Memory> {
-    operation_length: usize,
-    memory: &'a mut Paged<'a, Memory>
-}
-
 impl<'a, Memory: Seek + 'a> Paged<'a, Memory> {
     pub const PAGE_ITEM_BITS: u8 = 12;
     pub const PAGE_ITEM_MASK: u64 = 0x0000_0000_0000_0FFF;
@@ -52,25 +46,6 @@ impl<'a, Memory: Seek + 'a> Paged<'a, Memory> {
     /// # Result
     /// containing the translated address. If the translation does not exist for the particular page, then 
     /// [Err(InvalidPageError)] is returned.
-    /// 
-    /// # Example
-    /// ```
-    /// use std::collections::HashMap;
-    /// use std::io::Cursor;
-    /// use arrseq_lightning::paged::{Paged};
-    ///
-    /// let mut mem = Cursor::new(vec![0u8; 1024]);
-    /// let paged = Paged {
-    ///     memory: &mut mem,
-    ///     mappings: HashMap::from([
-    ///         (0xA, 0xB)
-    ///     ]),
-    ///     invalid_page_error: false
-    /// };
-    ///
-    /// assert_eq!(paged.translate_address(0x0000_0000_0000_A_F00).unwrap(), 0x0000_0000_0000_B_F00); 
-    /// assert!(matches!(paged.translate_address(0x0000_0000_0000_F_F00).unwrap_err(), InvalidPageError));
-    /// ```
     pub fn translate_address(&self, address: u64) -> Result<u64, InvalidPageError> {
         let page = Self::extract_page(address);
         let mapping = *self.mappings.get(&page).ok_or(InvalidPageError)?;
