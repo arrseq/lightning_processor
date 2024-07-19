@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::io::{Cursor, Read, Seek, SeekFrom};
-use arrseq_lightning::memory::Paged;
+use arrseq_lightning::paged::Paged;
 
 fn main() {
     let mut vector = vec![0u8; 8192];

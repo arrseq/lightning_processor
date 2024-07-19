@@ -19,7 +19,7 @@ pub struct Instruction {
 }
 
 /// The instruction was set to execute synchronously but there was no address operand. Synchronous execution is used
-/// to access a memory address without a race condition.
+/// to access a paged address without a race condition.
 #[derive(Debug)]
 pub struct SynchronizedWithNoAddress;
 

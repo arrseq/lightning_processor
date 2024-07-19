@@ -2,7 +2,7 @@ extern crate arrseq_lightning;
 
 use std::collections::HashMap;
 use std::io::{Cursor, Read};
-use arrseq_lightning::memory::Paged;
+use arrseq_lightning::paged::Paged;
 
 fn main() {
     let mut memory = Cursor::new(vec![0u8; 4096 * 2]);

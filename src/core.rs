@@ -4,7 +4,7 @@ use std::io::{Read, Seek, SeekFrom, Write};
 use crate::instruction;
 use crate::instruction::Instruction;
 use crate::instruction::operand::register;
-use crate::memory::Paged;
+use crate::paged::Paged;
 
 pub mod decode_cache;
 
@@ -43,7 +43,7 @@ impl Core {
     //     let result = match &self.context.privilege {
     //         Privilege::High => Instruction::decode(input).map_err(DecodeError::Instruction)?,
     //         Privilege::Low => {
-    //             let mut paged = Paged { mappings: self.context.page_mappings, memory: input };
+    //             let mut paged = Paged { mappings: self.context.page_mappings, paged: input };
     //             Instruction::decode(&mut paged).map_err(DecodeError::Instruction)?
     //         }
     //     };

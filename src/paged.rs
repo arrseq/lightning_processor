@@ -5,7 +5,7 @@ use std::io::{ErrorKind, Read, Seek, SeekFrom, Write};
 use thiserror::Error;
 
 #[cfg(test)]
-mod benchmark;
+mod test;
 
 #[derive(Debug, PartialEq)]
 pub struct Paged<'a, Memory> {
@@ -57,7 +57,7 @@ impl<'a, Memory: Seek + 'a> Paged<'a, Memory> {
     /// ```
     /// use std::collections::HashMap;
     /// use std::io::Cursor;
-    /// use arrseq_lightning::memory::{Paged};
+    /// use arrseq_lightning::paged::{Paged};
     ///
     /// let mut mem = Cursor::new(vec![0u8; 1024]);
     /// let paged = Paged {

@@ -2,7 +2,7 @@ use thiserror::Error;
 use crate::dynamic_number;
 use super::operand::register::Register;
 
-/// A tuple containing a register and a constant which will be operated on and then used to address memory.
+/// A tuple containing a register and a constant which will be operated on and then used to address paged.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Calculated {
     pub base: Register,
@@ -12,16 +12,16 @@ pub struct Calculated {
 /// A dynamic address dereferencing source target.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Address {
-    /// Address memory with the dynamic operand's register field.
+    /// Address paged with the dynamic operand's register field.
     Register(Register),
 
-    /// Address memory with the emulator constant field.
+    /// Address paged with the emulator constant field.
     Constant(dynamic_number::Unsigned),
 
-    /// Address memory with the sum of the dynamic operand's register field.
+    /// Address paged with the sum of the dynamic operand's register field.
     Add(Calculated),
 
-    /// Address memory with the difference of the dynamic operand's register field.
+    /// Address paged with the difference of the dynamic operand's register field.
     Subtract(Calculated)
 }
 
