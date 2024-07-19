@@ -7,10 +7,12 @@ use thiserror::Error;
 #[cfg(test)]
 mod test;
 
+pub type Mappings = Vec<(u64, u64)>;
+
 #[derive(Debug, PartialEq)]
 pub struct Paged<'a, Memory> {
     /// Mappings from page's page to physical page.
-    pub mappings: Vec<(u64, u64)>,
+    pub mappings: Mappings,
     pub memory: &'a mut Memory,
     pub invalid_page_error: bool
 }
