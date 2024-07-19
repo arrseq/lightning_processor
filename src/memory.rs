@@ -4,6 +4,9 @@ use std::io;
 use std::io::{ErrorKind, Read, Seek, SeekFrom, Write};
 use thiserror::Error;
 
+#[cfg(test)]
+mod benchmark;
+
 #[derive(Debug, PartialEq)]
 pub struct Paged<'a, Memory> {
     /// Mappings from page's page to physical page.
