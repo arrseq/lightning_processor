@@ -118,3 +118,23 @@ fn read() {
     assert_eq!(buffer, mid_way_data.as_slice());
     assert_eq!(paged.stream_position().unwrap(), 4096 + 2048);
 }
+
+#[test]
+fn write() {
+    let mut memory: Cursor<Vec<u8>> = Cursor::new(Vec::new());
+    let mut paged = Paged {
+        memory: &mut memory,
+        mappings: HashMap::from([ (0, 0) ]),
+        invalid_page_error: false
+    };
+
+    let buffer = {
+        let mut buffer = vec![200u8; 2048];
+        buffer.extend(vec![100u8; 2048]);
+        buffer
+    };
+
+    paged.write_all(&buffer).unwrap();
+    assert_eq!(*paged.memory.get_ref(), buffer);
+    assert_eq!(paged.stream_position().unwrap(), 4096);
+}
