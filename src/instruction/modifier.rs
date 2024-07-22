@@ -22,7 +22,7 @@ pub enum Execution {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Prefix {
+pub enum Modifier {
     Escape(Escape),
     Execution(Execution),
     BranchLikelyTaken(bool)
@@ -32,7 +32,7 @@ pub enum Prefix {
 #[error("Invalid prefix code")]
 pub struct InvalidCodeError;
 
-impl Prefix {
+impl Modifier {
     pub const BYTE_ESCAPE: u8 = 0;
     pub const WORD_ESCAPE: u8 = 1;
     pub const SYNCHRONIZED_EXECUTION: u8 = 2;
@@ -76,7 +76,7 @@ impl Prefix {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Prefixes {
+pub struct Modifiers {
     pub escape: Escape,
     pub execution: Option<Execution>,
     pub branch_likely_taken: Option<bool>
@@ -94,18 +94,18 @@ pub enum DecodeError {
     MissingEscape
 }
 
-impl Prefixes {
+impl Modifiers {
     pub fn encode(self, output: &mut impl Write) -> Result<(), io::Error> {
-        let mut buffer = [Prefix::Escape(self.escape).encode(); 1];
+        let mut buffer = [Modifier::Escape(self.escape).encode(); 1];
         output.write_all(&buffer)?;
         
         if let Some(execution) = self.execution {
-            buffer[0] = Prefix::Execution(execution).encode();
+            buffer[0] = Modifier::Execution(execution).encode();
             output.write_all(&buffer)?;
         }
         
         if let Some(likely) = self.branch_likely_taken {
-            buffer[0] = Prefix::BranchLikelyTaken(likely).encode();
+            buffer[0] = Modifier::BranchLikelyTaken(likely).encode();
             output.write_all(&buffer)?;
         }
         
@@ -120,12 +120,12 @@ impl Prefixes {
         let mut buffer = [0u8; 1];
         loop {
             input.read_exact(&mut buffer).map_err(DecodeError::Read)?;
-            let prefix = Prefix::decode(buffer[0]).map_err(DecodeError::InvalidCode)?;
+            let prefix = Modifier::decode(buffer[0]).map_err(DecodeError::InvalidCode)?;
             
             match prefix {
-                Prefix::Escape(value) => break escape = Some(value),
-                Prefix::Execution(value) => execution = Some(value),
-                Prefix::BranchLikelyTaken(value) => branch_likely_taken = Some(value)
+                Modifier::Escape(value) => break escape = Some(value),
+                Modifier::Execution(value) => execution = Some(value),
+                Modifier::BranchLikelyTaken(value) => branch_likely_taken = Some(value)
             }
         }
         

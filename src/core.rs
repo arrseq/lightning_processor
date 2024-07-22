@@ -42,7 +42,7 @@ pub enum DecodeError {
     #[error("")]
     Instruction(instruction::DecodeError),
     
-    /// The mappings vector wasn't set and it may have been taken.
+    /// The mappings vector wasn't set, and it may have been taken.
     #[error("The mappings vector is None")]
     MappingsUnavailable
 }

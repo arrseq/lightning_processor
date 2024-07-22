@@ -7,6 +7,7 @@ use super::operand::dynamic::Dynamic;
 use super::operand::register::Register;
 
 pub mod dynamic;
+pub mod modifier;
 pub mod register;
 
 #[cfg(test)]
