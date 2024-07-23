@@ -37,7 +37,8 @@ pub struct Meta {
     /// Whether to override the destination and use an external dynamic operand as the destination.
     pub external_destination: bool,
 
-    /// The encoded code of the dynamic operand.
+    /// The encoded code of the dynamic operand. The entire dynamic operand is not stored here to modularize the 
+    /// decoding process.
     dynamic_code: u8,
 }
 
