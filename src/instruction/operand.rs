@@ -133,12 +133,7 @@ impl Operands {
         let mut encoded_meta = self.size.exponent_representation() << 6;
         encoded_meta |= (matches!(self.destination, Destination::Dynamic) as u8) << 5;
         encoded_meta |= self.dynamic.encode() << 1;
-        
-        let external_destination = match self.destination {
-            Destination::External(value) => Some(value),
-            _ => None
-        };
-        encoded_meta |= external_destination.is_some() as u8;
+        encoded_meta |= matches!(self.destination, Destination::External(_)) as u8;
 
         // Encode the actual operands.
         let registers = register::Dual {
@@ -151,7 +146,7 @@ impl Operands {
         
         if let Ok(constant) = self.dynamic.constant() { Self::encode_constant(output, constant).map_err(EncodeError::Write)?; }
         
-        if let Some(external_destination) = external_destination {
+        if let Destination::External(external_destination) = self.destination {
             let mut encoded_meta = external_destination.encode() << 4;
             encoded_meta |= external_destination.register().unwrap_or(Register::default()).encode();
             output.write_all(&[encoded_meta]).map_err(EncodeError::Write)?;
