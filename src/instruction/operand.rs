@@ -144,6 +144,14 @@ impl Operands {
         output.write_all(&buffer).map_err(EncodeError::Write)?;
         
         if let Ok(constant) = self.dynamic.constant() { Self::encode_constant(output, constant).map_err(EncodeError::Write)?; }
+        
+        if let Some(external_destination) = self.external_destination {
+            let mut encoded_meta = external_destination.encode() << 4;
+            encoded_meta |= external_destination.register().unwrap_or(Register::default()).encode();
+            output.write_all(&[encoded_meta]).map_err(EncodeError::Write)?;
+            
+            if let Ok(constant) = self.dynamic.constant() { Self::encode_constant(output, constant).map_err(EncodeError::Write)? }
+        }
         Ok(())
     }
     
