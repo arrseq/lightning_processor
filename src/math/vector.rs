@@ -59,6 +59,31 @@ macro_rules! implement_operation {
                 }
             }
         }
+        
+        impl $operation for TrioVector<$for> {
+            type Output = Self;
+
+            fn $function(self, other: Self) -> Self::Output {
+                Self {
+                    component_a: self.component_a $operator other.component_a,
+                    component_b: self.component_b $operator other.component_b,
+                    component_c: self.component_c $operator other.component_c
+                }
+            }
+        }
+        
+        impl $operation for QuartetVector<$for> {
+            type Output = Self;
+
+            fn $function(self, other: Self) -> Self::Output {
+                Self {
+                    component_a: self.component_a $operator other.component_a,
+                    component_b: self.component_b $operator other.component_b,
+                    component_c: self.component_c $operator other.component_c,
+                    component_d: self.component_d $operator other.component_d
+                }
+            }
+        }
     };
 }
 
