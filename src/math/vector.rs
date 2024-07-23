@@ -1,4 +1,4 @@
-use std::ops::Add;
+use std::ops::{Add, Div, Mul, Sub};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Component {
@@ -46,3 +46,32 @@ pub type U32QuartetVector = QuartetVector<u32>;
 pub type U64DoubleVector = DoubleVector<u64>;
 pub type U64TrioVector = TrioVector<u64>;
 pub type U64QuartetVector = QuartetVector<u64>;
+
+macro_rules! implement_operation {
+    ($operation: path, $function: tt, $operator: tt, $for: ty) => {
+        impl $operation for DoubleVector<$for> {
+            type Output = Self;
+
+            fn $function(self, other: Self) -> Self::Output {
+                Self {
+                    component_a: self.component_a $operator other.component_a,
+                    component_b: self.component_b $operator other.component_b
+                }
+            }
+        }
+    };
+}
+
+macro_rules! implement_for_numeric_types {
+    ($operation: path, $function: tt, $operator: tt) => {
+        implement_operation!($operation, $function, $operator, u8);
+        implement_operation!($operation, $function, $operator, u16);
+        implement_operation!($operation, $function, $operator, u32);
+        implement_operation!($operation, $function, $operator, u64);
+    };
+}
+
+implement_for_numeric_types!(Add, add, +);
+implement_for_numeric_types!(Sub, sub, -);
+implement_for_numeric_types!(Mul, mul, *);
+implement_for_numeric_types!(Div, div, /);
