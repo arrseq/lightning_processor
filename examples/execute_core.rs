@@ -4,7 +4,7 @@ use std::io::Cursor;
 use arrseq_lightning::core::Core;
 use arrseq_lightning::math::dynamic_number::Size;
 use arrseq_lightning::instruction::Instruction;
-use arrseq_lightning::instruction::operand::{Name, Operands};
+use arrseq_lightning::instruction::operand::{Destination, Operands};
 use arrseq_lightning::instruction::operand::dynamic::Dynamic;
 use arrseq_lightning::instruction::operand::register::{GeneralPurpose, Register};
 use arrseq_lightning::instruction::operation::{Arithmetic, Operation};
@@ -18,7 +18,7 @@ fn main() {
 		execution: None,
 		operation: Operation::Arithmetic(Arithmetic::Add),
 		operands: Operands {
-			destination: Name::Register,
+			destination: Destination::Register,
 			register: Register::Accumulator,
 			dynamic: Dynamic::Register(Register::GeneralPurpose(GeneralPurpose::G0)),
 			size: Size::QuadWord,

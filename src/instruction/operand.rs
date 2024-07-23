@@ -13,24 +13,25 @@ pub mod register;
 #[cfg(test)]
 mod test;
 
-/// Named of the 2 supported operands.
+/// Named of the 3 supported operands.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Name {
+pub enum Destination {
     /// Register only operands.
     Register,
     
     /// Dynamically addressed operand. This operand could potentially refer to one of many things.
-    Dynamic
+    Dynamic,
+    
+    External(Dynamic)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Operands {
     /// The size of the data that the operands refer to.
     pub size: dynamic_number::Size,
-    pub destination: Name,
+    pub destination: Destination,
     pub register: Register,
     pub dynamic: Dynamic,
-    pub external_destination: Option<Dynamic>,
 
     /// Whether to use as a vector.
     pub segmented: bool
@@ -63,7 +64,7 @@ impl Operands {
         // Decode meta data.
         let meta_byte = buffer[0];
         let meta_size = dynamic_number::Size::from_exponent_representation(meta_byte >> 6).unwrap();
-        let destination = if (meta_byte >> 5) & 0b0000000_1 == 1 { Name::Dynamic } else { Name::Register };
+        let destination = if (meta_byte >> 5) & 0b0000000_1 == 1 { Destination::Dynamic } else { Destination::Register };
         let dynamic_code = (meta_byte & 0b000_1111_0) >> 1;
         let external_destination = meta_byte & 0b0000000_1 == 1;
 
@@ -88,9 +89,9 @@ impl Operands {
         
         Ok(Self {
             size: meta_size,
-            destination,
+            destination: if let Some(external_destination) = external_destination { Destination::External(external_destination) } else { destination },
             register: registers.first,
-            dynamic, external_destination, segmented
+            dynamic, segmented
         })
     }
 
@@ -130,9 +131,14 @@ impl Operands {
     pub fn encode(self, output: &mut impl Write) -> Result<(), EncodeError> {
         // Encode the operand meta data.
         let mut encoded_meta = self.size.exponent_representation() << 6;
-        encoded_meta |= (matches!(self.destination, Name::Dynamic) as u8) << 5;
+        encoded_meta |= (matches!(self.destination, Destination::Dynamic) as u8) << 5;
         encoded_meta |= self.dynamic.encode() << 1;
-        encoded_meta |= self.external_destination.is_some() as u8;
+        
+        let external_destination = match self.destination {
+            Destination::External(value) => Some(value),
+            _ => None
+        };
+        encoded_meta |= external_destination.is_some() as u8;
 
         // Encode the actual operands.
         let registers = register::Dual {
@@ -145,7 +151,7 @@ impl Operands {
         
         if let Ok(constant) = self.dynamic.constant() { Self::encode_constant(output, constant).map_err(EncodeError::Write)?; }
         
-        if let Some(external_destination) = self.external_destination {
+        if let Some(external_destination) = external_destination {
             let mut encoded_meta = external_destination.encode() << 4;
             encoded_meta |= external_destination.register().unwrap_or(Register::default()).encode();
             output.write_all(&[encoded_meta]).map_err(EncodeError::Write)?;

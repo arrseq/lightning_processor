@@ -1,7 +1,7 @@
 use std::io::Cursor;
 use crate::math::dynamic_number::Size;
 use crate::instruction::Instruction;
-use crate::instruction::operand::{Name, Operands};
+use crate::instruction::operand::{Destination, Operands};
 use crate::instruction::operand::dynamic::Dynamic;
 use crate::instruction::operand::register::{GeneralPurpose, Register};
 use crate::instruction::operation::{Arithmetic, Operation};
@@ -12,7 +12,7 @@ const ADD: Instruction = Instruction {
     execution: None,
     operation: Operation::Arithmetic(Arithmetic::Add),
     operands: Operands {
-        destination: Name::Register,
+        destination: Destination::Register,
         register: Register::Accumulator,
         dynamic: Dynamic::Register(Register::GeneralPurpose(GeneralPurpose::G0)),
         size: Size::QuadWord,
