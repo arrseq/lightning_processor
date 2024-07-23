@@ -69,6 +69,11 @@ macro_rules! implement_for_numeric_types {
         implement_operation!($operation, $function, $operator, u32);
         implement_operation!($operation, $function, $operator, u64);
         
+        implement_operation!($operation, $function, $operator, i8);
+        implement_operation!($operation, $function, $operator, i16);
+        implement_operation!($operation, $function, $operator, i32);
+        implement_operation!($operation, $function, $operator, i64);
+        
         implement_operation!($operation, $function, $operator, f32);
         implement_operation!($operation, $function, $operator, f64);
     };
