@@ -30,7 +30,10 @@ pub struct Operands {
     pub destination: Name,
     pub register: Register,
     pub dynamic: Dynamic,
-    pub external_destination: Option<Dynamic>
+    pub external_destination: Option<Dynamic>,
+    
+    /// Whether to use as a vector.
+    pub segmented: bool
 }
 
 #[derive(Debug, Error)]
@@ -52,7 +55,7 @@ pub enum EncodeError {
 }
 
 impl Operands {
-    pub fn decode(input: &mut impl Read) -> Result<Self, DecodeError> {
+    pub fn decode(input: &mut impl Read, segmented: bool) -> Result<Self, DecodeError> {
         // Contains the meta and registers bytes.
         let mut buffer = [0u8; 2];
         input.read_exact(&mut buffer).map_err(DecodeError::Read)?;
@@ -92,8 +95,7 @@ impl Operands {
             size: meta_size,
             destination,
             register: registers.first,
-            dynamic,
-            external_destination
+            dynamic, external_destination, segmented
         })
     }
     

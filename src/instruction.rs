@@ -15,8 +15,7 @@ pub struct Instruction {
     pub execution: Option<modifier::Execution>,
     pub branch_likely_taken: Option<bool>,
     pub operands: Operands,
-    pub operation: Operation,
-    pub segmented_operands: bool
+    pub operation: Operation
 }
 
 /// The instruction was set to execute synchronously but there was no address operand. Synchronous execution is used
@@ -58,15 +57,14 @@ impl Instruction {
     pub fn decode(input: &mut impl Read) -> Result<Self, DecodeError> {
         let modifiers = Modifiers::decode(input).map_err(DecodeError::Prefix)?;
         let operation = Self::decode_operation(input, modifiers.escape).map_err(DecodeError::Operation)?;
-        let operands = Operands::decode(input).map_err(DecodeError::Operands)?;
+        let operands = Operands::decode(input, modifiers.segmented_operands).map_err(DecodeError::Operands)?;
 
         Self::check_synchronous_error(modifiers.execution, operands.dynamic).map_err(DecodeError::SynchronizedWithNoAddress)?;
         
         Ok(Self {
             operands, operation,
             execution: modifiers.execution,
-            branch_likely_taken: modifiers.branch_likely_taken,
-            segmented_operands: modifiers.segmented_operands
+            branch_likely_taken: modifiers.branch_likely_taken
         })
     }
     
@@ -95,7 +93,7 @@ impl Instruction {
             escape: operation_escape,
             execution: self.execution,
             branch_likely_taken: self.branch_likely_taken,
-            segmented_operands: self.segmented_operands
+            segmented_operands: self.operands.segmented
         };
 
         Self::check_synchronous_error(self.execution, self.operands.dynamic).map_err(EncodeError::SynchronizedWithNoAddress)?;
