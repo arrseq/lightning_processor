@@ -18,11 +18,11 @@ fn main() {
 		execution: None,
 		operation: Operation::Arithmetic(Arithmetic::Add),
 		operands: Operands {
-			result: Name::Register,
+			destination: Name::Register,
 			register: Register::Accumulator,
 			dynamic: Dynamic::Register(Register::GeneralPurpose(GeneralPurpose::G0)),
 			size: Size::QuadWord,
-			custom_data: false
+			external_destination: false
 		}
 	};
 

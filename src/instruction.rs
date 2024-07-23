@@ -15,7 +15,8 @@ pub struct Instruction {
     pub execution: Option<modifier::Execution>,
     pub branch_likely_taken: Option<bool>,
     pub operands: Operands,
-    pub operation: Operation
+    pub operation: Operation,
+    pub segmented_operands: bool
 }
 
 /// The instruction was set to execute synchronously but there was no address operand. Synchronous execution is used
@@ -64,7 +65,8 @@ impl Instruction {
         Ok(Self {
             operands, operation,
             execution: modifiers.execution,
-            branch_likely_taken: modifiers.branch_likely_taken
+            branch_likely_taken: modifiers.branch_likely_taken,
+            segmented_operands: modifiers.segmented_operands
         })
     }
     
@@ -92,7 +94,8 @@ impl Instruction {
         let modifiers = Modifiers {
             escape: operation_escape,
             execution: self.execution,
-            branch_likely_taken: self.branch_likely_taken
+            branch_likely_taken: self.branch_likely_taken,
+            segmented_operands: self.segmented_operands
         };
 
         Self::check_synchronous_error(self.execution, self.operands.dynamic).map_err(EncodeError::SynchronizedWithNoAddress)?;

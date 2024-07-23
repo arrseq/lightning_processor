@@ -12,3 +12,4 @@ pub mod core;
 pub mod dynamic_number;
 pub mod instruction;
 pub mod paged;
+pub mod vector;

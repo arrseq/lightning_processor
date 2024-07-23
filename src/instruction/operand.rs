@@ -32,10 +32,10 @@ pub struct Meta {
     pub size: dynamic_number::Size,
 
     /// The name of the operand in which to store the result in.
-    pub result: operand::Name,
+    pub destination: Name,
 
-    /// This data does not control the encoder and can be used to indicate any boolean based value.
-    pub custom_data: bool,
+    /// Whether to override the destination and use an external dynamic operand as the destination.
+    pub external_destination: bool,
 
     /// The encoded code of the dynamic operand.
     dynamic_code: u8,
@@ -50,19 +50,20 @@ impl Meta {
     /// # Result
     /// Instance of [Self] as long as the dynamic operand isn't constant with the result of this metadata being set to
     /// the dynamic operand.
-    pub fn new(size: dynamic_number::Size, result: Name, custom_data: bool, dynamic: Dynamic) -> Result<Self, ResultToConstantError> {
-        if matches!(dynamic, Dynamic::Constant(_)) && matches!(result, Name::Dynamic) { return Err(ResultToConstantError) }
+    pub fn new(size: dynamic_number::Size, destination: Name, custom_data: bool, dynamic: Dynamic) -> Result<Self, ResultToConstantError> {
+        if matches!(dynamic, Dynamic::Constant(_)) && matches!(destination, Name::Dynamic) { return Err(ResultToConstantError) }
         Ok(Self {
-            size, result, custom_data,
+            size, destination,
+            external_destination: custom_data,
             dynamic_code: dynamic.encode()
         })
     }
 
     pub fn encode(self) -> u8 {
         let mut encoded = self.size.exponent_representation() << 6;
-        encoded |= (matches!(self.result, Name::Dynamic) as u8) << 5;
+        encoded |= (matches!(self.destination, Name::Dynamic) as u8) << 5;
         encoded |= self.dynamic_code << 1;
-        encoded |= self.custom_data as u8;
+        encoded |= self.external_destination as u8;
         encoded
     }
 
@@ -70,11 +71,11 @@ impl Meta {
     /// This function has no error because the dynamic code is never invalid. Valid dynamic codes are 4 bits.
     pub fn decode(encoded: u8) -> Result<Self, dynamic::InvalidCodeError> {
         let size = dynamic_number::Size::from_exponent_representation(encoded >> 6).unwrap();
-        let result = if (encoded >> 5) & 0b0000000_1 == 1 { Name::Dynamic } else { Name::Register };
+        let destination = if (encoded >> 5) & 0b0000000_1 == 1 { Name::Dynamic } else { Name::Register };
         let dynamic_code = (encoded & 0b000_1111_0) >> 1;
         if !Dynamic::is_valid(dynamic_code) { return Err(dynamic::InvalidCodeError); }
         let custom_data = encoded & 0b0000000_1 == 1;
-        Ok(Self { size, result, dynamic_code, custom_data })
+        Ok(Self { size, destination, dynamic_code, external_destination: custom_data })
     }
 
     pub fn dynamic_code(self) -> u8 {
@@ -86,10 +87,10 @@ impl Meta {
 pub struct Operands {
     /// The size of the data that the operands refer to.
     pub size: dynamic_number::Size,
-    pub result: Name,
+    pub destination: Name,
     pub register: Register,
     pub dynamic: Dynamic,
-    pub custom_data: bool
+    pub external_destination: Option<Dynamic>
 }
 
 #[derive(Debug, Error)]
@@ -132,12 +133,17 @@ impl Operands {
             }
         }.unwrap();
         
+        let external_destination = if !meta.external_destination { None } 
+        else {
+            todo!() as Option<Dynamic>
+        };
+        
         Ok(Self {
             size: meta.size,
-            result: meta.result,
+            destination: meta.destination,
             register: registers.first,
             dynamic,
-            custom_data: meta.custom_data
+            external_destination
         })
     }
     
@@ -155,7 +161,7 @@ impl Operands {
     }
     
     pub fn encode(self, output: &mut impl Write) -> Result<(), EncodeError> {
-        let meta = Meta::new(self.size, self.result, self.custom_data, self.dynamic).map_err(EncodeError::ResultToConstant)?;
+        let meta = Meta::new(self.size, self.destination, self.external_destination.is_some(), self.dynamic).map_err(EncodeError::ResultToConstant)?;
         let registers = register::Dual {
             first: self.register,
             second: self.dynamic.register().unwrap_or_default()

@@ -17,5 +17,9 @@ impl Modifier {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Modifiers {
-    
+    pub vector: [Option<Vector>; Self::LIMIT as usize],
+}
+
+impl Modifiers {
+    pub const LIMIT: u8 = 4;
 }

@@ -25,7 +25,10 @@ pub enum Execution {
 pub enum Modifier {
     Escape(Escape),
     Execution(Execution),
-    BranchLikelyTaken(bool)
+    
+    /// Contains a hint to whether the branch is likely to be taken.
+    BranchLikelyTaken(bool),
+    SegmentedOperands
 }
 
 #[derive(Debug, Error)]
@@ -41,6 +44,7 @@ impl Modifier {
     pub const DECREMENTING_REPEATED_EXECUTION: u8 = 5;
     pub const BRANCH_LIKELY_TAKEN: u8 = 6;
     pub const BRANCH_NOT_LIKELY_TAKEN: u8 = 7;
+    pub const SEGMENTED_OPERANDS: u8 = 8;
     
     pub fn decode(encoded: u8) -> Result<Self, InvalidCodeError> {
         Ok(match encoded {
@@ -52,6 +56,7 @@ impl Modifier {
             Self::DECREMENTING_REPEATED_EXECUTION => Self::Execution(Execution::Repeat(Repeat::Decremental)),
             Self::BRANCH_LIKELY_TAKEN => Self::BranchLikelyTaken(true),
             Self::BRANCH_NOT_LIKELY_TAKEN => Self::BranchLikelyTaken(false),
+            Self::SEGMENTED_OPERANDS => Self::SegmentedOperands,
             _ => return Err(InvalidCodeError)
         })
     }
@@ -70,7 +75,8 @@ impl Modifier {
                     Repeat::Decremental => Self::DECREMENTING_REPEATED_EXECUTION
                 }
             },
-            Self::BranchLikelyTaken(likely) => if likely { Self::BRANCH_LIKELY_TAKEN } else { Self::BRANCH_NOT_LIKELY_TAKEN }
+            Self::BranchLikelyTaken(likely) => if likely { Self::BRANCH_LIKELY_TAKEN } else { Self::BRANCH_NOT_LIKELY_TAKEN },
+            Self::SegmentedOperands => Self::SEGMENTED_OPERANDS
         }
     }
 }
@@ -79,7 +85,8 @@ impl Modifier {
 pub struct Modifiers {
     pub escape: Escape,
     pub execution: Option<Execution>,
-    pub branch_likely_taken: Option<bool>
+    pub branch_likely_taken: Option<bool>,
+    pub segmented_operands: bool
 }
 
 #[derive(Debug, Error)]
@@ -116,6 +123,7 @@ impl Modifiers {
         let escape: Option<Escape>;
         let mut execution: Option<Execution> = None;
         let mut branch_likely_taken: Option<bool> = None;
+        let mut segmented_operands = false;
         
         let mut buffer = [0u8; 1];
         loop {
@@ -125,11 +133,12 @@ impl Modifiers {
             match prefix {
                 Modifier::Escape(value) => break escape = Some(value),
                 Modifier::Execution(value) => execution = Some(value),
-                Modifier::BranchLikelyTaken(value) => branch_likely_taken = Some(value)
+                Modifier::BranchLikelyTaken(value) => branch_likely_taken = Some(value),
+                Modifier::SegmentedOperands => segmented_operands = true
             }
         }
         
-        if let Some(escape) = escape { return Ok(Self { escape, execution, branch_likely_taken }); }
+        if let Some(escape) = escape { return Ok(Self { escape, execution, branch_likely_taken, segmented_operands }); }
         Err(DecodeError::MissingEscape)
     }
 }
