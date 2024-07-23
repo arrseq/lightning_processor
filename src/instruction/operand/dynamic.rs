@@ -1,5 +1,5 @@
 use thiserror::Error;
-use crate::dynamic_number;
+use crate::math::dynamic_number;
 use super::operand::register::Register;
 
 #[cfg(test)]

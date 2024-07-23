@@ -1,4 +1,4 @@
-use crate::dynamic_number;
+use crate::math::dynamic_number;
 use crate::instruction::operand::dynamic::{Address, Calculated, Dynamic, Requirement};
 use crate::instruction::operand::register::{Register, SideInput};
 

@@ -1,5 +1,5 @@
 use std::io::Cursor;
-use crate::dynamic_number::Size;
+use crate::math::dynamic_number::Size;
 use crate::instruction::Instruction;
 use crate::instruction::operand::{Name, Operands};
 use crate::instruction::operand::dynamic::Dynamic;

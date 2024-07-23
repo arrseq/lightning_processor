@@ -9,7 +9,6 @@
 #![allow(soft_unstable)]
 
 pub mod core;
-pub mod dynamic_number;
+pub mod math;
 pub mod instruction;
 pub mod paged;
-pub mod vector;

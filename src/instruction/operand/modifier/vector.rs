@@ -1,4 +1,4 @@
-use crate::vector;
+use crate::math::vector;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Remap {

@@ -1,7 +1,7 @@
 use std::io;
 use std::io::{Read, Write};
 use thiserror::Error;
-use crate::dynamic_number;
+use crate::math::dynamic_number;
 use super::operand;
 use super::operand::dynamic::Dynamic;
 use super::operand::register::Register;

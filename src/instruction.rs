@@ -1,6 +1,6 @@
 use std::io;
 use std::io::{Read, Write};
-use crate::dynamic_number;
+use crate::math::dynamic_number;
 use crate::instruction::operand::dynamic::Dynamic;
 use self::operand::Operands;
 use self::operation::Operation;

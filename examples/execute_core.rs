@@ -2,7 +2,7 @@ extern crate arrseq_lightning;
 
 use std::io::Cursor;
 use arrseq_lightning::core::Core;
-use arrseq_lightning::dynamic_number::Size;
+use arrseq_lightning::math::dynamic_number::Size;
 use arrseq_lightning::instruction::Instruction;
 use arrseq_lightning::instruction::operand::{Name, Operands};
 use arrseq_lightning::instruction::operand::dynamic::Dynamic;
