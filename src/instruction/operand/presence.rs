@@ -1,4 +1,4 @@
-use crate::instruction::operand::dynamic::Operand;
+use crate::instruction::operand::Operand;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct DualInput {

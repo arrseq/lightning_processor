@@ -1,21 +1,12 @@
-use crate::instruction::Instruction;
-use crate::instruction::operand::Operands;
-use crate::instruction::operation::{Arithmetic, Operation};
-
-// TODO: Implement surrounding tests.
-#[test]
-fn encode() {
-    let instruction = Instruction {
-        branch_likely_taken: None,
-        execution: None,
-        operation: Operation::Arithmetic(Arithmetic::Add),
-        operands: Operands {
-            destination: Nam
-        }
-    }
-}
+use crate::instruction::operand::{Address, Calculated, Operand, Requirement};
+use crate::instruction::operand::register::{Register, SideInput};
+use crate::math::dynamic_number;
 
 #[test]
-fn decode() {
-    
+fn requirement() {
+    assert_eq!(Operand::requirement(Operand::Constant(dynamic_number::Unsigned::Word(u16::MAX)).encode()).unwrap(), Requirement::Constant(None));
+    assert_eq!(Operand::requirement(Operand::Address(Address::Array(Calculated {
+        base: Register::SideInput(SideInput::First),
+        offset: dynamic_number::Unsigned::Word(u16::MAX)
+    })).encode()).unwrap(), Requirement::RegisterAndConstant(Some(dynamic_number::Size::Word)));
 }

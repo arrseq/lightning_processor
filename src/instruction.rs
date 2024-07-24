@@ -1,8 +1,8 @@
 use std::io;
 use std::io::{Read, Write};
+use crate::instruction::operand::{Operand, operands};
 use crate::math::dynamic_number;
-use crate::instruction::operand::dynamic::Operand;
-use self::operand::Operands;
+use crate::instruction::operand::operands::Operands;
 use self::operation::Operation;
 use self::modifier::Modifiers;
 
@@ -26,7 +26,7 @@ pub struct SynchronizedWithNoAddress;
 #[derive(Debug)]
 pub enum DecodeError {
     Prefix(modifier::DecodeError),
-    Operands(operand::DecodeError),
+    Operands(operands::DecodeError),
     Operation(OperationError),
     SynchronizedWithNoAddress(SynchronizedWithNoAddress)
 }
@@ -34,7 +34,7 @@ pub enum DecodeError {
 #[derive(Debug)]
 pub enum EncodeError {
     Write(io::Error),
-    Operands(operand::EncodeError),
+    Operands(operands::EncodeError),
     SynchronizedWithNoAddress(SynchronizedWithNoAddress)
 }
 
