@@ -1,17 +1,39 @@
 use std::io;
 use std::io::{Read, Write};
 use thiserror::Error;
+use crate::instruction::operand::presence::Presence;
 use crate::math::dynamic_number;
 use super::operand;
-use super::operand::dynamic::Dynamic;
+use super::operand::dynamic::Operand;
 use super::operand::register::Register;
 
 pub mod dynamic;
 pub mod modifier;
 pub mod register;
+pub mod presence;
 
 #[cfg(test)]
 mod test;
+
+/// The number of operands that are encoded.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Encoded {
+    Single,
+    Dual,
+    Triple
+}
+
+impl From<Presence> for Encoded {
+    fn from(value: Presence) -> Self {
+        match value {
+            Presence::Destination(_)
+            | Presence::SingleInput(_) => Self::Single,
+            Presence::DualInput(_) 
+            | Presence::DestinationAndInput(_) => Self::Dual,
+            Presence::All(_) => Self::Triple
+        }
+    }
+}
 
 /// Named of the 3 supported operands.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -22,7 +44,7 @@ pub enum Destination {
     /// Dynamically addressed operand. This operand could potentially refer to one of many things.
     Dynamic,
     
-    External(Dynamic)
+    External(Operand)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -31,7 +53,7 @@ pub struct Operands {
     pub size: dynamic_number::Size,
     pub destination: Destination,
     pub register: Register,
-    pub dynamic: Dynamic,
+    pub dynamic: Operand,
 
     /// Whether to use as a vector.
     pub segmented: bool
@@ -95,12 +117,12 @@ impl Operands {
         })
     }
 
-    fn decode_dynamic(input: &mut impl Read, dynamic_code: u8, register: Register, meta_size: dynamic_number::Size) -> Result<Dynamic, DecodeError> {
-        Ok(match Dynamic::requirement(dynamic_code).unwrap() {
-            dynamic::Requirement::Register => Dynamic::decode_register(dynamic_code, register).map_err(DecodeError::InvalidDynamicCode)?,
+    fn decode_dynamic(input: &mut impl Read, dynamic_code: u8, register: Register, meta_size: dynamic_number::Size) -> Result<Operand, DecodeError> {
+        Ok(match Operand::requirement(dynamic_code).unwrap() {
+            dynamic::Requirement::Register => Operand::decode_register(dynamic_code, register).map_err(DecodeError::InvalidDynamicCode)?,
             dynamic::Requirement::Constant(size) => {
                 let constant = Self::decode_constant(input, size.unwrap_or(meta_size)).map_err(DecodeError::Read)?;
-                Dynamic::decode_constant(dynamic_code, constant).map_err(DecodeError::InvalidDynamicCode)?
+                Operand::decode_constant(dynamic_code, constant).map_err(DecodeError::InvalidDynamicCode)?
             },
             // There is no dynamic operand mode with this requirement that uses [None] for its constant size here. It is
             // acceptable to unwrap here.
@@ -110,7 +132,7 @@ impl Operands {
                     offset: Self::decode_constant(input, size.unwrap_or(meta_size)).map_err(DecodeError::Read)?
                 };
 
-                Dynamic::decode_calculated(dynamic_code, calculated).map_err(DecodeError::InvalidDynamicCode)?
+                Operand::decode_calculated(dynamic_code, calculated).map_err(DecodeError::InvalidDynamicCode)?
             }
         })
     }

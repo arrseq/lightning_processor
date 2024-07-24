@@ -1,7 +1,7 @@
 use std::io;
 use std::io::{Read, Write};
 use crate::math::dynamic_number;
-use crate::instruction::operand::dynamic::Dynamic;
+use crate::instruction::operand::dynamic::Operand;
 use self::operand::Operands;
 use self::operation::Operation;
 use self::modifier::Modifiers;
@@ -46,11 +46,11 @@ pub enum OperationError {
 
 impl Instruction {
     /// Synchronized instructions must have the dynamic operand point to an address.
-    fn check_synchronous_error(execution: Option<modifier::Execution>, dynamic: Dynamic) -> Result<(), SynchronizedWithNoAddress> {
+    fn check_synchronous_error(execution: Option<modifier::Execution>, dynamic: Operand) -> Result<(), SynchronizedWithNoAddress> {
         // Has an execution mode override.
         if let Some(execution) = execution
             && let modifier::Execution::Synchronize = execution
-            && !matches!(dynamic, Dynamic::Address(_)) { return Err(SynchronizedWithNoAddress) }
+            && !matches!(dynamic, Operand::Address(_)) { return Err(SynchronizedWithNoAddress) }
         Ok(())
     }
     

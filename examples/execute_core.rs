@@ -5,7 +5,7 @@ use arrseq_lightning::core::Core;
 use arrseq_lightning::math::dynamic_number::Size;
 use arrseq_lightning::instruction::Instruction;
 use arrseq_lightning::instruction::operand::{Destination, Operands};
-use arrseq_lightning::instruction::operand::dynamic::Dynamic;
+use arrseq_lightning::instruction::operand::dynamic::Operand;
 use arrseq_lightning::instruction::operand::register::{GeneralPurpose, Register};
 use arrseq_lightning::instruction::operation::{Arithmetic, Operation};
 
@@ -20,7 +20,7 @@ fn main() {
 		operands: Operands {
 			destination: Destination::Register,
 			register: Register::Accumulator,
-			dynamic: Dynamic::Register(Register::GeneralPurpose(GeneralPurpose::G0)),
+			dynamic: Operand::Register(Register::GeneralPurpose(GeneralPurpose::G0)),
 			size: Size::QuadWord,
 			external_destination: false
 		}

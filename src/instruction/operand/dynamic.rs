@@ -22,18 +22,18 @@ pub enum Address {
     Constant(dynamic_number::Unsigned),
 
     /// Address paged with the sum of the dynamic operand's register field.
-    Add(Calculated),
+    Array(Calculated),
 
     /// Address paged with the difference of the dynamic operand's register field.
-    Subtract(Calculated)
+    ArrayAtOffset(Calculated)
 }
 
 impl Address {
     pub fn register(self) -> Result<Register, NotIncludedError> {
         Ok(match self {
             Self::Register(register) => register,
-            Self::Add(calculated)
-            | Self::Subtract(calculated) => calculated.base,
+            Self::Array(calculated)
+            | Self::ArrayAtOffset(calculated) => calculated.base,
             _ => return Err(NotIncludedError)
         }) 
     }
@@ -41,8 +41,8 @@ impl Address {
     pub fn constant(self) -> Result<dynamic_number::Unsigned, NotIncludedError> {
         Ok(match self {
             Self::Constant(constant) => constant,
-            Self::Add(calculated) 
-            | Self::Subtract(calculated) => calculated.offset,
+            Self::Array(calculated) 
+            | Self::ArrayAtOffset(calculated) => calculated.offset,
             _ => return Err(NotIncludedError)
         })
     }
@@ -56,7 +56,7 @@ impl Address {
 /// # Encoding
 /// A dynamic code refers to the specific algorithm or mode of the operand. The largest valid code is 14.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Dynamic {
+pub enum Operand {
     Register(Register),
     Constant(dynamic_number::Unsigned),
     Address(Address)
@@ -92,7 +92,7 @@ pub struct InvalidCodeError;
 #[error("Does not contain a reference to a register")]
 pub struct NotIncludedError;
 
-impl Dynamic {
+impl Operand {
     pub const REGISTER: u8 = 0;
     pub const CONSTANT: u8 = 1;
 
@@ -108,10 +108,10 @@ impl Dynamic {
     pub const ADD_DOUBLE_WORD_ADDRESS: u8 = 9;
     pub const ADD_QUAD_WORD_ADDRESS: u8 = 10;
 
-    pub const SUBTRACT_BYTE_ADDRESS: u8 = 11;
-    pub const SUBTRACT_WORD_ADDRESS: u8 = 12;
-    pub const SUBTRACT_DOUBLE_WORD_ADDRESS: u8 = 13;
-    pub const SUBTRACT_QUAD_WORD_ADDRESS: u8 = 14;
+    pub const SUBTRACT_BYTE_ADDRESSING: u8 = 11;
+    pub const SUBTRACT_WORD_ADDRESSING: u8 = 12;
+    pub const SUBTRACT_DOUBLE_WORD_ADDRESSING: u8 = 13;
+    pub const SUBTRACT_QUAD_WORD_ADDRESSING: u8 = 14;
     
     pub fn register(self) -> Result<Register, NotIncludedError> {
         Ok(match self {
@@ -142,17 +142,17 @@ impl Dynamic {
                     dynamic_number::Unsigned::DoubleWord(_) => Self::CONSTANT_DOUBLE_WORD_ADDRESS,
                     dynamic_number::Unsigned::QuadWord(_) => Self::CONSTANT_QUAD_WORD_ADDRESS
                 },
-                Address::Add(add) => match add.offset {
+                Address::Array(add) => match add.offset {
                     dynamic_number::Unsigned::Byte(_) => Self::ADD_BYTE_ADDRESS,
                     dynamic_number::Unsigned::Word(_) => Self::ADD_WORD_ADDRESS,
                     dynamic_number::Unsigned::DoubleWord(_) => Self::ADD_DOUBLE_WORD_ADDRESS,
                     dynamic_number::Unsigned::QuadWord(_) => Self::ADD_QUAD_WORD_ADDRESS
                 },
-                Address::Subtract(subtract) => match subtract.offset {
-                    dynamic_number::Unsigned::Byte(_) => Self::SUBTRACT_BYTE_ADDRESS,
-                    dynamic_number::Unsigned::Word(_) => Self::SUBTRACT_WORD_ADDRESS,
-                    dynamic_number::Unsigned::DoubleWord(_) => Self::SUBTRACT_DOUBLE_WORD_ADDRESS,
-                    dynamic_number::Unsigned::QuadWord(_) => Self::SUBTRACT_QUAD_WORD_ADDRESS
+                Address::ArrayAtOffset(subtract) => match subtract.offset {
+                    dynamic_number::Unsigned::Byte(_) => Self::SUBTRACT_BYTE_ADDRESSING,
+                    dynamic_number::Unsigned::Word(_) => Self::SUBTRACT_WORD_ADDRESSING,
+                    dynamic_number::Unsigned::DoubleWord(_) => Self::SUBTRACT_DOUBLE_WORD_ADDRESSING,
+                    dynamic_number::Unsigned::QuadWord(_) => Self::SUBTRACT_QUAD_WORD_ADDRESSING
                 }
             }
         }
@@ -202,11 +202,11 @@ impl Dynamic {
             Self::ADD_BYTE_ADDRESS
             | Self::ADD_WORD_ADDRESS
             | Self::ADD_DOUBLE_WORD_ADDRESS
-            | Self::ADD_QUAD_WORD_ADDRESS => Address::Add(calculated),
-            Self::SUBTRACT_BYTE_ADDRESS
-            | Self::SUBTRACT_WORD_ADDRESS
-            | Self::SUBTRACT_DOUBLE_WORD_ADDRESS
-            | Self::SUBTRACT_QUAD_WORD_ADDRESS => Address::Subtract(calculated),
+            | Self::ADD_QUAD_WORD_ADDRESS => Address::Array(calculated),
+            Self::SUBTRACT_BYTE_ADDRESSING
+            | Self::SUBTRACT_WORD_ADDRESSING
+            | Self::SUBTRACT_DOUBLE_WORD_ADDRESSING
+            | Self::SUBTRACT_QUAD_WORD_ADDRESSING => Address::ArrayAtOffset(calculated),
             _ => return Err(InvalidCodeError)
         }))
     }
@@ -225,13 +225,13 @@ impl Dynamic {
             | Self::CONSTANT_DOUBLE_WORD_ADDRESS
             | Self::CONSTANT_QUAD_WORD_ADDRESS => Requirement::Constant(None),
             Self::ADD_BYTE_ADDRESS
-            | Self::SUBTRACT_BYTE_ADDRESS => Requirement::RegisterAndConstant(Some(dynamic_number::Size::Byte)),
+            | Self::SUBTRACT_BYTE_ADDRESSING => Requirement::RegisterAndConstant(Some(dynamic_number::Size::Byte)),
             Self::ADD_WORD_ADDRESS
-            | Self::SUBTRACT_WORD_ADDRESS => Requirement::RegisterAndConstant(Some(dynamic_number::Size::Word)),
+            | Self::SUBTRACT_WORD_ADDRESSING => Requirement::RegisterAndConstant(Some(dynamic_number::Size::Word)),
             Self::ADD_DOUBLE_WORD_ADDRESS
-            | Self::SUBTRACT_DOUBLE_WORD_ADDRESS => Requirement::RegisterAndConstant(Some(dynamic_number::Size::DoubleWord)),
+            | Self::SUBTRACT_DOUBLE_WORD_ADDRESSING => Requirement::RegisterAndConstant(Some(dynamic_number::Size::DoubleWord)),
             Self::ADD_QUAD_WORD_ADDRESS
-            | Self::SUBTRACT_QUAD_WORD_ADDRESS => Requirement::RegisterAndConstant(Some(dynamic_number::Size::QuadWord)),
+            | Self::SUBTRACT_QUAD_WORD_ADDRESSING => Requirement::RegisterAndConstant(Some(dynamic_number::Size::QuadWord)),
             _ => return Err(InvalidCodeError)
         })
     }

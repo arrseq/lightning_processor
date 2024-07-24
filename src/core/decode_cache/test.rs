@@ -2,7 +2,7 @@ use std::io::Cursor;
 use crate::math::dynamic_number::Size;
 use crate::instruction::Instruction;
 use crate::instruction::operand::{Destination, Operands};
-use crate::instruction::operand::dynamic::Dynamic;
+use crate::instruction::operand::dynamic::Operand;
 use crate::instruction::operand::register::{GeneralPurpose, Register};
 use crate::instruction::operation::{Arithmetic, Operation};
 use super::{DecodeCache, Manager};
@@ -14,7 +14,7 @@ const ADD: Instruction = Instruction {
     operands: Operands {
         destination: Destination::Register,
         register: Register::Accumulator,
-        dynamic: Dynamic::Register(Register::GeneralPurpose(GeneralPurpose::G0)),
+        dynamic: Operand::Register(Register::GeneralPurpose(GeneralPurpose::G0)),
         size: Size::QuadWord,
         external_destination: false
     }
