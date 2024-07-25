@@ -15,6 +15,8 @@ pub struct Paged<'a, Memory> {
     pub invalid_page_error: bool
 }
 
+// TODO: Rewrite with support for permission tags.
+
 /// The page mapping does not exist in the mappings.
 #[derive(Debug, Error)]
 #[error("Mapping for page not found")]

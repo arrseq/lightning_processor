@@ -1,10 +1,10 @@
 use std::io::Cursor;
 use crate::math::dynamic_number::Size;
-use crate::instruction::Instruction;
-use crate::instruction::operand::{Destination, Operands};
-use crate::instruction::operand::dynamic::Operand;
-use crate::instruction::operand::register::{GeneralPurpose, Register};
-use crate::instruction::operation::{Arithmetic, Operation};
+use crate::instruction_lg::Instruction;
+use crate::instruction_lg::operand::{Destination, Operands};
+use crate::instruction_lg::operand::dynamic::Operand;
+use crate::instruction_lg::operand::register::{GeneralPurpose, Register};
+use crate::instruction_lg::operation::{Arithmetic, Operation};
 use super::{DecodeCache, Manager};
 
 const ADD: Instruction = Instruction {

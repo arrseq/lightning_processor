@@ -1,4 +1,4 @@
-use crate::instruction::operand::register::{GeneralPurpose, Register};
+use crate::instruction_lg::operand::register::{GeneralPurpose, Register};
 
 #[test]
 fn encode() {

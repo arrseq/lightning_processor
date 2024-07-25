@@ -2,9 +2,9 @@ use std::io;
 use std::io::{Read, Seek, SeekFrom, Write};
 use thiserror::Error;
 use crate::core::decode_cache::DecodeCache;
-use crate::instruction;
-use crate::instruction::Instruction;
-use crate::instruction::operand::register;
+use crate::instruction_lg;
+use crate::instruction_lg::Instruction;
+use crate::instruction_lg::operand::register;
 use crate::paged::{Mappings, Paged};
 
 pub mod decode_cache;
@@ -40,7 +40,7 @@ pub enum DecodeError {
     Read(io::Error),
     
     #[error("")]
-    Instruction(instruction::DecodeError),
+    Instruction(instruction_lg::DecodeError),
     
     /// The mappings vector wasn't set, and it may have been taken.
     #[error("The mappings vector is None")]

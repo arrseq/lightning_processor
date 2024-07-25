@@ -1,4 +1,4 @@
-use crate::instruction::operand::Operand;
+use crate::instruction_lg::operand::Operand;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct DualInput {
@@ -14,7 +14,7 @@ pub struct All {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Presence {
+pub enum Combination {
     Destination(Operand),
     SingleInput(Operand),
     DualInput(DualInput),

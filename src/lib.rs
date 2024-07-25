@@ -10,5 +10,6 @@
 
 pub mod core;
 pub mod math;
-pub mod instruction;
+pub mod instruction_lg;
 pub mod paged;
+pub mod instruction;

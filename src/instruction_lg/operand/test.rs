@@ -1,5 +1,5 @@
-use crate::instruction::operand::{Address, Calculated, Operand, Requirement};
-use crate::instruction::operand::register::{Register, SideInput};
+use crate::instruction_lg::operand::{Address, Calculated, Operand, Requirement};
+use crate::instruction_lg::operand::register::{Register, SideInput};
 use crate::math::dynamic_number;
 
 #[test]

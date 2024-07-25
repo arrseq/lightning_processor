@@ -1,8 +1,8 @@
 use std::io;
 use std::io::{Read, Write};
 use thiserror::Error;
-use crate::instruction::operand::{Operand, register};
-use crate::instruction::operand::register::Register;
+use crate::instruction_lg::operand::{Operand, register};
+use crate::instruction_lg::operand::register::Register;
 use crate::math::dynamic_number;
 
 #[cfg(test)]

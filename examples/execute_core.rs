@@ -3,11 +3,11 @@ extern crate arrseq_lightning;
 use std::io::Cursor;
 use arrseq_lightning::core::Core;
 use arrseq_lightning::math::dynamic_number::Size;
-use arrseq_lightning::instruction::Instruction;
-use arrseq_lightning::instruction::operand::{Destination, Operands};
-use arrseq_lightning::instruction::operand::dynamic::Operand;
-use arrseq_lightning::instruction::operand::register::{GeneralPurpose, Register};
-use arrseq_lightning::instruction::operation::{Arithmetic, Operation};
+use arrseq_lightning::instruction_lg::Instruction;
+use arrseq_lightning::instruction_lg::operand::{Destination, Operands};
+use arrseq_lightning::instruction_lg::operand::dynamic::Operand;
+use arrseq_lightning::instruction_lg::operand::register::{GeneralPurpose, Register};
+use arrseq_lightning::instruction_lg::operation::{Arithmetic, Operation};
 
 fn main() {
 	let mut core = Core::default();

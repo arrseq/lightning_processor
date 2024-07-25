@@ -1,8 +1,8 @@
 use std::io;
 use std::io::{Read, Seek};
 use thiserror::Error;
-use crate::instruction;
-use crate::instruction::Instruction;
+use crate::instruction_lg;
+use crate::instruction_lg::Instruction;
 
 #[cfg(test)]
 mod test;
@@ -25,7 +25,7 @@ pub struct DecodeCache {
 #[derive(Debug, Error)]
 pub enum PopulateError {
     #[error("")]
-    DecodeError(instruction::DecodeError),
+    DecodeError(instruction_lg::DecodeError),
     
     #[error("Could not obtain the stream position")]
     Io(io::Error)

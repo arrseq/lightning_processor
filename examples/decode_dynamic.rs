@@ -1,7 +1,7 @@
 extern crate arrseq_lightning;
 
 use std::io::Cursor;
-use arrseq_lightning::instruction::Instruction;
+use arrseq_lightning::instruction_lg::Instruction;
 
 fn main() {
     let mut cursor = Cursor::new([
