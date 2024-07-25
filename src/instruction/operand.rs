@@ -1,29 +1,12 @@
 use thiserror::Error;
+use crate::instruction::operand::addressing::Addressing;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Constant {
-    pub value: u64,
-    pub mask: u64
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum AddressingMode {
-    Register,
-    Constant,
-    Array,
-    ArrayInObject
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Addressing {
-    pub mode: AddressingMode,
-    pub index_register: u8
-}
+pub mod addressing;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Mode {
     Register,
-    Constant,
+    Constant { constant: u64 },
     Addressing(Addressing)
 }
 
@@ -38,20 +21,7 @@ impl Mode {
     pub const CONSTANT_ADDRESSING_MODE: u8 = 3;
     pub const ARRAY_ADDRESSING_MODE: u8 = 4;
     pub const ARRAY_IN_OBJECT_ADDRESSING_MODE: u8 = 5;
-    
-    pub fn encode(self) -> u8 {
-        match self {
-            Self::Register => Self::REGISTER_MODE,
-            Self::Constant => Self::CONSTANT_MODE,
-            Self::Addressing(addressing) => match addressing.mode {
-                AddressingMode::Register => Self::REGISTER_ADDRESSING_MODE,
-                AddressingMode::Constant => Self::CONSTANT_ADDRESSING_MODE,
-                AddressingMode::Array => Self::ARRAY_ADDRESSING_MODE,
-                AddressingMode::ArrayInObject => Self::ARRAY_IN_OBJECT_ADDRESSING_MODE
-            }
-        }
-    }
-    
+
     // TODO: Complete
     // pub fn decode(code: u8) -> Self {
     //     match code {
@@ -66,8 +36,7 @@ impl Mode {
 pub struct Operand {
     pub mode: Mode,
     pub base_register: u8,
-    pub data_mask: u64,
-    pub constant: Constant
+    pub data_mask: u64
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
