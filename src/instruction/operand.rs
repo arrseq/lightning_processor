@@ -1,5 +1,4 @@
-#[cfg(test)]
-mod test;
+pub mod encoding;
 
 use thiserror::Error;
 
@@ -54,48 +53,32 @@ impl Mode {
     pub const CONSTANT_SECOND_MODE        : u8 = 1;
     pub const RELATIVE_SECOND_MODE        : u8 = 2;
     pub const ARRAY_IN_OBJECT_SECOND_MODE : u8 = 3;
+}
 
-    /// Encode this operand based on its mode.
-    pub fn encode_mode(self) -> EncodedModes {
-        match self {
-            Mode::Register { mode, .. } => match mode {
-                RegisterMode::Register => EncodedModes(Self::REGISTER_MODE, None),
-                RegisterMode::Dereference => EncodedModes(Self::DEREFERENCE_REGISTER_MODE, None)
-            },
-            Mode::Constant { .. } => EncodedModes(Self::CONSTANT_MODE, None),
-            Mode::Second { mode, .. } => match mode {
-                SecondMode::Array => EncodedModes(Self::SECOND_MODE, Some(Self::ARRAY_ADDRESSING_SECOND_MODE)),
-                SecondMode::ConstantBased { mode, .. } => match mode {
-                    ConstantMode::Constant => EncodedModes(Self::SECOND_MODE, Some(Self::CONSTANT_SECOND_MODE)),
-                    ConstantMode::Relative => EncodedModes(Self::SECOND_MODE, Some(Self::RELATIVE_SECOND_MODE)),
-                    ConstantMode::ArrayInObject => EncodedModes(Self::SECOND_MODE, Some(Self::ARRAY_IN_OBJECT_SECOND_MODE))
-                }
-            }
-        }
-    }
+/// The registers of the 2 encoded bytes. 
+/// 
+/// # Registers
+/// The first register is mandatory and the second is present and used depending on conditions of the second byte which
+/// is also optional.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct EncodedRegisters(pub u8, pub Option<u8>);
 
-    pub fn decode_register_mode(first_mode: u8, register: u8) -> Result<Self, InvalidModeError> {
-        let mode_variant = match first_mode {
-            Self::REGISTER_MODE => RegisterMode::Register,
-            Self::DEREFERENCE_REGISTER_MODE => RegisterMode::Dereference,
-            _ => return Err(InvalidModeError)
+/// # Reason
+/// Used when a field is attempted to be accessed but it isn't supported for the specific addressing mode.
+#[derive(Debug, Error)]
+#[error("The field accessed is not available on this mode")]
+pub struct UnsupportedModeField;
+
+impl Mode {
+    pub fn registers(self) -> Result<EncodedRegisters, UnsupportedModeField> {
+        let register = match self {
+            Mode::Register { register, .. } => Some((register, None)),
+            Mode::Constant { .. } => None,
+            Mode::Second { base_register, index_register, .. } => Some((base_register, Some(index_register)))
         };
         
-        Ok(Self::Register { mode: mode_variant, register })
-    }
-
-    pub fn decode_constant_mode(second_mode: u8, constant: u64, constant_mask: u64, base_register: u8, index_register: u8) -> Result<Self, InvalidModeError> {
-        let mode_variant = match second_mode {
-            Self::CONSTANT_SECOND_MODE => ConstantMode::Constant,
-            Self::RELATIVE_SECOND_MODE => ConstantMode::Relative,
-            Self::ARRAY_IN_OBJECT_SECOND_MODE => ConstantMode::ArrayInObject,
-            _ => return Err(InvalidModeError)
-        };
-        
-        Ok(Self::Second { 
-            base_register, index_register,
-            mode: SecondMode::ConstantBased { mode: mode_variant, constant, mask: constant_mask }
-        })
+        if let Some(register) = register { return Ok(EncodedRegisters(register.0, register.1)) }
+        Err(UnsupportedModeField)
     }
 }
 
