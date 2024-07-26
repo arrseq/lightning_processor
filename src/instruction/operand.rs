@@ -1,10 +1,12 @@
+#[cfg(test)]
+mod test;
+
 use thiserror::Error;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum RegisterMode {
     Register,
-    Dereference,
-    Relative
+    Dereference
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -22,7 +24,7 @@ pub enum SecondMode {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Mode {
-    Register { register: u8, mode: RegisterMode },
+    Register { mode: RegisterMode, register: u8 },
     Constant { constant: u64 },
     Second { mode: SecondMode, base_register: u8, index_register: u8 }
 }
@@ -43,30 +45,28 @@ pub struct InvalidCodeError;
 impl Mode {
     pub const REGISTER_MODE               : u8 = 0;
     pub const DEREFERENCE_REGISTER_MODE   : u8 = 1;
-    pub const RELATIVE_REGISTER_MODE      : u8 = 2;
+    pub const CONSTANT_MODE               : u8 = 2;
+    pub const SECOND_MODE                 : u8 = 3;
     
-    pub const CONSTANT_MODE               : u8 = 3;
-    pub const ARRAY_ADDRESSING_MODE       : u8 = 4;
-    
-    pub const CONSTANT_SECOND_MODE       : u8 = 5;
-    pub const RELATIVE_SECOND_MODE       : u8 = 6;
-    pub const ARRAY_IN_OBJECT_SECOND_MODE: u8 = 7;
+    pub const ARRAY_ADDRESSING_SECOND_MODE: u8 = 0;
+    pub const CONSTANT_SECOND_MODE        : u8 = 1;
+    pub const RELATIVE_SECOND_MODE        : u8 = 2;
+    pub const ARRAY_IN_OBJECT_SECOND_MODE : u8 = 3;
 
     /// Encode this operand based on its mode.
     pub fn encode_mode(self) -> EncodedMode {
         match self {
             Mode::Register { mode, .. } => match mode {
-                RegisterMode::Register => Self::REGISTER_MODE,
-                RegisterMode::Dereference => Self::DEREFERENCE_REGISTER_MODE,
-                RegisterMode::Relative => Self::RELATIVE_REGISTER_MODE
+                RegisterMode::Register => EncodedMode(Self::REGISTER_MODE, None),
+                RegisterMode::Dereference => EncodedMode(Self::DEREFERENCE_REGISTER_MODE, None)
             },
-            Mode::Constant { .. } => Self::CONSTANT_MODE, 
+            Mode::Constant { .. } => EncodedMode(Self::CONSTANT_MODE, None),
             Mode::Second { mode, .. } => match mode {
-                SecondMode::Array => Self::ARRAY_ADDRESSING_MODE,
+                SecondMode::Array => EncodedMode(Self::SECOND_MODE, Some(Self::ARRAY_ADDRESSING_SECOND_MODE)),
                 SecondMode::ConstantBased { mode, .. } => match mode {
-                    ConstantBasedMode::Constant => Self::CONSTANT_SECOND_MODE,
-                    ConstantBasedMode::Relative => Self::RELATIVE_SECOND_MODE,
-                    ConstantBasedMode::ArrayInObject => Self::ARRAY_IN_OBJECT_SECOND_MODE
+                    ConstantBasedMode::Constant => EncodedMode(Self::SECOND_MODE, Some(Self::CONSTANT_SECOND_MODE)),
+                    ConstantBasedMode::Relative => EncodedMode(Self::SECOND_MODE, Some(Self::RELATIVE_SECOND_MODE)),
+                    ConstantBasedMode::ArrayInObject => EncodedMode(Self::SECOND_MODE, Some(Self::ARRAY_IN_OBJECT_SECOND_MODE))
                 }
             }
         }

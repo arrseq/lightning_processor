@@ -8,8 +8,8 @@
 #![allow(clippy::unused_io_amount)]
 #![allow(soft_unstable)]
 
-pub mod core;
-pub mod math;
-pub mod instruction_lg;
-pub mod paged;
+// pub mod core;
+// pub mod math;
+// pub mod instruction_lg;
+// pub mod paged;
 pub mod instruction;
