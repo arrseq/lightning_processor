@@ -51,23 +51,6 @@ impl Mode {
     }
 }
 
-/// # Result
-/// - If the mask is [u64::MAX] then 3 is returned.
-/// - If the mask is [u32::MAX] then 2 is returned.
-/// - If the mask is [u16::MAX] then 1 is returned.
-/// - If the mask is [u8::MAX] or anything else, then 0 is returned.  
-pub fn mask_to_operand_size(mask: u64) -> u8 {
-    const U16_MAX: u64 = u16::MAX as u64;
-    const U32_MAX: u64 = u32::MAX as u64;
-
-    match mask {
-        U16_MAX => 1,
-        U32_MAX => 2,
-        u64::MAX => 3,
-        _ => 0
-    }
-}
-
 /// # Parameters
 /// - The 4 least significant bits are used from the register.
 /// - The first 2 least significant bits are used from the first_mode and operand size.
