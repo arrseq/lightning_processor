@@ -1,6 +1,7 @@
 pub mod encoding;
 
 use thiserror::Error;
+use crate::math::dynamic_number::{DynamicNumber, Size};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum RegisterMode {
@@ -18,7 +19,7 @@ pub enum ConstantMode {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SecondMode {
     Array,
-    ConstantBased { mode: ConstantMode, constant: u64, mask: u64 }
+    ConstantBased { mode: ConstantMode, constant: DynamicNumber }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -106,5 +107,5 @@ impl Mode {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Operand {
     pub mode: Mode,
-    pub data_mask: u64
+    pub data_size: Size
 }

@@ -3,9 +3,8 @@ mod test;
 
 use std::io;
 use std::io::Write;
-use thiserror::Error;
-use crate::instruction::operand;
 use crate::instruction::operand::{ConstantMode, EncodedModes, EncodedRegisters, InvalidModeError, Mode, Operand, RegisterMode, SecondMode};
+use crate::math::dynamic_number::{DynamicNumber, Size};
 
 impl Mode {
     /// Encode this operand based on its mode.
@@ -37,7 +36,7 @@ impl Mode {
         Ok(Self::Register { mode: mode_variant, register })
     }
 
-    pub fn decode_constant_mode(second_mode: u8, constant: u64, constant_mask: u64, base_register: u8, index_register: u8) -> Result<Self, InvalidModeError> {
+    pub fn decode_constant_mode(second_mode: u8, constant: DynamicNumber, base_register: u8, index_register: u8) -> Result<Self, InvalidModeError> {
         let mode_variant = match second_mode {
             Self::CONSTANT_SECOND_MODE => ConstantMode::Constant,
             Self::RELATIVE_SECOND_MODE => ConstantMode::Relative,
@@ -47,7 +46,7 @@ impl Mode {
 
         Ok(Self::Second {
             base_register, index_register,
-            mode: SecondMode::ConstantBased { mode: mode_variant, constant, mask: constant_mask }
+            mode: SecondMode::ConstantBased { mode: mode_variant, constant }
         })
     }
 }
@@ -72,16 +71,14 @@ pub fn mask_to_operand_size(mask: u64) -> u8 {
 /// # Parameters
 /// - The 4 least significant bits are used from the register.
 /// - The first 2 least significant bits are used from the first_mode and operand size.
-pub fn encode_first_mode_byte(register: u8, mut first_mode: u8, mut operand_size: u8) -> u8 {
+pub fn encode_first_mode_byte(register: u8, mut first_mode: u8, operand_size: Size) -> u8 {
     let mut encoded = register << 4;
 
     first_mode &= 0b000000_11;
     first_mode <<= 2;
     encoded |= first_mode;
 
-    operand_size &= 0b000000_11;
-    encoded |= operand_size;
-
+    encoded |= operand_size.to_power() & 0b000000_11;
     encoded
 }
 
@@ -90,7 +87,7 @@ impl Operand {
         let registers = self.mode.registers().unwrap_or(EncodedRegisters(0, Some(0)));
         let modes = self.mode.encode_mode();
         
-        let buffer = [encode_first_mode_byte(registers.0, modes.0, mask_to_operand_size(self.data_mask))];
+        let buffer = [encode_first_mode_byte(registers.0, modes.0, self.data_size)];
         output.write_all(&buffer)?;
         
         Ok(())
