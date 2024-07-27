@@ -22,6 +22,13 @@ pub enum SecondMode {
     ConstantBased { mode: ConstantMode, constant: DynamicNumber }
 }
 
+impl SecondMode {
+    pub const ARRAY_ADDRESSING_SECOND_MODE: u8 = 0;
+    pub const CONSTANT_SECOND_MODE        : u8 = 1;
+    pub const RELATIVE_SECOND_MODE        : u8 = 2;
+    pub const ARRAY_IN_OBJECT_SECOND_MODE : u8 = 3;
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Mode {
     Register { mode: RegisterMode, register: u8 },
@@ -45,15 +52,10 @@ pub struct EncodedModes(pub u8, pub Option<u8>);
 pub struct InvalidModeError;
 
 impl Mode {
-    pub const REGISTER_MODE               : u8 = 0;
-    pub const DEREFERENCE_REGISTER_MODE   : u8 = 1;
-    pub const CONSTANT_MODE               : u8 = 2;
-    pub const SECOND_MODE                 : u8 = 3;
-
-    pub const ARRAY_ADDRESSING_SECOND_MODE: u8 = 0;
-    pub const CONSTANT_SECOND_MODE        : u8 = 1;
-    pub const RELATIVE_SECOND_MODE        : u8 = 2;
-    pub const ARRAY_IN_OBJECT_SECOND_MODE : u8 = 3;
+    pub const REGISTER_MODE            : u8 = 0;
+    pub const DEREFERENCE_REGISTER_MODE: u8 = 1;
+    pub const CONSTANT_MODE            : u8 = 2;
+    pub const SECOND_MODE              : u8 = 3;
 }
 
 /// The registers of the 2 encoded bytes. 

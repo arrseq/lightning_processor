@@ -6,6 +6,17 @@ pub enum DynamicNumber {
     U64(u64)
 }
 
+impl DynamicNumber {
+    pub fn with_size(size: Size, value: u64) -> Self {
+        match size {
+            Size::U8 => Self::U8(value as u8),
+            Size::U16 => Self::U16(value as u16),
+            Size::U32 => Self::U32(value as u32),
+            Size::U64 => Self::U64(value)
+        }
+    }
+}
+
 /// # Power
 /// The power is a representation of this primitive data type which when set to the power of 2 gives the size in bytes. 
 /// The power only has its 2 least significant bits used and the rest are discarded.
