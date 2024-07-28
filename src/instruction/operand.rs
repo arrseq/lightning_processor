@@ -1,6 +1,5 @@
 pub mod encoding;
 
-use std::num::Add;
 use crate::math::dynamic_number::{Unsigned, Signed, Size};
 
 /// Mode for addressing with only the base register.
@@ -35,10 +34,10 @@ pub struct ComplexAddressingFieldRequirements {
 }
 
 impl ComplexAddressing {
-    pub const BASE_CODE: u8 = 0;
+    pub const BASE_CODE            : u8 = 0;
     pub const BASE_PLUS_OFFSET_CODE: u8 = 1;
-    pub const ARRAY_CODE: u8 = 2;
-    pub const OFFSETTED_ARRAY_CODE: u8 = 3;
+    pub const ARRAY_CODE           : u8 = 2;
+    pub const OFFSETTED_ARRAY_CODE : u8 = 3;
     
     pub const BASE            : ComplexAddressingFieldRequirements = ComplexAddressingFieldRequirements { specifier_code: Self::BASE_CODE,             requires_offset: false, requires_index_register: false };
     pub const BASE_PLUS_OFFSET: ComplexAddressingFieldRequirements = ComplexAddressingFieldRequirements { specifier_code: Self::BASE_PLUS_OFFSET_CODE, requires_offset: true,  requires_index_register: false };
