@@ -35,6 +35,38 @@ impl SecondMode {
     pub const ARRAY_IN_OBJECT_MODE : u8 = 3;
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum ArrayAddressing {
+    Array,
+    Offsetted
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum ComplexAddressing {
+    Base,
+    BasePlusOffset  { offset: DynamicNumber },
+    ArrayAddressing { mode: ArrayAddressing, index_register: u8, offset: DynamicNumber }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ComplexAddressingFieldRequirements {
+    pub specifier_code: u8,
+    pub requires_offset: bool,
+    pub requires_index_register: bool
+}
+
+impl ComplexAddressing {
+    pub const BASE_CODE: u8 = 0;
+    pub const BASE_PLUS_OFFSET_CODE: u8 = 1;
+    pub const ARRAY_CODE: u8 = 2;
+    pub const OFFSETTED_ARRAY_CODE: u8 = 3;
+    
+    pub const BASE            : ComplexAddressingFieldRequirements = ComplexAddressingFieldRequirements { specifier_code: Self::BASE_CODE,             requires_offset: false, requires_index_register: false };
+    pub const BASE_PLUS_OFFSET: ComplexAddressingFieldRequirements = ComplexAddressingFieldRequirements { specifier_code: Self::BASE_PLUS_OFFSET_CODE, requires_offset: true,  requires_index_register: false };
+    pub const ARRAY           : ComplexAddressingFieldRequirements = ComplexAddressingFieldRequirements { specifier_code: Self::ARRAY_CODE,            requires_offset: true,  requires_index_register: true };
+    pub const OFFSETTED_ARRAY : ComplexAddressingFieldRequirements = ComplexAddressingFieldRequirements { specifier_code: Self::OFFSETTED_ARRAY_CODE,  requires_offset: true,  requires_index_register: true };
+}
+
 /// How the operand should evaluate its value.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Mode {

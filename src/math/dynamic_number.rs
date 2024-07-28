@@ -58,14 +58,6 @@ pub enum DynamicNumber {
     U64(u64)
 }
 
-#[derive(Debug, Error)]
-pub enum DecodeUnprefixedError {
-    #[error("Overflow occurred when adding to summation buffer")]
-    Overflow,
-    #[error("Failed to read next byte")]
-    Io(#[source] io::Error)
-}
-
 impl From<DynamicNumber> for u8 {
     fn from(value: DynamicNumber) -> Self {
         match value {
