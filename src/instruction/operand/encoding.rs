@@ -5,7 +5,7 @@ use std::io;
 use std::io::{Read, Write};
 use thiserror::Error;
 use crate::instruction::operand::{ConstantMode, EncodedModes, EncodedRegisters, Mode, Operand, RegisterMode, SecondMode};
-use crate::math::dynamic_number::{DynamicNumber, Size};
+use crate::math::dynamic_number::{Unsigned, Size};
 
 /// # Usage
 /// This can be used to decode the first and second mode byte because they both follower the same field types.
@@ -98,7 +98,7 @@ impl Operand {
             let byte = ModeByte { register: index_register, mode: second_mode, size: constant_size };
             output.write_all(&[byte.encode()])?;
             constant
-        } else if let Mode::Constant { constant } = self.mode { Some(DynamicNumber::with_size_u64(self.data_size, constant)) }
+        } else if let Mode::Constant { constant } = self.mode { Some(Unsigned::with_size_u64(self.data_size, constant)) }
         else { None };
 
         if let Some(constant) = constant { Self::encode_constant(output, constant)?; }
@@ -106,12 +106,12 @@ impl Operand {
         Ok(())
     }
 
-    fn encode_constant(output: &mut impl Write, constant: DynamicNumber) -> io::Result<()> {
+    fn encode_constant(output: &mut impl Write, constant: Unsigned) -> io::Result<()> {
         match constant {
-            DynamicNumber::U8(value) => output.write_all(&[value])?,
-            DynamicNumber::U16(value) => output.write_all(&value.to_le_bytes())?,
-            DynamicNumber::U32(value) => output.write_all(&value.to_le_bytes())?,
-            DynamicNumber::U64(value) => output.write_all(&value.to_le_bytes())?
+            Unsigned::U8(value) => output.write_all(&[value])?,
+            Unsigned::U16(value) => output.write_all(&value.to_le_bytes())?,
+            Unsigned::U32(value) => output.write_all(&value.to_le_bytes())?,
+            Unsigned::U64(value) => output.write_all(&value.to_le_bytes())?
         }
 
         Ok(())
@@ -167,27 +167,27 @@ impl Operand {
         Ok(Self { mode, data_size })
     }
 
-    fn decode_constant(input: &mut impl Read, size: Size) -> io::Result<DynamicNumber> {
+    fn decode_constant(input: &mut impl Read, size: Size) -> io::Result<Unsigned> {
         Ok(match size {
             Size::U8 => {
                 let mut buffer = [0u8; 1];
                 input.read_exact(&mut buffer)?;
-                DynamicNumber::U8(buffer[0])
+                Unsigned::U8(buffer[0])
             },
             Size::U16 => {
                 let mut buffer = [0u8; (u16::BITS / 8) as usize];
                 input.read_exact(&mut buffer)?;
-                DynamicNumber::U16(u16::from_le_bytes(buffer))
+                Unsigned::U16(u16::from_le_bytes(buffer))
             },
             Size::U32 => {
                 let mut buffer = [0u8; (u32::BITS / 8) as usize];
                 input.read_exact(&mut buffer)?;
-                DynamicNumber::U32(u32::from_le_bytes(buffer))
+                Unsigned::U32(u32::from_le_bytes(buffer))
             },
             Size::U64 => {
                 let mut buffer = [0u8; (u64::BITS / 8) as usize];
                 input.read_exact(&mut buffer)?;
-                DynamicNumber::U64(u64::from_le_bytes(buffer))
+                Unsigned::U64(u64::from_le_bytes(buffer))
             },
         })
     }

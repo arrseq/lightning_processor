@@ -1,6 +1,6 @@
-use crate::math::dynamic_number::DynamicNumber;
+use crate::math::dynamic_number::Unsigned;
 
-impl DynamicNumber {
+impl Unsigned {
     /// If an overflow will happen then the addition will not happen. The other value is size cast to this instance of
     /// Self.
     ///

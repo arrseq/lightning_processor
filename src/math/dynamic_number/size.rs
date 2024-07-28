@@ -1,4 +1,4 @@
-use crate::math::dynamic_number::{DynamicNumber, Size};
+use crate::math::dynamic_number::{Unsigned, Size};
 
 impl Size {
     /// Get the number of bytes it would take to represent a value of this size.
@@ -50,7 +50,7 @@ impl Size {
     }
 }
 
-impl DynamicNumber {
+impl Unsigned {
     pub fn with_size_u64(size: Size, value: u64) -> Self {
         match size {
             Size::U8 => Self::U8(value as u8),

@@ -1,13 +1,13 @@
 use std::io::Cursor;
 use crate::instruction::operand::{ConstantMode, EncodedModes, Mode, Operand, RegisterMode, SecondMode};
 use crate::instruction::operand::encoding::encode_first_mode_byte;
-use crate::math::dynamic_number::{DynamicNumber, Size};
+use crate::math::dynamic_number::{Unsigned, Size};
 
 #[test]
 fn encode_mode() {
     assert_eq!(Mode::Register { mode: RegisterMode::Register, register: 2 }.encode_mode(), EncodedModes(Mode::REGISTER_MODE, None));
     assert_eq!(Mode::Second {
-        mode: SecondMode::ConstantBased { mode: ConstantMode::Relative, constant: DynamicNumber::U8(2) },
+        mode: SecondMode::ConstantBased { mode: ConstantMode::Relative, constant: Unsigned::U8(2) },
         base_register: 4,
         index_register: 8
     }.encode_mode(), EncodedModes(Mode::SECOND_MODE, Some(Mode::RELATIVE_SECOND_MODE)));

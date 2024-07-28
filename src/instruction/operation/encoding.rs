@@ -2,7 +2,7 @@ use std::io::Read;
 use thiserror::Error;
 use crate::instruction::operation::Operation;
 use crate::math::dynamic_number;
-use crate::math::dynamic_number::DynamicNumber;
+use crate::math::dynamic_number::Unsigned;
 
 #[derive(Debug, Error)]
 pub enum DecodeError {
@@ -26,7 +26,7 @@ impl Operation {
     }
     
     fn decode(input: &mut impl Read) -> Result<Self, DecodeError> {
-        let code = DynamicNumber::decode_unprefixed(input).map_err(DecodeError::DynamicNumber)?;
+        let code = Unsigned::decode_unprefixed(input).map_err(DecodeError::DynamicNumber)?;
         dbg!(code);
         todo!()
     }
