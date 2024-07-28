@@ -3,12 +3,14 @@ pub mod encoding;
 use thiserror::Error;
 use crate::math::dynamic_number::{DynamicNumber, Size};
 
+/// Modes for dereferencing with a register from the first mode byte.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum RegisterMode {
     Register,
     Dereference
 }
 
+/// Modes for dereferencing with a constant.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ConstantMode {
     Constant,
@@ -16,6 +18,10 @@ pub enum ConstantMode {
     ArrayInObject
 }
 
+/// Mode for the second mode byte. It specifies more modes for the operand to be evaluated as.
+///
+/// # Usage
+/// Used for more complex encoding.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SecondMode {
     Array,
@@ -23,12 +29,13 @@ pub enum SecondMode {
 }
 
 impl SecondMode {
-    pub const ARRAY_ADDRESSING_SECOND_MODE: u8 = 0;
-    pub const CONSTANT_SECOND_MODE        : u8 = 1;
-    pub const RELATIVE_SECOND_MODE        : u8 = 2;
-    pub const ARRAY_IN_OBJECT_SECOND_MODE : u8 = 3;
+    pub const ARRAY_ADDRESSING_MODE: u8 = 0;
+    pub const CONSTANT_MODE        : u8 = 1;
+    pub const RELATIVE_MODE        : u8 = 2;
+    pub const ARRAY_IN_OBJECT_MODE : u8 = 3;
 }
 
+/// How the operand should evaluate its value.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Mode {
     Register { mode: RegisterMode, register: u8 },
@@ -58,8 +65,8 @@ impl Mode {
     pub const SECOND_MODE              : u8 = 3;
 }
 
-/// The registers of the 2 encoded bytes. 
-/// 
+/// The registers of the 2 encoded bytes.
+///
 /// # Registers
 /// The first register is mandatory and the second is present and used depending on conditions of the second byte which
 /// is also optional.
@@ -67,7 +74,7 @@ impl Mode {
 pub struct EncodedRegisters(pub u8, pub Option<u8>);
 
 /// # Reason
-/// Used when a field is attempted to be accessed but it isn't supported for the specific addressing mode.
+/// Used when a field is attempted to be accessed, but it isn't supported for the specific addressing mode.
 #[derive(Debug, Error)]
 #[error("The field accessed is not available on this mode")]
 pub struct UnsupportedModeField;
@@ -79,7 +86,7 @@ impl Mode {
             Mode::Constant { .. } => None,
             Mode::Second { base_register, index_register, .. } => Some((base_register, Some(index_register)))
         };
-        
+
         if let Some(register) = register { return Ok(EncodedRegisters(register.0, register.1)) }
         Err(UnsupportedModeField)
     }
