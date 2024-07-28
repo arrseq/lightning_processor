@@ -1,3 +1,6 @@
+use std::io;
+use std::io::Read;
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum DynamicNumber {
     U8(u8),
@@ -14,6 +17,10 @@ impl DynamicNumber {
             Size::U32 => Self::U32(value as u32),
             Size::U64 => Self::U64(value)
         }
+    }
+    
+    pub fn decode_unprefixed(input: &mut impl Read) -> io::Result<Self> {
+        let mut buffer = 0u64;
     }
 }
 
@@ -71,6 +78,48 @@ impl Size {
         };
         
         size as u8
+    }
+    
+    /// Attempt to increase the size to the next quantization. 
+    /// 
+    /// # Result
+    /// If this cannot be upsized anymore, then self is returned.
+    pub fn upsize(self) -> Self {
+        match self {
+            Self::U8 => Self::U16,
+            Self::U16 => Self::U32,
+            Self::U32 => Self::U64,
+            Self::U64 => Self::U64
+        }
+    }
+    
+    /// Whether if upsizing will return a different value.
+    pub fn can_upsize(self) -> bool {
+        match self {
+            Self::U64 => false,
+            _ => true
+        }
+    }
+
+    /// Attempt to decrease the size to the next quantization. 
+    ///
+    /// # Result
+    /// If this cannot be downsized anymore, then self is returned.
+    pub fn downsize(self) -> Self {
+        match self {
+            Self::U64 => Self::U32,
+            Self::U32 => Self::U16,
+            Self::U16 => Self::U8,
+            Self::U8 => Self::U8
+        }
+    }
+
+    /// Whether if downsizing will return a different value.
+    pub fn can_downsize(self) -> bool {
+        match self {
+            Self::U8 => false,
+            _ => true
+        }
     }
 }
 

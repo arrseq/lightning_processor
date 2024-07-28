@@ -4,7 +4,7 @@ mod test;
 use std::io;
 use std::io::{Read, Write};
 use thiserror::Error;
-use crate::instruction::operand::{ConstantMode, EncodedModes, EncodedRegisters, InvalidModeError, Mode, Operand, RegisterMode, SecondMode};
+use crate::instruction::operand::{ConstantMode, EncodedModes, EncodedRegisters, Mode, Operand, RegisterMode, SecondMode};
 use crate::math::dynamic_number::{DynamicNumber, Size};
 
 impl SecondMode {
@@ -38,10 +38,6 @@ impl Mode {
                 }
             }
         }
-    }
-    
-    fn is_second_mode(first_mode: u8) -> bool {
-        first_mode == Self::SECOND_MODE
     }
 }
 
@@ -106,7 +102,7 @@ pub enum DecodeError {
 }
 
 impl Operand {
-    pub fn encode(self, output: &mut impl Write) -> io::Result<()> {
+    fn encode(self, output: &mut impl Write) -> io::Result<()> {
         let registers = self.mode.registers().unwrap_or(EncodedRegisters(0, Some(0)));
         let modes = self.mode.encode_mode();
 
@@ -149,7 +145,7 @@ impl Operand {
         Ok(())
     }
     
-    pub fn decode(self, input: &mut impl Read) -> Result<Self, DecodeError> {
+    fn decode(self, input: &mut impl Read) -> Result<Self, DecodeError> {
         let mut buffer = [0u8; 1];
         input.read_exact(&mut buffer).map_err(|io| DecodeError::Io { io, decoder: DecodeIoError::FirstModeByte })?;
         
