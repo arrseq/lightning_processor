@@ -1,6 +1,7 @@
 pub mod encoding;
 
-use crate::math::dynamic_number::{Unsigned, Signed};
+use std::num::Add;
+use crate::math::dynamic_number::{Unsigned, Signed, Size};
 
 /// Mode for addressing with only the base register.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -48,9 +49,17 @@ impl ComplexAddressing {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ConstantAddressing {
     /// Constant as value.
-    Value,
+    Constant,
     /// Relative to the current instruction pointer with an offset.
     Relative
+}
+
+/// Field requirements for non complex addressing modes.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct AddressingFieldRequirements {
+    pub specifier_code: u8,
+    pub requires_register: bool,
+    pub requires_constant: bool
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -61,4 +70,22 @@ pub enum AddressingMode {
     Constant { mode: ConstantAddressing, constant: Signed },
     /// Address the value from memory.
     Complex  { mode: ComplexAddressing,  base: u8         }
+}
+
+impl AddressingMode {
+    pub const REGISTER_CODE: u8 = 0;
+    pub const CONSTANT_CODE: u8 = 1;
+    pub const RELATIVE_CODE: u8 = 2;
+    pub const COMPLEX_CODE : u8 = 3;
+
+    pub const REGISTER: AddressingFieldRequirements = AddressingFieldRequirements { specifier_code: Self::REGISTER_CODE, requires_register: true,  requires_constant: false };
+    pub const CONSTANT: AddressingFieldRequirements = AddressingFieldRequirements { specifier_code: Self::CONSTANT_CODE, requires_register: false, requires_constant: true  };
+    pub const RELATIVE: AddressingFieldRequirements = AddressingFieldRequirements { specifier_code: Self::RELATIVE_CODE, requires_register: false, requires_constant: true  };
+    pub const COMPLEX : AddressingFieldRequirements = AddressingFieldRequirements { specifier_code: Self::COMPLEX_CODE,  requires_register: false, requires_constant: false };
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Operand {
+    pub mode: AddressingMode,
+    pub size: Size
 }
