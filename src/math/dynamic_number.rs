@@ -17,8 +17,19 @@ impl DynamicNumber {
     }
 }
 
+impl From<DynamicNumber> for u64 {
+    fn from(value: DynamicNumber) -> Self {
+        match value {
+            DynamicNumber::U8(value) => value as u64,
+            DynamicNumber::U16(value) => value as u64,
+            DynamicNumber::U32(value) => value as u64,
+            DynamicNumber::U64(value) => value
+        }
+    }
+}
+
 /// # Power
-/// The power is a representation of this primitive data type which when set to the power of 2 gives the size in bytes. 
+/// The power is a representation of this primitive data type which when set to the power of 2 gives the size in bytes.
 /// The power only has its 2 least significant bits used and the rest are discarded.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Size {
@@ -48,6 +59,18 @@ impl Size {
             Self::U32 => 2,
             Self::U64 => 3
         }
+    }
+    
+    /// Get the number of bytes it would take to represent a value of this size.
+    pub fn size(self) -> u8 {
+        let size = match self {
+            Self::U8 => u8::BITS / 8,
+            Self::U16 => u16::BITS / 8,
+            Self::U32 => u32::BITS / 8,
+            Self::U64 => u64::BITS / 8
+        };
+        
+        size as u8
     }
 }
 
