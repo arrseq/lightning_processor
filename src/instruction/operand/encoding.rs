@@ -98,7 +98,7 @@ impl Operand {
             let byte = ModeByte { register: index_register, mode: second_mode, size: constant_size };
             output.write_all(&[byte.encode()])?;
             constant
-        } else if let Mode::Constant { constant } = self.mode { Some(DynamicNumber::with_size(self.data_size, constant)) }
+        } else if let Mode::Constant { constant } = self.mode { Some(DynamicNumber::with_size_u64(self.data_size, constant)) }
         else { None };
 
         if let Some(constant) = constant { Self::encode_constant(output, constant)?; }
