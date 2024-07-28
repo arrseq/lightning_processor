@@ -7,36 +7,6 @@ use thiserror::Error;
 use crate::instruction::operand::{ConstantMode, EncodedModes, EncodedRegisters, Mode, Operand, RegisterMode, SecondMode};
 use crate::math::dynamic_number::{DynamicNumber, Size};
 
-impl SecondMode {
-    pub fn encode_mode(self) -> u8 {
-        match self {
-            Self::Array => Self::ARRAY_ADDRESSING_MODE,
-            Self::ConstantBased { mode, .. } => match mode {
-                ConstantMode::Constant => Self::CONSTANT_MODE,
-                ConstantMode::Relative => Self::RELATIVE_MODE,
-                ConstantMode::ArrayInObject => Self::ARRAY_IN_OBJECT_MODE
-            }
-        }
-    }
-}
-
-/// # Usage
-/// This can be used to encode the first and second mode byte because they both follower the same field types.
-///
-/// # Parameters
-/// - The 4 least significant bits are used from the register.
-/// - The first 2 least significant bits are used from the first_mode and operand size.
-fn encode_mode_byte(register: u8, mut first_mode: u8, operand_size: u8) -> u8 {
-    let mut encoded = register << 4;
-
-    first_mode &= 0b000000_11;
-    first_mode <<= 2;
-    encoded |= first_mode;
-
-    encoded |= operand_size & 0b000000_11;
-    encoded
-}
-
 /// # Usage
 /// This can be used to decode the first and second mode byte because they both follower the same field types.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -115,8 +85,17 @@ impl Operand {
             else { None };
             let constant_size = if let Some(constant) = constant { Size::from(constant).to_power() }
             else { 0 };
+            
+            let second_mode = match mode {
+                SecondMode::Array => SecondMode::ARRAY_ADDRESSING_MODE,
+                SecondMode::ConstantBased { mode, .. } => match mode {
+                    ConstantMode::Constant => SecondMode::CONSTANT_MODE,
+                    ConstantMode::Relative => SecondMode::RELATIVE_MODE,
+                    ConstantMode::ArrayInObject => SecondMode::ARRAY_IN_OBJECT_MODE
+                }
+            };
 
-            let byte = ModeByte { register: index_register, mode: mode.encode_mode(), size: constant_size };
+            let byte = ModeByte { register: index_register, mode: second_mode, size: constant_size };
             output.write_all(&[byte.encode()])?;
             constant
         } else if let Mode::Constant { constant } = self.mode { Some(DynamicNumber::with_size(self.data_size, constant)) }
