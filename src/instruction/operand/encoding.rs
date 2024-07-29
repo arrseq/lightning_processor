@@ -63,7 +63,15 @@ impl Operand {
             AddressingMode::IMMEDIATE_CODE
             | AddressingMode::RELATIVE_CODE => {
                 let immediate_size = Size::from_power(end_segment >> 2);
-                let immediate = Self::decode_immediate(input, immediate_size).map_err(|source| DecodeError::Io { source, error: DecodeIoError::ImmediateOffset })?;
+                let immediate = Unsigned::read(input, immediate_size).map_err(|source| {
+                    let error = match addressing_mode {
+                        AddressingMode::IMMEDIATE_CODE => DecodeIoError::ImmediateValue,
+                        AddressingMode::RELATIVE_CODE => DecodeIoError::ImmediateOffset,
+                        _ => unreachable!()
+                    };
+                    
+                    DecodeError::Io { source, error }
+                })?;
                 
                 match addressing_mode {
                     AddressingMode::IMMEDIATE_CODE => AddressingMode::Immediate { mode: ImmediateAddressing::Immediate { immediate                       }},
@@ -83,10 +91,6 @@ impl Operand {
         };
         
         Ok(Self { size, mode })
-    }
-
-    fn decode_immediate(input: &mut impl Read, size: Size) -> io::Result<Unsigned> {
-        todo!()
     }
     
     fn decode_complex(input: &mut impl Read) -> Result<ComplexAddressing, DecodeError> {

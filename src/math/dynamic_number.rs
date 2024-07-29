@@ -60,7 +60,7 @@ pub enum Unsigned {
 }
 
 impl Unsigned {
-    fn read(input: &mut impl Read, size: Size) -> io::Result<Unsigned> {
+    pub fn read(input: &mut impl Read, size: Size) -> io::Result<Unsigned> {
         Ok(match size {
             Size::U8 => {
                 let mut buffer = [0u8; 1];

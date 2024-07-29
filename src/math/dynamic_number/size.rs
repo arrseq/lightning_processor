@@ -86,3 +86,5 @@ impl Unsigned {
         Self::with_size(new_size, self)
     }
 }
+
+// TODO: Copy methods for signed
