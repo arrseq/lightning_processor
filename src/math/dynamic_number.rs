@@ -3,6 +3,7 @@ pub mod arithmetic;
 pub mod size;
 
 use std::io;
+use std::io::Read;
 use thiserror::Error;
 
 /// # Power
@@ -56,6 +57,33 @@ pub enum Unsigned {
     U16(u16),
     U32(u32),
     U64(u64)
+}
+
+impl Unsigned {
+    fn read(input: &mut impl Read, size: Size) -> io::Result<Unsigned> {
+        Ok(match size {
+            Size::U8 => {
+                let mut buffer = [0u8; 1];
+                input.read_exact(&mut buffer)?;
+                Unsigned::U8(buffer[0])
+            },
+            Size::U16 => {
+                let mut buffer = [0u8; size_of::<u16>()];
+                input.read_exact(&mut buffer)?;
+                Unsigned::U16(u16::from_le_bytes(buffer))
+            },
+            Size::U32 => {
+                let mut buffer = [0u8; size_of::<u32>()];
+                input.read_exact(&mut buffer)?;
+                Unsigned::U32(u32::from_le_bytes(buffer))
+            },
+            Size::U64 => {
+                let mut buffer = [0u8; size_of::<u64>()];
+                input.read_exact(&mut buffer)?;
+                Unsigned::U64(u64::from_le_bytes(buffer))
+            }
+        })
+    }
 }
 
 impl From<Signed> for Unsigned {
