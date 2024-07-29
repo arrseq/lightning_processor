@@ -58,6 +58,17 @@ pub enum Unsigned {
     U64(u64)
 }
 
+impl From<Signed> for Unsigned {
+    fn from(value: Signed) -> Self {
+        match value {
+            Signed::I8(value) => Self::U8(value as u8),
+            Signed::I16(value) => Self::U16(value as u16),
+            Signed::I32(value) => Self::U32(value as u32),
+            Signed::I64(value) => Self::U64(value as u64)
+        }
+    }
+}
+
 impl From<Unsigned> for u8 {
     fn from(value: Unsigned) -> Self {
         match value {
@@ -108,6 +119,17 @@ pub enum Signed {
     I16(i16),
     I32(i32),
     I64(i64)
+}
+
+impl From<Unsigned> for Signed {
+    fn from(value: Unsigned) -> Self {
+        match value {
+            Unsigned::U8(value) => Self::I8(value as i8),
+            Unsigned::U16(value) => Self::I16(value as i16),
+            Unsigned::U32(value) => Self::I32(value as i32),
+            Unsigned::U64(value) => Self::I64(value as i64)
+        }
+    }
 }
 
 impl From<Signed> for i8 {
