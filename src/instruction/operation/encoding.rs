@@ -12,17 +12,19 @@ pub enum DecodeError {
 
 impl Operation {
     fn input_count(code: u16) -> u8 {
-        match code {
-            Self::STACK.code => {},    
-            Self::UNSTACK => {}, 
-            Self::COPY => {},     
-            Self::COMPARE => {}, 
-            Self::SIGNED_COMPARE => {},
-            Self::ADD => {},     
-            Self::SUBTRACT => {}, 
-            Self::MULTIPLY => {},
-            Self::DIVIDE => {}   
-        }
+        // match code {
+        //     Self::STACK.code => {},    
+        //     Self::UNSTACK => {}, 
+        //     Self::COPY => {},     
+        //     Self::COMPARE => {}, 
+        //     Self::SIGNED_COMPARE => {},
+        //     Self::ADD => {},     
+        //     Self::SUBTRACT => {}, 
+        //     Self::MULTIPLY => {},
+        //     Self::DIVIDE => {}   
+        // }
+        
+        todo!()
     }
     
     fn decode(input: &mut impl Read) -> Result<Self, DecodeError> {
