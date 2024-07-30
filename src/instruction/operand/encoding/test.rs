@@ -1,5 +1,5 @@
 use crate::cursor_test;
-use crate::instruction::operand::{AddressingMode, ArrayAddressing, BaseAddressing, ComplexAddressing, ImmediateAddressing, Operand};
+use crate::instruction::operand::{Operand, ArrayAddressing, BaseAddressing, ComplexAddressing, ImmediateAddressing, AddressingMode};
 use crate::math::dynamic_number::{Signed, Size, Unsigned};
 
 #[test]

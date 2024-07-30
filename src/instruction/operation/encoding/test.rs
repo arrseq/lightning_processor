@@ -1,7 +1,16 @@
 use crate::cursor_test;
-use crate::instruction::operation::Operation;
+use crate::instruction::operand::{AddressingMode, Operand};
+use crate::instruction::operation::{Input, Operation};
+use crate::math::dynamic_number::Size;
 
 #[test]
 fn decode() {
-    cursor_test([255, 255], Operation::decode).expect("Failed to decode operation");
+    // stack register 0 as byte
+    assert_eq!(cursor_test([0, 0], Operation::decode).unwrap(), Operation::Input {
+        operation: Input::Stack,
+        input: Operand {
+            mode: AddressingMode::Register { register: 0 },
+            size: Size::U8
+        }
+    });
 }

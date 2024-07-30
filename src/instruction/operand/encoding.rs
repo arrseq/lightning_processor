@@ -41,7 +41,7 @@ impl Operand {
         // Decode the addressing mode.
         let mode = match addressing_mode {
             AddressingMode::REGISTER_CODE => AddressingMode::Register { register: end_segment },
-            
+
             AddressingMode::IMMEDIATE_CODE
             | AddressingMode::RELATIVE_CODE => {
                 let immediate_size = Size::from_power(end_segment >> 2);
@@ -62,7 +62,7 @@ impl Operand {
                     _ => unreachable!()
                 }
             },
-            
+
             AddressingMode::COMPLEX_CODE => { 
                 let complex_mode = Self::decode_complex(input)?;
                 AddressingMode::Complex { mode: complex_mode, base: end_segment } 

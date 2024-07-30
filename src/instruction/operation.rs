@@ -6,41 +6,35 @@ use crate::instruction::operand::Operand;
 pub enum Category {
     Destination,
     Input,
-    InputAndDestination,
+    DestinationAndInput,
     DualInput,
-    DualInputAndDestination
-}
-
-impl Category {
-    pub fn has_destination(self) -> bool {
-        matches!(self, Category::Destination | Category::InputAndDestination | Category::DualInputAndDestination)
-    }
+    DestinationAndDualInput
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Destination {
-    Stack
-}
-
-impl Destination {
-    pub const STACK: u16 = Operation::STACK.code;
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Input {
     Unstack
 }
 
-impl Input {
+impl Destination {
     pub const UNSTACK: u16 = Operation::UNSTACK.code;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum InputAndDestination {
+pub enum Input {
+    Stack
+}
+
+impl Input {
+    pub const STACK: u16 = Operation::STACK.code;
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum DestinationAndInput {
     Copy
 }
 
-impl InputAndDestination {
+impl DestinationAndInput {
     pub const COPY: u16 = Operation::COPY.code;
 }
 
@@ -56,27 +50,35 @@ impl DualInput {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum DualInputAndDestination {
+pub enum DestinationAndDualInput {
     Add,
+    FloatingAdd,
     Subtract,
+    FloatingSubtract,
     Multiply,
+    FloatingMultiply,
     Divide,
+    FloatingDivide
 }
 
-impl DualInput {
+impl DestinationAndDualInput {
     pub const ADD: u16 = Operation::ADD.code;
+    pub const FLOATING_ADD: u16 = Operation::FLOATING_ADD.code;
     pub const SUBTRACT: u16 = Operation::SUBTRACT.code;
+    pub const FLOATING_SUBTRACT: u16 = Operation::FLOATING_SUBTRACT.code;
     pub const MULTIPLY: u16 = Operation::MULTIPLY.code;
+    pub const FLOATING_MULTIPLY: u16 = Operation::FLOATING_MULTIPLY.code;
     pub const DIVIDE: u16 = Operation::DIVIDE.code;
+    pub const FLOATING_DIVIDE: u16 = Operation::FLOATING_DIVIDE.code;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Operation {
     Destination             { operation: Destination,             destination: Operand },
     Input                   { operation: Input,                   input:       Operand },
-    InputAndDestination     { operation: InputAndDestination,     destination: Operand, input: Operand },
-    DualInput               { operation: DualInput,               destination: Operand, input: Operand },
-    DualInputAndDestination { operation: DualInputAndDestination, input: [Operand; 2],  destination: Operand }
+    DestinationAndInput     { operation: DestinationAndInput,     destination: Operand, input: Operand },
+    DualInput               { operation: DualInput,               input: [Operand; 2] },
+    DestinationAndDualInput { operation: DestinationAndDualInput, input: [Operand; 2],  destination: Operand }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -88,17 +90,17 @@ pub struct Dependencies {
 impl Operation {
     pub const STACK            : Dependencies = Dependencies { code: 0 , category: Category::Input                   };
     pub const UNSTACK          : Dependencies = Dependencies { code: 1 , category: Category::Destination             };
-    pub const COPY             : Dependencies = Dependencies { code: 2 , category: Category::InputAndDestination     };
+    pub const COPY             : Dependencies = Dependencies { code: 2 , category: Category::DestinationAndInput };
     pub const COMPARE          : Dependencies = Dependencies { code: 3 , category: Category::DualInput               };
     pub const SIGNED_COMPARE   : Dependencies = Dependencies { code: 4 , category: Category::DualInput               };
-    pub const ADD              : Dependencies = Dependencies { code: 5 , category: Category::DualInputAndDestination };
-    pub const FLOATING_ADD     : Dependencies = Dependencies { code: 6 , category: Category::DualInputAndDestination };
-    pub const SUBTRACT         : Dependencies = Dependencies { code: 7 , category: Category::DualInputAndDestination };
-    pub const FLOATING_SUBTRACT: Dependencies = Dependencies { code: 8 , category: Category::DualInputAndDestination };
-    pub const MULTIPLY         : Dependencies = Dependencies { code: 9 , category: Category::DualInputAndDestination };
-    pub const FLOATING_MULTIPLY: Dependencies = Dependencies { code: 10, category: Category::DualInputAndDestination };
-    pub const DIVIDE           : Dependencies = Dependencies { code: 11, category: Category::DualInputAndDestination };
-    pub const FLOATING_DIVIDE  : Dependencies = Dependencies { code: 12, category: Category::DualInputAndDestination };
+    pub const ADD              : Dependencies = Dependencies { code: 5 , category: Category::DestinationAndDualInput };
+    pub const FLOATING_ADD     : Dependencies = Dependencies { code: 6 , category: Category::DestinationAndDualInput };
+    pub const SUBTRACT         : Dependencies = Dependencies { code: 7 , category: Category::DestinationAndDualInput };
+    pub const FLOATING_SUBTRACT: Dependencies = Dependencies { code: 8 , category: Category::DestinationAndDualInput };
+    pub const MULTIPLY         : Dependencies = Dependencies { code: 9 , category: Category::DestinationAndDualInput };
+    pub const FLOATING_MULTIPLY: Dependencies = Dependencies { code: 10, category: Category::DestinationAndDualInput };
+    pub const DIVIDE           : Dependencies = Dependencies { code: 11, category: Category::DestinationAndDualInput };
+    pub const FLOATING_DIVIDE  : Dependencies = Dependencies { code: 12, category: Category::DestinationAndDualInput };
 
     pub const STACK_CODE            : u16 = Self::STACK.code            ;
     pub const UNSTACK_CODE          : u16 = Self::UNSTACK.code          ;
