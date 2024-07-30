@@ -3,7 +3,22 @@ use crate::instruction::operand::{AddressingMode, ImmediateAddressing, Operand};
 use crate::math::dynamic_number::{Signed, Size, Unsigned};
 
 #[test]
-fn decode_relative_addressing() {
+fn decode_register() {
+    // register 0 as qword
+    assert_eq!(cursor_test([ 0b00_110000 ], Operand::decode).unwrap(), Operand {
+        size: Size::U64,
+        mode: AddressingMode::Register { register: 0 }
+    });
+
+    // register 10 as dword
+    assert_eq!(cursor_test([ 0b00_101010 ], Operand::decode).unwrap(), Operand {
+        size: Size::U32,
+        mode: AddressingMode::Register { register: 10 }
+    });
+}
+
+#[test]
+fn decode_relative_immediate() {
     // +1 int_1 offset with a qword value.
     assert_eq!(cursor_test([ 0b10_110000, 0b00000001 ], Operand::decode).unwrap(), Operand {
         size: Size::U64,
@@ -22,7 +37,7 @@ fn decode_relative_addressing() {
 }
 
 #[test]
-fn decode_immediate_value() {
+fn decode_value_immediate() {
     // 10 uint_1 as a qword value.
     assert_eq!(cursor_test([ 0b01_110000, 0b00001010 ], Operand::decode).unwrap(), Operand {
         size: Size::U64,
