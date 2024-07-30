@@ -91,8 +91,8 @@ fn decode_array() {
     assert_eq!(cursor_test([ 0b11_10_0011, 0b11_1010_00, u8::MAX ], Operand::decode).unwrap(), Operand {
         size: Size::U32,
         mode: AddressingMode::Complex {
-            mode: ComplexAddressing::ArrayAddressing { 
-                mode: ArrayAddressing::Offsetted { offset: Unsigned::U8(255) }, 
+            mode: ComplexAddressing::ArrayAddressing {
+                mode: ArrayAddressing::Offsetted { offset: Unsigned::U8(255) },
                 index: 10
             },
             base: 3
