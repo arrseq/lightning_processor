@@ -4,7 +4,7 @@ mod test;
 use std::io;
 use std::io::Read;
 use thiserror::Error;
-use crate::instruction::operand::{AddressingMode, ComplexAddressing, ImmediateAddressing, Operand};
+use crate::instruction::operand::{AddressingMode, ArrayAddressing, BaseAddressing, ComplexAddressing, ImmediateAddressing, Operand};
 use crate::math::dynamic_number::{Signed, Size, Unsigned};
 
 #[derive(Debug, Error)]
@@ -14,7 +14,9 @@ pub(crate) enum DecodeIoError {
     #[error("Could not retrieve immediate value")]
     ImmediateValue,
     #[error("Could not retrieve immediate relative offset")]
-    ImmediateOffset
+    ImmediateOffset,
+    #[error("Could not retrieve complex addressing byte")]
+    ComplexAddressingByte
 }
 
 #[derive(Debug, Error)]
@@ -74,6 +76,32 @@ impl Operand {
     }
     
     fn decode_complex(input: &mut impl Read) -> Result<ComplexAddressing, DecodeError> {
-        todo!()
+        let mut buffer = [0u8; 1];
+        input
+            .read_exact(&mut buffer)
+            .map_err(|source| DecodeError::Io { source, error: DecodeIoError::ComplexAddressingByte })?;
+        
+        let addressing_mode = (buffer[0] & 0b11_0000_00) >> 6;
+        let index_register = (buffer[0] & 0b00_1111_00) >> 2;
+        let size = Size::from_power(buffer[0] & 0b00_0000_11);
+        
+        Ok(match addressing_mode {
+            ComplexAddressing::BASE_CODE
+            | ComplexAddressing::ARRAY_CODE => match addressing_mode {
+                ComplexAddressing::BASE_CODE => ComplexAddressing::Base { mode: BaseAddressing::Base },
+                ComplexAddressing::ARRAY_CODE => ComplexAddressing::ArrayAddressing { mode: ArrayAddressing::Array, index: index_register },
+                _ => unreachable!()
+            },
+            ComplexAddressing::BASE_PLUS_OFFSET_CODE
+            | ComplexAddressing::OFFSETTED_ARRAY_CODE => {
+                let offset = Unsigned::read(input, size).map_err(|source| DecodeError::Io { source, error: DecodeIoError::ImmediateOffset })?;
+                match addressing_mode {
+                    ComplexAddressing::BASE_PLUS_OFFSET_CODE => ComplexAddressing::Base { mode: BaseAddressing::Offsetted { offset }},
+                    ComplexAddressing::OFFSETTED_ARRAY_CODE => ComplexAddressing::ArrayAddressing { mode: ArrayAddressing::Offsetted { offset }, index: index_register },
+                    _ => unreachable!()
+                }
+            },
+            _ => unreachable!()
+        })
     }
 }

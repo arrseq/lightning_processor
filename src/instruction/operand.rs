@@ -6,18 +6,38 @@ use crate::math::dynamic_number::{Unsigned, Signed, Size};
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum BaseAddressing {
     /// Reference something at a base address.
+    /// 
+    /// # Formula
+    /// ```js
+    /// base
+    /// ```
     Base,
     /// Reference something at a base address with an offset.
+    /// 
+    /// # Formula
+    /// ```js
+    /// base + offset
+    /// ```
     Offsetted { offset: Unsigned }
 }
 
 /// More complex addressing that is for arrays.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ArrayAddressing {
-    /// Reference an array.
+    /// Reference an array. 
+    /// 
+    /// # Formula
+    /// ```js
+    /// base + index * size
+    /// ```
     Array,
     /// Reference an array that is at an offset.
-    Offsetted
+    /// 
+    /// # Formula
+    /// ```js
+    /// base + index * size + offset
+    /// ```
+    Offsetted { offset: Unsigned }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
