@@ -20,7 +20,7 @@ impl Category {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Destination {
     Stack
-}/
+}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Input {
