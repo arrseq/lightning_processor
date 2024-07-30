@@ -22,14 +22,26 @@ pub enum Destination {
     Stack
 }
 
+impl Destination {
+    pub const STACK: u16 = Operation::STACK.code;
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Input {
     Unstack
 }
 
+impl Input {
+    pub const UNSTACK: u16 = Operation::UNSTACK.code;
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum InputAndDestination {
     Copy
+}
+
+impl InputAndDestination {
+    pub const COPY: u16 = Operation::COPY.code;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -38,12 +50,24 @@ pub enum DualInput {
     SignedCompare
 }
 
+impl DualInput {
+    pub const COMPARE: u16 = Operation::COMPARE.code;
+    pub const SIGNED_COMPARE: u16 = Operation::SIGNED_COMPARE.code;
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum DualInputAndDestination {
     Add,
     Subtract,
     Multiply,
     Divide,
+}
+
+impl DualInput {
+    pub const ADD: u16 = Operation::ADD.code;
+    pub const SUBTRACT: u16 = Operation::SUBTRACT.code;
+    pub const MULTIPLY: u16 = Operation::MULTIPLY.code;
+    pub const DIVIDE: u16 = Operation::DIVIDE.code;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
