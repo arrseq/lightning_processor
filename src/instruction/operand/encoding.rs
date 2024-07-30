@@ -7,26 +7,6 @@ use thiserror::Error;
 use crate::instruction::operand::{AddressingMode, ComplexAddressing, ImmediateAddressing, Operand};
 use crate::math::dynamic_number::{Signed, Size, Unsigned};
 
-impl ComplexAddressing {
-    fn requires_offset(code: u8) -> Option<bool> {
-        Some(Self::MODES.get(code as usize)?.requires_offset)
-    }
-
-    fn requires_index_register(code: u8) -> Option<bool> {
-        Some(Self::MODES.get(code as usize)?.requires_index_register)
-    }
-}
-
-impl AddressingMode {
-    fn requires_register(code: u8) -> Option<bool> {
-        Some(Self::MODES.get(code as usize)?.requires_register)
-    }
-
-    fn requires_immediate(code: u8) -> Option<bool> {
-        Some(Self::MODES.get(code as usize)?.requires_immediate)
-    }
-}
-
 #[derive(Debug, Error)]
 pub(crate) enum DecodeIoError {
     #[error("Could not retrieve addressing byte")]
