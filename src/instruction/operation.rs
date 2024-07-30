@@ -67,4 +67,12 @@ impl Operation {
     pub const SUBTRACT      : Dependencies = Dependencies { code: Self::SUBTRACT_CODE      , has_destination: true,  input_count: 2 };
     pub const MULTIPLY      : Dependencies = Dependencies { code: Self::MULTIPLY_CODE      , has_destination: true,  input_count: 2 };
     pub const DIVIDE        : Dependencies = Dependencies { code: Self::DIVIDE_CODE        , has_destination: true,  input_count: 2 };
+    
+    pub const OPERATIONS: [Dependencies; 9] = [
+        Self::STACK   , Self::UNSTACK       ,
+        Self::COPY    ,
+        Self::COMPARE , Self::SIGNED_COMPARE,
+        Self::ADD     , Self::SUBTRACT      ,
+        Self::MULTIPLY, Self::DIVIDE        ,
+    ];
 }

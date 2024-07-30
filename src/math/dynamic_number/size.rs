@@ -2,7 +2,7 @@ use crate::math::dynamic_number::{Unsigned, Size};
 
 impl Size {
     /// Get the number of bytes it would take to represent a value of this size.
-    pub fn size(self) -> u8 {
+    pub const fn size(self) -> u8 {
         let size = match self {
             Self::U8 => u8::BITS / 8,
             Self::U16 => u16::BITS / 8,
@@ -17,7 +17,7 @@ impl Size {
     ///
     /// # Result
     /// If this cannot be upsized anymore, then self is returned.
-    pub fn upsize(self) -> Self {
+    pub const fn upsize(self) -> Self {
         match self {
             Self::U8 => Self::U16,
             Self::U16 => Self::U32,
@@ -27,7 +27,7 @@ impl Size {
     }
 
     /// Whether if upsizing will return a different value.
-    pub fn can_upsize(self) -> bool {
+    pub const fn can_upsize(self) -> bool {
         !matches!(self, Self::U64)
     }
 
@@ -35,7 +35,7 @@ impl Size {
     ///
     /// # Result
     /// If this cannot be downsized anymore, then self is returned.
-    pub fn downsize(self) -> Self {
+    pub const fn downsize(self) -> Self {
         match self {
             Self::U64 => Self::U32,
             Self::U32 => Self::U16,
@@ -45,13 +45,13 @@ impl Size {
     }
 
     /// Whether if downsizing will return a different value.
-    pub fn can_downsize(self) -> bool {
+    pub const fn can_downsize(self) -> bool {
         !matches!(self, Self::U8)
     }
 }
 
 impl Unsigned {
-    pub fn with_size_u64(size: Size, value: u64) -> Self {
+    pub const fn with_size_u64(size: Size, value: u64) -> Self {
         match size {
             Size::U8 => Self::U8(value as u8),
             Size::U16 => Self::U16(value as u16),

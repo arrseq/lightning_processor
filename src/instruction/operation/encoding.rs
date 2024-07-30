@@ -11,20 +11,20 @@ pub enum DecodeError {
 }
 
 impl Operation {
-    fn input_count(code: u16) -> u8 {
-        // match code {
-        //     Self::STACK.code => {},    
-        //     Self::UNSTACK => {}, 
-        //     Self::COPY => {},     
-        //     Self::COMPARE => {}, 
-        //     Self::SIGNED_COMPARE => {},
-        //     Self::ADD => {},     
-        //     Self::SUBTRACT => {}, 
-        //     Self::MULTIPLY => {},
-        //     Self::DIVIDE => {}   
-        // }
-        
-        todo!()
+    /// Get the number of inputs a specific operation requires based on its code.
+    /// 
+    /// # Result
+    /// [None] is returned if the code is invalid.
+    fn input_count(code: u16) -> Option<u8> {
+        Some(Self::OPERATIONS.get(code as usize)?.input_count)
+    }
+
+    /// Get whether the destination operand is present for an operation based on its code.
+    ///
+    /// # Result
+    /// [None] is returned if the code is invalid.
+    fn has_destination(code: u16) -> Option<bool> {
+        Some(Self::OPERATIONS.get(code as usize)?.has_destination)
     }
     
     fn decode(input: &mut impl Read) -> Result<Self, DecodeError> {

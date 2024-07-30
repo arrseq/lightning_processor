@@ -4,7 +4,6 @@ pub mod size;
 
 use std::io;
 use std::io::Read;
-use thiserror::Error;
 
 /// # Power
 /// The power is a representation of this primitive data type which when set to the power of 2 gives the size in bytes.
@@ -30,7 +29,7 @@ impl Size {
     }
 
     /// Convert this enum representation to a power of 2.
-    pub fn to_power(self) -> u8 {
+    pub const fn to_power(self) -> u8 {
         match self {
             Self::U8 => 0,
             Self::U16 => 1,

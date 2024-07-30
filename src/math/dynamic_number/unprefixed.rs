@@ -15,7 +15,7 @@ impl Unsigned {
     pub fn decode_unprefixed(input: &mut impl Read) -> Result<Self, DecodeError> {
         /// # Result
         /// Tuple containing whether a next byte should be read and the value this byte evaluates to.
-        fn evaluate(byte: u8) -> (bool, u8) {
+        const fn evaluate(byte: u8) -> (bool, u8) {
             if byte == 255 { (true, 254) } else { (false, byte) }
         }
 
