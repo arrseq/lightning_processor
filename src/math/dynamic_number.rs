@@ -1,4 +1,4 @@
-pub mod chain_length;
+pub mod chain;
 pub mod arithmetic;
 pub mod size;
 
