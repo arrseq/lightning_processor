@@ -6,13 +6,13 @@ use crate::math::dynamic_number::{Signed, Size, Unsigned};
 fn decode_register() {
     // register 0 as qword
     assert_eq!(cursor_test([ 0b00_110000 ], Operand::decode).unwrap(), Operand {
-        size: Size::U64,
+        size: Size::X64,
         mode: AddressingMode::Register { register: 0 }
     });
 
     // register 10 as dword
     assert_eq!(cursor_test([ 0b00_101010 ], Operand::decode).unwrap(), Operand {
-        size: Size::U32,
+        size: Size::X32,
         mode: AddressingMode::Register { register: 10 }
     });
 }
@@ -21,17 +21,23 @@ fn decode_register() {
 fn decode_relative_immediate() {
     // +1 int_1 offset with a qword value.
     assert_eq!(cursor_test([ 0b10_110000, 0b00000001 ], Operand::decode).unwrap(), Operand {
-        size: Size::U64,
+        size: Size::X64,
         mode: AddressingMode::Immediate { mode: ImmediateAddressing::Relative {
-            offset: Signed::I8(1)
+            offset: Signed {
+                value: 1,
+                size: Size::X8
+            }
         }}
     });
 
     // +0 int_2 offset with a qword value.
     assert_eq!(cursor_test([ 0b10_110100, 0b00000000, 0b00000000 ], Operand::decode).unwrap(), Operand {
-        size: Size::U64,
+        size: Size::X64,
         mode: AddressingMode::Immediate { mode: ImmediateAddressing::Relative {
-            offset: Signed::I16(0)
+            offset: Signed {
+                value: 0,
+                size: Size::X16
+            }
         }}
     });
 }
@@ -40,17 +46,23 @@ fn decode_relative_immediate() {
 fn decode_value_immediate() {
     // 10 uint_1 as a qword value.
     assert_eq!(cursor_test([ 0b01_110000, 0b00001010 ], Operand::decode).unwrap(), Operand {
-        size: Size::U64,
+        size: Size::X64,
         mode: AddressingMode::Immediate { mode: ImmediateAddressing::Immediate {
-            immediate: Unsigned::U8(10)
+            immediate: Unsigned {
+                value: 10,
+                size: Size::X8
+            }
         }}
     });
 
     // 10 uint_8 as a word value.
     assert_eq!(cursor_test([ 0b01_001100, 0b00001010, 0, 0, 0, 0, 0, 0, 0 ], Operand::decode).unwrap(), Operand {
-        size: Size::U8,
+        size: Size::X8,
         mode: AddressingMode::Immediate { mode: ImmediateAddressing::Immediate {
-            immediate: Unsigned::U64(10)
+            immediate: Unsigned {
+                value: 10,
+                size: Size::X64
+            }
         }}
     });
 }
@@ -59,7 +71,7 @@ fn decode_value_immediate() {
 fn decode_base() {
     // register 10 as base as a byte value.
     assert_eq!(cursor_test([ 0b11_00_1010, 0b00_0000_00 ], Operand::decode).unwrap(), Operand {
-        size: Size::U8,
+        size: Size::X8,
         mode: AddressingMode::Complex {
             mode: ComplexAddressing::Base { mode: BaseAddressing::Base },
             base: 10
@@ -68,9 +80,12 @@ fn decode_base() {
 
     // register 15 with word offset of 3 as base as a qword value.
     assert_eq!(cursor_test([ 0b11_11_1111, 0b01_0000_01, 0b00000011, 0 ], Operand::decode).unwrap(), Operand {
-        size: Size::U64,
+        size: Size::X64,
         mode: AddressingMode::Complex {
-            mode: ComplexAddressing::Base { mode: BaseAddressing::Offsetted { offset: Unsigned::U16(3) } },
+            mode: ComplexAddressing::Base { mode: BaseAddressing::Offsetted { offset: Unsigned {
+                value: 3,
+                size: Size::X16
+            }}},
             base: 15
         }
     });
@@ -80,7 +95,7 @@ fn decode_base() {
 fn decode_array() {
     // base register 3 and index register 10 as a dword value.
     assert_eq!(cursor_test([ 0b11_10_0011, 0b10_1010_00 ], Operand::decode).unwrap(), Operand {
-        size: Size::U32,
+        size: Size::X32,
         mode: AddressingMode::Complex {
             mode: ComplexAddressing::ArrayAddressing { mode: ArrayAddressing::Array, index: 10 },
             base: 3
@@ -89,10 +104,13 @@ fn decode_array() {
 
     // base register 3, index register 10, and with offset uint_1 255 as a dword value.
     assert_eq!(cursor_test([ 0b11_10_0011, 0b11_1010_00, u8::MAX ], Operand::decode).unwrap(), Operand {
-        size: Size::U32,
+        size: Size::X32,
         mode: AddressingMode::Complex {
             mode: ComplexAddressing::ArrayAddressing {
-                mode: ArrayAddressing::Offsetted { offset: Unsigned::U8(255) },
+                mode: ArrayAddressing::Offsetted { offset: Unsigned {
+                    value: 255,
+                    size: Size::X8
+                } },
                 index: 10
             },
             base: 3

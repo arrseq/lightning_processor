@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod test;
 
-use std::io::Read;
+use std::io::{Read, Write};
 use thiserror::Error;
 use crate::instruction::operand;
 use crate::instruction::operand::Operand;
@@ -20,19 +20,22 @@ pub enum DecodeOperandError {
 #[derive(Debug, Error)]
 pub enum DecodeError {
     #[error("Failed to read operation specifier code")]
-    Chain(#[source] dynamic_number::chain::DecodeError),
+    Chain { #[source] source: dynamic_number::chain::Error },
     #[error("The operation code was not recognized")]
     InvalidOperation,
     #[error("Failed to retrieve operand")]
     Operand { #[source] source: operand::encoding::DecodeError, error: DecodeOperandError }
 }
 
+#[derive(Debug, Error)]
+pub enum EncodeError {}
+
 impl Operation {
     /// The maximum number of bytes an operation can be in the chain length encoding.
     pub const MAX_OPERATION_LENGTH: u8 = 2;
     
     fn decode(input: &mut impl Read) -> Result<Self, DecodeError> {
-        let code = u16::from(Unsigned::decode_chain_length(input, Some(Self::MAX_OPERATION_LENGTH as usize)).map_err(DecodeError::Chain)?);
+        let code = Unsigned::decode_chain(input, Some(Self::MAX_OPERATION_LENGTH as u64)).map_err(|source| DecodeError::Chain { source })?.value as u16;
         let category = Self::OPERATIONS.get(code as usize).ok_or(DecodeError::InvalidOperation)?.category;
         
         // The ends of the statements are marked unreachable in the match because the codes will always be valid for 
@@ -106,4 +109,8 @@ impl Operation {
     fn decode_operand(input: &mut impl Read, error: DecodeOperandError) -> Result<Operand, DecodeError> {
         Operand::decode(input).map_err(|source| DecodeError::Operand { source, error })
     }
+    
+    // fn encode(output: &mut impl Write) -> Result<(), EncodeError> {
+    //     
+    // }
 }

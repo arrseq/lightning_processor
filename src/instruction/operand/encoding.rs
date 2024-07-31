@@ -26,6 +26,33 @@ pub(crate) enum DecodeError {
 }
 
 impl Operand {
+    fn read_immediate(input: &mut impl Read, size: Size) -> io::Result<Unsigned> {
+        let value = match size {
+            Size::X8 => {
+                let mut buffer = [0u8; size_of::<u8>() as usize];
+                input.read_exact(&mut buffer)?;
+                u8::from_le_bytes(buffer) as u64
+            },
+            Size::X16 => {
+                let mut buffer = [0u8; size_of::<u16>() as usize];
+                input.read_exact(&mut buffer)?;
+                u16::from_le_bytes(buffer) as u64
+            },
+            Size::X32 => {
+                let mut buffer = [0u8; size_of::<u32>() as usize];
+                input.read_exact(&mut buffer)?;
+                u32::from_le_bytes(buffer) as u64
+            },
+            Size::X64 => {
+                let mut buffer = [0u8; size_of::<u64>() as usize];
+                input.read_exact(&mut buffer)?;
+                u64::from_le_bytes(buffer) as u64
+            }
+        };
+        
+        Ok(Unsigned { value, size })
+    }
+    
     pub(crate) fn decode(input: &mut impl Read) -> Result<Self, DecodeError> {
         // Try to decode the addressing byte.
         let mut buffer = [0u8; 1];
@@ -45,7 +72,7 @@ impl Operand {
             AddressingMode::IMMEDIATE_CODE
             | AddressingMode::RELATIVE_CODE => {
                 let immediate_size = Size::from_power(end_segment >> 2);
-                let immediate = Unsigned::read(input, immediate_size).map_err(|source| {
+                let immediate = Self::read_immediate(input, immediate_size).map_err(|source| {
                     let error = match addressing_mode {
                         AddressingMode::IMMEDIATE_CODE => DecodeIoError::ImmediateValue,
                         AddressingMode::RELATIVE_CODE => DecodeIoError::ImmediateOffset,
@@ -94,7 +121,7 @@ impl Operand {
             },
             ComplexAddressing::BASE_PLUS_OFFSET_CODE
             | ComplexAddressing::OFFSETTED_ARRAY_CODE => {
-                let offset = Unsigned::read(input, size).map_err(|source| DecodeError::Io { source, error: DecodeIoError::ImmediateOffset })?;
+                let offset = Self::read_immediate(input, size).map_err(|source| DecodeError::Io { source, error: DecodeIoError::ImmediateOffset })?;
                 match addressing_mode {
                     ComplexAddressing::BASE_PLUS_OFFSET_CODE => ComplexAddressing::Base { mode: BaseAddressing::Offsetted { offset }},
                     ComplexAddressing::OFFSETTED_ARRAY_CODE => ComplexAddressing::ArrayAddressing { mode: ArrayAddressing::Offsetted { offset }, index: index_register },
