@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod test;
 
+use std::io;
 use std::io::{Read, Write};
 use thiserror::Error;
 use crate::instruction::operand;
@@ -20,7 +21,7 @@ pub enum DecodeOperandError {
 #[derive(Debug, Error)]
 pub enum DecodeError {
     #[error("Failed to read operation specifier code")]
-    Chain { #[source] source: dynamic_number::chain::Error },
+    Chain { #[source] source: io::Error },
     #[error("The operation code was not recognized")]
     InvalidOperation,
     #[error("Failed to retrieve operand")]

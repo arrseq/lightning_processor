@@ -107,10 +107,7 @@ fn decode_array() {
         size: Size::X32,
         mode: AddressingMode::Complex {
             mode: ComplexAddressing::ArrayAddressing {
-                mode: ArrayAddressing::Offsetted { offset: Unsigned {
-                    value: 255,
-                    size: Size::X8
-                } },
+                mode: ArrayAddressing::Offsetted { offset: Unsigned::new(255) },
                 index: 10
             },
             base: 3

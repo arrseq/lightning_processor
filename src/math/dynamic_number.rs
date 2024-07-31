@@ -78,7 +78,7 @@ impl Size {
         !matches!(self, Self::X8)
     }
     
-    pub fn mask(self) -> u64 {
+    pub const fn mask(self) -> u64 {
         match self {
             Self::X8 => u8::MAX as u64,
             Self::X16 => u16::MAX as u64,
@@ -87,7 +87,7 @@ impl Size {
         }
     }
     
-    pub fn get_minimum(value: u64) -> Self {
+    pub const fn get_minimum(value: u64) -> Self {
         if value > u32::MAX as u64 { Self::X64 }
             else if value > u16::MAX as u64 { Self::X32 }
             else if value > u8::MAX as u64 { Self::X16 }
@@ -99,6 +99,16 @@ impl Size {
 pub struct Unsigned {
     pub value: u64,
     pub size: Size
+}
+
+impl Unsigned {
+    pub const fn new(value: u64) -> Self {
+        let size = Size::get_minimum(value);
+        Unsigned {
+            value: value & size.mask(),
+            size
+        }
+    }
 }
 
 impl From<Signed> for Unsigned {
