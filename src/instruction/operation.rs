@@ -90,7 +90,7 @@ pub struct Dependencies {
 impl Operation {
     pub const STACK            : Dependencies = Dependencies { code: 0 , category: Category::Input                   };
     pub const UNSTACK          : Dependencies = Dependencies { code: 1 , category: Category::Destination             };
-    pub const COPY             : Dependencies = Dependencies { code: 2 , category: Category::DestinationAndInput };
+    pub const COPY             : Dependencies = Dependencies { code: 2 , category: Category::DestinationAndInput     };
     pub const COMPARE          : Dependencies = Dependencies { code: 3 , category: Category::DualInput               };
     pub const SIGNED_COMPARE   : Dependencies = Dependencies { code: 4 , category: Category::DualInput               };
     pub const ADD              : Dependencies = Dependencies { code: 5 , category: Category::DestinationAndDualInput };

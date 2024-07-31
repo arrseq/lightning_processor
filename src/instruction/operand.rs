@@ -78,7 +78,7 @@ pub enum ImmediateAddressing {
 /// Field requirements for non complex addressing modes.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct AddressingFieldRequirements {
-    pub specifier_code: u8,
+    pub code: u8,
     pub requires_register: bool,
     pub requires_immediate: bool
 }
@@ -99,10 +99,10 @@ impl AddressingMode {
     pub const RELATIVE_CODE:  u8 = 2;
     pub const COMPLEX_CODE:   u8 = 3;
 
-    pub const REGISTER:  AddressingFieldRequirements = AddressingFieldRequirements { specifier_code: Self::REGISTER_CODE,  requires_register: true,  requires_immediate: false };
-    pub const IMMEDIATE: AddressingFieldRequirements = AddressingFieldRequirements { specifier_code: Self::IMMEDIATE_CODE, requires_register: false, requires_immediate: true  };
-    pub const RELATIVE:  AddressingFieldRequirements = AddressingFieldRequirements { specifier_code: Self::RELATIVE_CODE,  requires_register: false, requires_immediate: true  };
-    pub const COMPLEX:   AddressingFieldRequirements = AddressingFieldRequirements { specifier_code: Self::COMPLEX_CODE,   requires_register: true,  requires_immediate: false };
+    pub const REGISTER:  AddressingFieldRequirements = AddressingFieldRequirements { code: Self::REGISTER_CODE,  requires_register: true,  requires_immediate: false };
+    pub const IMMEDIATE: AddressingFieldRequirements = AddressingFieldRequirements { code: Self::IMMEDIATE_CODE, requires_register: false, requires_immediate: true  };
+    pub const RELATIVE:  AddressingFieldRequirements = AddressingFieldRequirements { code: Self::RELATIVE_CODE,  requires_register: false, requires_immediate: true  };
+    pub const COMPLEX:   AddressingFieldRequirements = AddressingFieldRequirements { code: Self::COMPLEX_CODE,   requires_register: true,  requires_immediate: false };
     
     pub const MODES: [AddressingFieldRequirements; 4] = [Self::REGISTER, Self::IMMEDIATE, Self::RELATIVE, Self::COMPLEX];
 }

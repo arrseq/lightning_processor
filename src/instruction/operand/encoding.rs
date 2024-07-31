@@ -2,27 +2,29 @@
 mod test;
 
 use std::io;
-use std::io::Read;
+use std::io::{Read, Write};
 use thiserror::Error;
 use crate::instruction::operand::{AddressingMode, ArrayAddressing, BaseAddressing, ComplexAddressing, ImmediateAddressing, Operand};
 use crate::math::dynamic_number::{Signed, Size, Unsigned};
 
 #[derive(Debug, Error)]
-pub(crate) enum DecodeIoError {
-    #[error("Could not retrieve addressing byte")]
+pub(crate) enum IoError {
+    #[error("Could not handle addressing byte")]
     AddressingByte,
-    #[error("Could not retrieve immediate value")]
+    #[error("Could not handle immediate value")]
     ImmediateValue,
-    #[error("Could not retrieve immediate relative offset")]
+    #[error("Could not handle immediate relative offset")]
     ImmediateOffset,
-    #[error("Could not retrieve complex addressing byte")]
+    #[error("Could not handle complex addressing byte")]
     ComplexAddressingByte
 }
 
 #[derive(Debug, Error)]
-pub(crate) enum DecodeError {
-    #[error("Failed to read data for decoding")]
-    Io { #[source] source: io::Error, error: DecodeIoError }
+#[error("Failed to access data for encoding or decoding")]
+pub(crate) struct Error {
+    #[source] 
+    source: io::Error, 
+    error: IoError 
 }
 
 impl Operand {
@@ -53,12 +55,12 @@ impl Operand {
         Ok(Unsigned { value, size })
     }
     
-    pub(crate) fn decode(input: &mut impl Read) -> Result<Self, DecodeError> {
+    pub(crate) fn decode(input: &mut impl Read) -> Result<Self, Error> {
         // Try to decode the addressing byte.
         let mut buffer = [0u8; 1];
         input
             .read_exact(&mut buffer)
-            .map_err(|source| DecodeError::Io { source, error: DecodeIoError::AddressingByte })?;
+            .map_err(|source| Error { source, error: IoError::AddressingByte })?;
         
         let addressing_mode = buffer[0] >> 6;
         let size = Size::from_power((buffer[0] & 0b00_11_0000) >> 4);
@@ -74,12 +76,12 @@ impl Operand {
                 let immediate_size = Size::from_power(end_segment >> 2);
                 let immediate = Self::read_immediate(input, immediate_size).map_err(|source| {
                     let error = match addressing_mode {
-                        AddressingMode::IMMEDIATE_CODE => DecodeIoError::ImmediateValue,
-                        AddressingMode::RELATIVE_CODE => DecodeIoError::ImmediateOffset,
+                        AddressingMode::IMMEDIATE_CODE => IoError::ImmediateValue,
+                        AddressingMode::RELATIVE_CODE => IoError::ImmediateOffset,
                         _ => unreachable!()
                     };
                     
-                    DecodeError::Io { source, error }
+                    Error { source, error }
                 })?;
                 
                 match addressing_mode {
@@ -102,11 +104,11 @@ impl Operand {
         Ok(Self { size, mode })
     }
     
-    fn decode_complex(input: &mut impl Read) -> Result<ComplexAddressing, DecodeError> {
+    fn decode_complex(input: &mut impl Read) -> Result<ComplexAddressing, Error> {
         let mut buffer = [0u8; 1];
         input
             .read_exact(&mut buffer)
-            .map_err(|source| DecodeError::Io { source, error: DecodeIoError::ComplexAddressingByte })?;
+            .map_err(|source| Error { source, error: IoError::ComplexAddressingByte })?;
         
         let addressing_mode = (buffer[0] & 0b11_0000_00) >> 6;
         let index_register = (buffer[0] & 0b00_1111_00) >> 2;
@@ -121,7 +123,7 @@ impl Operand {
             },
             ComplexAddressing::BASE_PLUS_OFFSET_CODE
             | ComplexAddressing::OFFSETTED_ARRAY_CODE => {
-                let offset = Self::read_immediate(input, size).map_err(|source| DecodeError::Io { source, error: DecodeIoError::ImmediateOffset })?;
+                let offset = Self::read_immediate(input, size).map_err(|source| Error { source, error: IoError::ImmediateOffset })?;
                 match addressing_mode {
                     ComplexAddressing::BASE_PLUS_OFFSET_CODE => ComplexAddressing::Base { mode: BaseAddressing::Offsetted { offset }},
                     ComplexAddressing::OFFSETTED_ARRAY_CODE => ComplexAddressing::ArrayAddressing { mode: ArrayAddressing::Offsetted { offset }, index: index_register },
@@ -130,5 +132,55 @@ impl Operand {
             },
             _ => unreachable!()
         })
+    }
+    
+    fn encode_addressing_byte(self, output: &mut impl Write, addressing_mode: u8, end_segment: u8) -> Result<(), Error> {
+        let mut first_byte = addressing_mode << 6;
+        first_byte |= (self.size.to_power() & 0b00000011) << 4;
+        first_byte |= end_segment & 0b00001111;
+
+        output.write_all(&[first_byte]).map_err(|source| Error { source, error: IoError::AddressingByte })
+    }
+    
+    fn write_immediate(output: &mut impl Write, immediate: Unsigned, error: IoError) -> Result<(), Error> {
+        let result = match immediate.size {
+            Size::X8 => output.write_all(&(immediate.value as u8).to_le_bytes()),
+            Size::X16 => output.write_all(&(immediate.value as u16).to_le_bytes()),
+            Size::X32 => output.write_all(&(immediate.value as u32).to_le_bytes()),
+            Size::X64 => output.write_all(&(immediate.value as u64).to_le_bytes())
+        };
+        
+        result.map_err(|source| Error { source, error })?;
+        Ok(())
+    }
+    
+    pub(crate) fn encode(self, output: &mut impl Write) -> Result<(), Error> {
+        match self.mode {
+            AddressingMode::Register { register } => self.encode_addressing_byte(output, AddressingMode::REGISTER.code, register)?,
+            AddressingMode::Immediate { mode } => {
+                self.encode_addressing_byte(output, AddressingMode::REGISTER.code, 0)?;
+                
+                match mode {
+                    ImmediateAddressing::Immediate { immediate } => Self::write_immediate(output, immediate, IoError::ImmediateValue)?,
+                    ImmediateAddressing::Relative { offset } => {
+                        let immediate = Unsigned::from(offset);
+                        Self::write_immediate(output, immediate, IoError::ImmediateOffset)?
+                    }
+                }
+            },
+            AddressingMode::Complex { mode, base } => {
+                self.encode_addressing_byte(output, AddressingMode::COMPLEX.code, base)?;
+                    
+                match mode {
+                    ComplexAddressing::Base { mode } => match mode {
+                        BaseAddressing::Base => {}
+                        BaseAddressing::Offsetted { offset } => {}
+                    }
+                    ComplexAddressing::ArrayAddressing { mode, index } => {}
+                }
+            }
+        }
+        
+        Ok(())
     }
 }

@@ -21,7 +21,18 @@ pub mod instruction;
 /// 
 /// # Result
 /// Value returned by the handle closure.
-pub fn cursor_test<T: AsRef<[u8]>, R>(data: T, mut handle: impl FnMut(&mut Cursor<T>) -> R) -> R {
+pub fn read_cursor<T: AsRef<[u8]>, R>(data: T, mut handle: impl FnMut(&mut Cursor<T>) -> R) -> R {
     let mut cursor = Cursor::new(data);
     handle(&mut cursor)
+}
+
+/// Testing utility to streamline the processing of creating a temporary cursor and using it for an operation that 
+/// modifies a buffer.
+///
+/// # Result
+/// The buffer that was modified.
+pub fn write_cursor<T: AsRef<[u8]>, R>(data: T, mut handle: impl FnMut(&mut Cursor<T>) -> R) -> T {
+    let mut cursor = Cursor::new(data);
+    handle(&mut cursor);
+    cursor.into_inner()
 }

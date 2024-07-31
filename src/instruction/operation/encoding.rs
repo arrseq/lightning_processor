@@ -6,16 +6,16 @@ use std::io::{Read, Write};
 use thiserror::Error;
 use crate::instruction::operand;
 use crate::instruction::operand::Operand;
-use crate::instruction::operation::{Category, Operation};
+use crate::instruction::operation::{Category, DestinationAndDualInput, DestinationAndInput, DualInput, Input, Operation};
 use crate::math::dynamic_number;
 use crate::math::dynamic_number::Unsigned;
 
 #[derive(Debug, Error)]
-pub enum DecodeOperandError {
+pub enum OperandError {
     #[error("Failed to retrieve destination")]
     Destination,
-    #[error("Failed to retrieve input")]
-    Input
+    #[error("Failed to retrieve input {nth}")]
+    Input { nth: usize }
 }
 
 #[derive(Debug, Error)]
@@ -25,17 +25,20 @@ pub enum DecodeError {
     #[error("The operation code was not recognized")]
     InvalidOperation,
     #[error("Failed to retrieve operand")]
-    Operand { #[source] source: operand::encoding::DecodeError, error: DecodeOperandError }
+    Operand { #[source] source: operand::encoding::Error, error: OperandError }
 }
 
 #[derive(Debug, Error)]
-pub enum EncodeError {}
+pub enum EncodeError {
+    #[error("Failed to write operation specifier code")]
+    Chain { #[source] source: io::Error }
+}
 
 impl Operation {
     /// The maximum number of bytes an operation can be in the chain length encoding.
     pub const MAX_OPERATION_LENGTH: u8 = 2;
     
-    fn decode(input: &mut impl Read) -> Result<Self, DecodeError> {
+    pub(crate) fn decode(input: &mut impl Read) -> Result<Self, DecodeError> {
         let code = Unsigned::decode_chain(input, Some(Self::MAX_OPERATION_LENGTH as u64)).map_err(|source| DecodeError::Chain { source })?.value as u16;
         let category = Self::OPERATIONS.get(code as usize).ok_or(DecodeError::InvalidOperation)?.category;
         
@@ -43,7 +46,7 @@ impl Operation {
         // their operand types.
         Ok(match category {
             Category::Destination => {
-                let destination = Self::decode_operand(input, DecodeOperandError::Destination)?;
+                let destination = Self::decode_operand(input, OperandError::Destination)?;
                 
                 let operation = match code {
                     super::Destination::UNSTACK => super::Destination::Unstack,
@@ -53,7 +56,7 @@ impl Operation {
                 Operation::Destination { operation, destination }
             },
             Category::Input => {
-                let input = Self::decode_operand(input, DecodeOperandError::Input)?;
+                let input = Self::decode_operand(input, OperandError::Input { nth: 0 })?;
 
                 let operation = match code {
                     super::Input::STACK => super::Input::Stack,
@@ -63,8 +66,8 @@ impl Operation {
                 Operation::Input { operation, input }
             },
             Category::DestinationAndInput => {
-                let destination = Self::decode_operand(input, DecodeOperandError::Destination)?;
-                let input = Self::decode_operand(input, DecodeOperandError::Input)?;
+                let destination = Self::decode_operand(input, OperandError::Destination)?;
+                let input = Self::decode_operand(input, OperandError::Input { nth: 0 })?;
                 
                 let operation = match code {
                     super::DestinationAndInput::COPY => super::DestinationAndInput::Copy,
@@ -74,8 +77,8 @@ impl Operation {
                 Operation::DestinationAndInput { operation, destination, input }
             }
             Category::DualInput => {
-                let input_0 = Self::decode_operand(input, DecodeOperandError::Input)?;
-                let input_1 = Self::decode_operand(input, DecodeOperandError::Input)?;
+                let input_0 = Self::decode_operand(input, OperandError::Input { nth: 0 })?;
+                let input_1 = Self::decode_operand(input, OperandError::Input { nth: 1 })?;
                 
                 let operation = match code {
                     super::DualInput::COMPARE => super::DualInput::Compare,
@@ -86,9 +89,9 @@ impl Operation {
                 Operation::DualInput { operation, input: [input_0, input_1] }
             },
             Category::DestinationAndDualInput => {
-                let destination = Self::decode_operand(input, DecodeOperandError::Destination)?;
-                let input_0 = Self::decode_operand(input, DecodeOperandError::Input)?;
-                let input_1 = Self::decode_operand(input, DecodeOperandError::Input)?;
+                let destination = Self::decode_operand(input, OperandError::Destination)?;
+                let input_0 = Self::decode_operand(input, OperandError::Input { nth: 0 })?;
+                let input_1 = Self::decode_operand(input, OperandError::Input { nth: 1 })?;
 
                 let operation = match code {
                     super::DestinationAndDualInput::ADD               => super::DestinationAndDualInput::Add,
@@ -107,11 +110,39 @@ impl Operation {
         })
     }
     
-    fn decode_operand(input: &mut impl Read, error: DecodeOperandError) -> Result<Operand, DecodeError> {
+    fn decode_operand(input: &mut impl Read, error: OperandError) -> Result<Operand, DecodeError> {
         Operand::decode(input).map_err(|source| DecodeError::Operand { source, error })
     }
     
-    // fn encode(output: &mut impl Write) -> Result<(), EncodeError> {
-    //     
-    // }
+    pub(crate) fn encode(self, output: &mut impl Write) -> Result<(), EncodeError> {
+        let operation = match self {
+            Self::Destination { operation, .. } => match operation {
+                super::Destination::Unstack => Self::UNSTACK.code
+            },
+            Operation::Input { operation, .. } => match operation { 
+                Input::Stack => Self::STACK.code
+            },
+            Operation::DestinationAndInput { operation, .. } => match operation { 
+                DestinationAndInput::Copy => Self::COPY.code
+            },
+            Operation::DualInput { operation, .. } => match operation {
+                DualInput::Compare => Self::COMPARE.code,
+                DualInput::SignedCompare => Self::SIGNED_COMPARE.code
+            },
+            Operation::DestinationAndDualInput { operation, .. } => match operation {
+                DestinationAndDualInput::Add => Self::ADD.code,
+                DestinationAndDualInput::FloatingAdd => Self::FLOATING_ADD.code,
+                DestinationAndDualInput::Subtract => Self::SUBTRACT.code,
+                DestinationAndDualInput::FloatingSubtract => Self::FLOATING_SUBTRACT.code,
+                DestinationAndDualInput::Multiply => Self::MULTIPLY.code,
+                DestinationAndDualInput::FloatingMultiply => Self::FLOATING_MULTIPLY.code,
+                DestinationAndDualInput::Divide => Self::DIVIDE.code,
+                DestinationAndDualInput::FloatingDivide => Self::FLOATING_DIVIDE.code
+            },
+        };
+        Unsigned::new(operation as u64).encode_chain(output, true).map_err(|source| EncodeError::Chain { source })?;
+        Ok(())
+    }
+    
+    // fn encode_destination(self, output: &mut impl Write) -> Result<(), operand::encoding::>
 }

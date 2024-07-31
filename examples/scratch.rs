@@ -1,5 +1,5 @@
 use std::io::{Cursor, Seek, SeekFrom};
-use arrseq_lightning::cursor_test;
+use arrseq_lightning::read_cursor;
 use arrseq_lightning::instruction::operation::Operation;
 use arrseq_lightning::math::dynamic_number::Unsigned;
 
