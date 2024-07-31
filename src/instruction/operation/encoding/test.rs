@@ -27,10 +27,7 @@ fn decode() {
                 size: Size::X8
             },
             Operand {
-                mode: AddressingMode::Immediate { mode: ImmediateAddressing::Immediate { immediate: Unsigned {
-                    value: 5,
-                    size: Size::X16
-                }}},
+                mode: AddressingMode::Immediate { mode: ImmediateAddressing::Immediate { immediate: Unsigned::new(5) }},
                 size: Size::X16
             }
         ]
