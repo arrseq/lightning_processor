@@ -48,7 +48,7 @@ pub enum ComplexAddressing {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ComplexAddressingFieldRequirements {
-    pub specifier_code: u8,
+    pub code: u8,
     pub requires_offset: bool,
     pub requires_index_register: bool
 }
@@ -59,10 +59,10 @@ impl ComplexAddressing {
     pub const ARRAY_CODE           : u8 = 2;
     pub const OFFSETTED_ARRAY_CODE : u8 = 3;
 
-    pub const BASE            : ComplexAddressingFieldRequirements = ComplexAddressingFieldRequirements { specifier_code: Self::BASE_CODE,             requires_offset: false, requires_index_register: false };
-    pub const BASE_PLUS_OFFSET: ComplexAddressingFieldRequirements = ComplexAddressingFieldRequirements { specifier_code: Self::BASE_PLUS_OFFSET_CODE, requires_offset: true,  requires_index_register: false };
-    pub const ARRAY           : ComplexAddressingFieldRequirements = ComplexAddressingFieldRequirements { specifier_code: Self::ARRAY_CODE,            requires_offset: true,  requires_index_register: true  };
-    pub const OFFSETTED_ARRAY : ComplexAddressingFieldRequirements = ComplexAddressingFieldRequirements { specifier_code: Self::OFFSETTED_ARRAY_CODE,  requires_offset: true,  requires_index_register: true  };
+    pub const BASE            : ComplexAddressingFieldRequirements = ComplexAddressingFieldRequirements { code: Self::BASE_CODE,             requires_offset: false, requires_index_register: false };
+    pub const BASE_PLUS_OFFSET: ComplexAddressingFieldRequirements = ComplexAddressingFieldRequirements { code: Self::BASE_PLUS_OFFSET_CODE, requires_offset: true,  requires_index_register: false };
+    pub const ARRAY           : ComplexAddressingFieldRequirements = ComplexAddressingFieldRequirements { code: Self::ARRAY_CODE,            requires_offset: true,  requires_index_register: true  };
+    pub const OFFSETTED_ARRAY : ComplexAddressingFieldRequirements = ComplexAddressingFieldRequirements { code: Self::OFFSETTED_ARRAY_CODE,  requires_offset: true,  requires_index_register: true  };
     
     pub const MODES: [ComplexAddressingFieldRequirements; 4] = [Self::BASE, Self::BASE_PLUS_OFFSET, Self::ARRAY, Self::OFFSETTED_ARRAY];
 }

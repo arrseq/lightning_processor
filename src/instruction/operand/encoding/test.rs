@@ -27,9 +27,9 @@ fn encode_register() {
 
     // immediate 5 as word
     assert_eq!(write_cursor(vec![0u8; 0], |cursor| Operand {
-        mode: AddressingMode::Immediate { mode: ImmediateAddressing::Immediate { immediate: Unsigned::new(5) } },
+        mode: AddressingMode::Immediate { mode: ImmediateAddressing::Immediate { immediate: Unsigned::new(5) }},
         size: Size::X16
-    }.encode(cursor)), [0b01010000]);
+    }.encode(cursor)), [0b01010000, 5]);
 }
 
 #[test]

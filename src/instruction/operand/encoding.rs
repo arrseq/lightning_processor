@@ -31,22 +31,22 @@ impl Operand {
     fn read_immediate(input: &mut impl Read, size: Size) -> io::Result<Unsigned> {
         let value = match size {
             Size::X8 => {
-                let mut buffer = [0u8; size_of::<u8>() as usize];
+                let mut buffer = [0u8; size_of::<u8>()];
                 input.read_exact(&mut buffer)?;
                 u8::from_le_bytes(buffer) as u64
             },
             Size::X16 => {
-                let mut buffer = [0u8; size_of::<u16>() as usize];
+                let mut buffer = [0u8; size_of::<u16>()];
                 input.read_exact(&mut buffer)?;
                 u16::from_le_bytes(buffer) as u64
             },
             Size::X32 => {
-                let mut buffer = [0u8; size_of::<u32>() as usize];
+                let mut buffer = [0u8; size_of::<u32>()];
                 input.read_exact(&mut buffer)?;
                 u32::from_le_bytes(buffer) as u64
             },
             Size::X64 => {
-                let mut buffer = [0u8; size_of::<u64>() as usize];
+                let mut buffer = [0u8; size_of::<u64>()];
                 input.read_exact(&mut buffer)?;
                 u64::from_le_bytes(buffer) as u64
             }
@@ -134,12 +134,40 @@ impl Operand {
         })
     }
     
+    /// Encode the addressing byte. 
+    ///
+    /// The data size is obtained from this instance.
+    /// 
+    /// The end segment should be used to store an immediate size or a base register. 
+    /// 
+    /// # Byte Format
+    /// | Name            | Size in bits |
+    /// | --------------- | ------------ |
+    /// | Addressing mode | 2            |
+    /// | Data size       | 2            |
+    /// | End segment     | 4            |
     fn encode_addressing_byte(self, output: &mut impl Write, addressing_mode: u8, end_segment: u8) -> Result<(), Error> {
-        let mut first_byte = addressing_mode << 6;
-        first_byte |= (self.size.to_power() & 0b00000011) << 4;
-        first_byte |= end_segment & 0b00001111;
+        let mut byte = addressing_mode << 6;
+        byte |= (self.size.to_power() & 0b00000011) << 4;
+        byte |= end_segment & 0b00001111;
 
-        output.write_all(&[first_byte]).map_err(|source| Error { source, error: IoError::AddressingByte })
+        output.write_all(&[byte]).map_err(|source| Error { source, error: IoError::AddressingByte })
+    }
+    
+    /// Encode the complex addressing byte.
+    ///
+    /// # Byte Format
+    /// | Name            | Size in bits |
+    /// | --------------- | ------------ |
+    /// | Addressing mode | 2            |
+    /// | Index register  | 4            |
+    /// | Immediate size  | 2            |
+    fn encode_complex_addressing_byte(self, output: &mut impl Write, complex_addressing_mode: u8, index_register: u8, immediate_size: u8) -> Result<(), Error> {
+        let mut byte = complex_addressing_mode << 6;
+        byte |= (index_register & 0b00001111) << 2;
+        byte |= immediate_size & 0b00000011;
+
+        output.write_all(&[byte]).map_err(|source| Error { source, error: IoError::ComplexAddressingByte })
     }
     
     fn write_immediate(output: &mut impl Write, immediate: Unsigned, error: IoError) -> Result<(), Error> {
@@ -157,15 +185,16 @@ impl Operand {
     pub(crate) fn encode(self, output: &mut impl Write) -> Result<(), Error> {
         match self.mode {
             AddressingMode::Register { register } => self.encode_addressing_byte(output, AddressingMode::REGISTER.code, register)?,
-            AddressingMode::Immediate { mode } => {
-                self.encode_addressing_byte(output, AddressingMode::REGISTER.code, 0)?;
-                
-                match mode {
-                    ImmediateAddressing::Immediate { immediate } => Self::write_immediate(output, immediate, IoError::ImmediateValue)?,
-                    ImmediateAddressing::Relative { offset } => {
-                        let immediate = Unsigned::from(offset);
-                        Self::write_immediate(output, immediate, IoError::ImmediateOffset)?
-                    }
+            AddressingMode::Immediate { mode } => match mode {
+                ImmediateAddressing::Immediate { immediate } => {
+                    self.encode_addressing_byte(output, AddressingMode::IMMEDIATE.code, 0)?;
+                    Self::write_immediate(output, immediate, IoError::ImmediateValue)?
+                },
+                ImmediateAddressing::Relative { offset } => {
+                    self.encode_addressing_byte(output, AddressingMode::RELATIVE.code, 0)?;
+                    
+                    let immediate = Unsigned::from(offset);
+                    Self::write_immediate(output, immediate, IoError::ImmediateOffset)?
                 }
             },
             AddressingMode::Complex { mode, base } => {
@@ -173,10 +202,19 @@ impl Operand {
                     
                 match mode {
                     ComplexAddressing::Base { mode } => match mode {
-                        BaseAddressing::Base => {}
-                        BaseAddressing::Offsetted { offset } => {}
+                        BaseAddressing::Base => self.encode_complex_addressing_byte(output, ComplexAddressing::BASE.code, 0, 0)?,
+                        BaseAddressing::Offsetted { offset } => {
+                            self.encode_complex_addressing_byte(output, ComplexAddressing::BASE_PLUS_OFFSET.code, 0, offset.size.to_power())?;
+                            Self::write_immediate(output, offset, IoError::ImmediateOffset)?;
+                        }
                     }
-                    ComplexAddressing::ArrayAddressing { mode, index } => {}
+                    ComplexAddressing::ArrayAddressing { mode, index } => match mode {
+                        ArrayAddressing::Array => self.encode_complex_addressing_byte(output, ComplexAddressing::ARRAY.code, index, 0)?,
+                        ArrayAddressing::Offsetted { offset } => {
+                            self.encode_complex_addressing_byte(output, ComplexAddressing::OFFSETTED_ARRAY.code, index, offset.size.to_power())?;
+                            Self::write_immediate(output, offset, IoError::ImmediateOffset)?;
+                        }
+                    }
                 }
             }
         }
