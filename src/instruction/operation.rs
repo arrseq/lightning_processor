@@ -78,17 +78,15 @@ pub enum VectorComponent {
     X0,
     X1,
     X2,
-    X3,
-    X4
+    X3
 }
-
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Operation {
     None,
     Lock,
     VectorOperands,
-    MapVector { mappings: [VectorComponent; 4], operand: u8 },
+    MapVector { mappings: [Option<VectorComponent>; 4], operand: u8 },
     OverrideBranch,
     Destination             { operation: Destination,             destination: Operand },
     Input                   { operation: Input,                   input:       Operand },

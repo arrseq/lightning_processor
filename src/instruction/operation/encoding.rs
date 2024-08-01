@@ -147,18 +147,6 @@ pub enum EncodeError {
     Io { #[source] source: io::Error, error: IoError }
 }
 
-impl VectorComponent {
-    pub(super) const fn from_code(code: u8) -> Self {
-        match code {
-            0 => Self::X0,
-            1 => Self::X1,
-            2 => Self::X2,
-            3 => Self::X3,
-            _ => Self::X4
-        }
-    }
-}
-
 impl Operation {
     /// The maximum number of bytes an operation can be in the chain length encoding.
     pub const MAX_OPERATION_LENGTH: u8 = 2;
@@ -250,19 +238,38 @@ impl Operation {
         Self::encode_operand(output, destination, OperandError::Destination)
     }
     
-    fn encode_map_vector(output: &mut impl Write, operand: u8, mappings: [VectorComponent; 4]) -> Result<(), EncodeError> {
+    fn optional_vector_component_from_code(code: u8) -> Option<VectorComponent> {
+        Some(match code {
+            1 => VectorComponent::X0,
+            2 => VectorComponent::X1,
+            3 => VectorComponent::X2,
+            4 => VectorComponent::X3,
+            _ => return None
+        })
+    }
+    
+    fn optional_vector_component_code(vector_component: Option<VectorComponent>) -> u8 {
+        if let Some(component) = vector_component { match component {
+            VectorComponent::X0 => 1,
+            VectorComponent::X1 => 2,
+            VectorComponent::X2 => 3,
+            VectorComponent::X3 => 4
+        }} else { 0 }
+    }
+    
+    fn encode_map_vector(output: &mut impl Write, operand: u8, mappings: [Option<VectorComponent>; 4]) -> Result<(), EncodeError> {
         // todo: fix comments
         let mut encoded = operand << 6;
-        encoded |= (mappings[0] as u8 & 0b00000_111) << 3;
-        encoded |= mappings[1] as u8 & 0b00000_111;
+        encoded |= (Self::optional_vector_component_code(mappings[0]) & 0b00000_111) << 3;
+        encoded |= Self::optional_vector_component_code(mappings[1]) & 0b00000_111;
         
-        let mut second_encoded = (mappings[2] as u8 & 0b00000_111) << 5;
-        second_encoded |= (mappings[3] as u8 & 0b00000_111) << 2;
+        let mut second_encoded = (Self::optional_vector_component_code(mappings[2]) & 0b00000_111) << 5;
+        second_encoded |= (Self::optional_vector_component_code(mappings[3]) & 0b00000_111) << 2;
         
         output.write_all(&[ encoded, second_encoded ]).map_err(|source| EncodeError::Io { source, error: IoError::MapVector })
     }
 
-    fn decode_map_vector(input: &mut impl Read) -> Result<(u8, [VectorComponent; 4]), DecodeError> {
+    fn decode_map_vector(input: &mut impl Read) -> Result<(u8, [Option<VectorComponent>; 4]), DecodeError> {
         let mut buffer = [0u8; 2];
         input.read_exact(&mut buffer).map_err(|source| DecodeError::Io { source, error: IoError::MapVector })?;
         
@@ -273,10 +280,10 @@ impl Operation {
         let mapping_3 = (buffer[1] & 0b000_111_00) >> 2;
         
         Ok((operand, [
-            VectorComponent::from_code(mapping_0),
-            VectorComponent::from_code(mapping_1),
-            VectorComponent::from_code(mapping_2),
-            VectorComponent::from_code(mapping_3)
+            Self::optional_vector_component_from_code(mapping_0),
+            Self::optional_vector_component_from_code(mapping_1),
+            Self::optional_vector_component_from_code(mapping_2),
+            Self::optional_vector_component_from_code(mapping_3)
         ]))
     }
     

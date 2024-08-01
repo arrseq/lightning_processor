@@ -38,9 +38,9 @@ fn decode() {
 fn encode() {
     // dbg!(write_cursor(vec![0u8; 0], |cursor| Operation::None.encode(cursor)));
     dbg!(read_cursor(write_cursor(vec![0u8; 0], |cursor| Operation::MapVector { mappings: [
-        VectorComponent::X1,
-        VectorComponent::X1,
-        VectorComponent::X2,
-        VectorComponent::X4
+        Some(VectorComponent::X1),
+        None,
+        Some(VectorComponent::X2),
+        Some(VectorComponent::X3)
     ], operand: 0 }.encode(cursor)), Operation::decode));
 }
