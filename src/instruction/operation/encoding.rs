@@ -113,10 +113,10 @@ impl DestinationAndDualInput {
 
 #[derive(Debug, Error)]
 pub enum OperandError {
-    #[error("Failed to retrieve destination")]
+    #[error("Failed to perform operation on destination")]
     Destination,
-    #[error("Failed to retrieve input {nth}")]
-    Input { nth: usize }
+    #[error("Failed to perform operation on input {nth}")]
+    Input { nth: u8 }
 }
 
 #[derive(Debug, Error)]
@@ -132,7 +132,9 @@ pub enum DecodeError {
 #[derive(Debug, Error)]
 pub enum EncodeError {
     #[error("Failed to write operation specifier code")]
-    Chain { #[source] source: io::Error }
+    Chain { #[source] source: io::Error },
+    #[error("Failed to encode operand")]
+    Operand { #[source] source: operand::encoding::Error, error: OperandError }
 }
 
 impl Operation {
@@ -175,25 +177,66 @@ impl Operation {
                 ]
             }
         }); }
-
-        todo!()
+        
+        Ok(Self::from_no_operand_code(code).ok_or(DecodeError::InvalidOperation)?)
+    }
+    
+    const fn from_no_operand_code(code: u16) -> Option<Self> {
+        Some(match code {
+            Self::NONE_CODE => Self::None,
+            _ => return None
+        })
     }
     
     fn decode_operand(input: &mut impl Read, error: OperandError) -> Result<Operand, DecodeError> {
         Operand::decode(input).map_err(|source| DecodeError::Operand { source, error })
     }
     
-    pub(crate) fn encode(self, output: &mut impl Write) -> Result<(), EncodeError> {
-        let operation = match self {
+    const fn encode_operation(self) -> u16 {
+        match self {
             Self::None => Self::NONE.code,
             Self::Destination { operation, .. } => operation.to_code(),
             Operation::Input { operation, .. } => operation.to_code(),
             Operation::DestinationAndInput { operation, .. } => operation.to_code(),
             Operation::DualInput { operation, .. } => operation.to_code(),
             Operation::DestinationAndDualInput { operation, .. } => operation.to_code(),
-        };
+        }
+    }
 
-        Unsigned::new(operation as u64).encode_chain(output, true).map_err(|source| EncodeError::Chain { source })?;
+    fn encode_operand(output: &mut impl Write, operand: Operand, error: OperandError) -> Result<(), EncodeError> {
+        operand.encode(output).map_err(|source| EncodeError::Operand { source, error })
+    }
+    
+    fn encode_inputs<const Count: usize>(output: &mut impl Write, inputs: [Operand; Count]) -> Result<(), EncodeError> {
+        for (nth, input) in inputs.iter().enumerate() { Self::encode_operand(output, *input, OperandError::Input { nth: nth as u8 })?; }
+        Ok(())
+    }
+    
+    fn encode_destination(output: &mut impl Write, destination: Operand) -> Result<(), EncodeError> {
+        Self::encode_operand(output, destination, OperandError::Destination)
+    }
+    
+    pub(crate) fn encode(self, output: &mut impl Write) -> Result<(), EncodeError> {
+        let operation = self.encode_operation();
+        Unsigned::new(operation as u64)
+            .encode_chain(output, true)
+            .map_err(|source| EncodeError::Chain { source })?;
+        
+        match self {
+            Self::Destination { destination, .. } => Self::encode_destination(output, destination)?,
+            Self::Input { input, .. } => Self::encode_inputs(output, [ input ])?,
+            Self::DestinationAndInput { destination, input, .. } => {
+                Self::encode_destination(output, destination)?;
+                Self::encode_inputs(output, [ input ])?;
+            },
+            Self::DualInput { inputs, .. } => Self::encode_inputs(output, inputs)?,
+            Self::DestinationAndDualInput { destination, inputs, .. } => {
+                Self::encode_destination(output, destination)?;
+                Self::encode_inputs(output, inputs)?;
+            },
+            _ => {}
+        };
+        
         Ok(())
     }
 }
