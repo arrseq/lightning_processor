@@ -2,7 +2,7 @@ use std::io::{Cursor, Read};
 use arrseq_lightning::instruction::Instruction;
 use arrseq_lightning::instruction::operand::{AddressingMode, ArrayAddressing, BaseAddressing, ComplexAddressing, ImmediateAddressing, Operand};
 use arrseq_lightning::instruction::operation::{Destination, DestinationAndDualInput, DestinationAndInput, DualInput, Input, Operation};
-use arrseq_lightning::math::dynamic_number::Size;
+use arrseq_lightning::math::dynamic_number::{Signed, Size};
 
 fn size_to_str<'a>(size: Size) -> &'a str {
     match size {
@@ -40,14 +40,22 @@ fn register_to_str(register: u8) -> String {
     format!("g{}", register)
 }
 
+fn format_offset(offset: i64) -> String {
+    if offset.is_negative() {
+        format!("[self - {}]", offset.abs())
+    } else {
+        format!("[self + {}]", offset)
+    }
+}
+
 fn operand_to_str(operand: Operand) -> String {
     let size_spec = size_to_str(operand.size);
-    
+
     let body = match operand.mode {
         AddressingMode::Register { register } => &format!("g{}", register),
         AddressingMode::Immediate { mode } => match mode {
             ImmediateAddressing::Immediate { immediate } => &immediate.value.to_string(),
-            ImmediateAddressing::Relative { offset } => &offset.value.to_string()
+            ImmediateAddressing::Relative { offset } => &format_offset(i64::from(offset))
         },
         AddressingMode::Complex { mode, base } => match mode {
             ComplexAddressing::Base { mode } => match mode {
@@ -60,7 +68,7 @@ fn operand_to_str(operand: Operand) -> String {
             }
         }
     };
-    
+
     size_spec.to_string() + " " + body
 }
 
@@ -80,7 +88,7 @@ fn disassemble(instruction: Instruction) -> String {
         Operation::DestinationAndDualInput { destination, inputs, .. } => &[destination, inputs[0], inputs[1]],
         _ => &[]
     };
-    
+
     operation.to_string() + " " + &operands_to_str(operands)
 }
 
@@ -92,8 +100,9 @@ fn main() {
             Ok(value) => value,
             Err(_) => continue
         };
-        
+
         let asm_instruction = disassemble(instruction);
-        println!("{}", asm_instruction); 
+        println!("{}", asm_instruction);
     }
+
 }

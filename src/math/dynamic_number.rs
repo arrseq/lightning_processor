@@ -146,6 +146,17 @@ impl Signed {
     }
 }
 
+impl From<Signed> for i64 {
+    fn from(value: Signed) -> Self {
+        match value.size {
+            Size::X8 => value.value as i8 as i64,
+            Size::X16 => value.value as i16 as i64,
+            Size::X32 => value.value as i32 as i64,
+            Size::X64 => value.value
+        }
+    }
+}
+
 impl From<Unsigned> for Signed {
     fn from(value: Unsigned) -> Self {
         Self {
