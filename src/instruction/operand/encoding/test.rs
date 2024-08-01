@@ -5,13 +5,13 @@ use crate::math::dynamic_number::{Signed, Size, Unsigned};
 #[test]
 fn decode_register() {
     // register 0 as qword
-    assert_eq!(read_cursor([ 0b00_110000 ], Operand::decode).unwrap(), Operand {
+    assert_eq!(read_cursor([ 0b00_11_0000 ], Operand::decode).unwrap(), Operand {
         size: Size::X64,
         mode: AddressingMode::Register { register: 0 }
     });
 
     // register 10 as dword
-    assert_eq!(read_cursor([ 0b00_101010 ], Operand::decode).unwrap(), Operand {
+    assert_eq!(read_cursor([ 0b00_10_1010 ], Operand::decode).unwrap(), Operand {
         size: Size::X32,
         mode: AddressingMode::Register { register: 10 }
     });
@@ -23,19 +23,62 @@ fn encode_register() {
     assert_eq!(write_cursor(vec![0u8; 0], |cursor| Operand {
         mode: AddressingMode::Register { register: 10 },
         size: Size::X32
-    }.encode(cursor)), [0b00101010]);
+    }.encode(cursor)), [0b00_10_1010]);
 
     // immediate 5 as word
     assert_eq!(write_cursor(vec![0u8; 0], |cursor| Operand {
         mode: AddressingMode::Immediate { mode: ImmediateAddressing::Immediate { immediate: Unsigned::new(5) }},
         size: Size::X16
-    }.encode(cursor)), [0b01010000, 5]);
+    }.encode(cursor)), [0b01_01_0000, 5]);
+}
+
+#[test]
+fn decode_value_immediate() {
+    // 10 uint_1 as a qword value.
+    assert_eq!(read_cursor([ 0b01_11_0000, 0b00001010 ], Operand::decode).unwrap(), Operand {
+        size: Size::X64,
+        mode: AddressingMode::Immediate { mode: ImmediateAddressing::Immediate {
+            immediate: Unsigned {
+                value: 10,
+                size: Size::X8
+            }
+        }}
+    });
+
+    // 10 uint_8 as a word value.
+    assert_eq!(read_cursor([ 0b01_00_1100, 0b00001010, 0, 0, 0, 0, 0, 0, 0 ], Operand::decode).unwrap(), Operand {
+        size: Size::X8,
+        mode: AddressingMode::Immediate { mode: ImmediateAddressing::Immediate {
+            immediate: Unsigned {
+                value: 10,
+                size: Size::X64
+            }
+        }}
+    });
+}
+
+#[test]
+fn encode_value_immediate() {
+    // u16::MAX uint_2 as a byte value.
+    assert_eq!(write_cursor(vec![0u8; 0], |cursor| Operand {
+        mode: AddressingMode::Immediate { mode: ImmediateAddressing::Immediate { immediate: Unsigned::new(u16::MAX as u64) }},
+        size: Size::X8
+    }.encode(cursor)), [ 0b01_00_0001, 255, 255 ]);
+
+    // u8::MAX uint_2 as a qword value.
+    assert_eq!(write_cursor(vec![0u8; 0], |cursor| Operand {
+        mode: AddressingMode::Immediate { mode: ImmediateAddressing::Immediate { immediate: Unsigned {
+            value: u8::MAX as u64,
+            size: Size::X16
+        }}},
+        size: Size::X64
+    }.encode(cursor)), [ 0b01_11_0001, 255, 0 ]);
 }
 
 #[test]
 fn decode_relative_immediate() {
     // +1 int_1 offset with a qword value.
-    assert_eq!(read_cursor([ 0b10_110000, 0b00000001 ], Operand::decode).unwrap(), Operand {
+    assert_eq!(read_cursor([ 0b10_11_0000, 0b00000001 ], Operand::decode).unwrap(), Operand {
         size: Size::X64,
         mode: AddressingMode::Immediate { mode: ImmediateAddressing::Relative {
             offset: Signed {
@@ -46,7 +89,7 @@ fn decode_relative_immediate() {
     });
 
     // +0 int_2 offset with a qword value.
-    assert_eq!(read_cursor([ 0b10_110100, 0b00000000, 0b00000000 ], Operand::decode).unwrap(), Operand {
+    assert_eq!(read_cursor([ 0b10_11_0100, 0b00000000, 0b00000000 ], Operand::decode).unwrap(), Operand {
         size: Size::X64,
         mode: AddressingMode::Immediate { mode: ImmediateAddressing::Relative {
             offset: Signed {
@@ -59,36 +102,20 @@ fn decode_relative_immediate() {
 
 #[test]
 fn encode_relative_immediate() {
-    // -10 int_2 offset with dword value.
+    // -10 int_1 offset with dword value.
     assert_eq!(write_cursor(vec![0u8; 0], |cursor| Operand {
         mode: AddressingMode::Immediate { mode: ImmediateAddressing::Relative { offset: Signed::new(-10) }},
         size: Size::X32
-    }.encode(cursor)), [])
-}
+    }.encode(cursor)), [ 0b10_10_0000, -10i8 as u8 ]);
 
-#[test]
-fn decode_value_immediate() {
-    // 10 uint_1 as a qword value.
-    assert_eq!(read_cursor([ 0b01_110000, 0b00001010 ], Operand::decode).unwrap(), Operand {
-        size: Size::X64,
-        mode: AddressingMode::Immediate { mode: ImmediateAddressing::Immediate {
-            immediate: Unsigned {
-                value: 10,
-                size: Size::X8
-            }
-        }}
-    });
-
-    // 10 uint_8 as a word value.
-    assert_eq!(read_cursor([ 0b01_001100, 0b00001010, 0, 0, 0, 0, 0, 0, 0 ], Operand::decode).unwrap(), Operand {
-        size: Size::X8,
-        mode: AddressingMode::Immediate { mode: ImmediateAddressing::Immediate {
-            immediate: Unsigned {
-                value: 10,
-                size: Size::X64
-            }
-        }}
-    });
+    // 5 int_2 offset with word value.
+    assert_eq!(write_cursor(vec![0u8; 0], |cursor| Operand {
+        mode: AddressingMode::Immediate { mode: ImmediateAddressing::Relative { offset: Signed {
+            value: 5,
+            size: Size::X16
+        }}},
+        size: Size::X16
+    }.encode(cursor)), [ 0b10_01_0001, 5i8 as u8, 0 ])
 }
 
 #[test]

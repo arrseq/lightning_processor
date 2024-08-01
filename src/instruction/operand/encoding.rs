@@ -187,11 +187,11 @@ impl Operand {
             AddressingMode::Register { register } => self.encode_addressing_byte(output, AddressingMode::REGISTER.code, register)?,
             AddressingMode::Immediate { mode } => match mode {
                 ImmediateAddressing::Immediate { immediate } => {
-                    self.encode_addressing_byte(output, AddressingMode::IMMEDIATE.code, 0)?;
+                    self.encode_addressing_byte(output, AddressingMode::IMMEDIATE.code, immediate.size.to_power())?;
                     Self::write_immediate(output, immediate, IoError::ImmediateValue)?
                 },
                 ImmediateAddressing::Relative { offset } => {
-                    self.encode_addressing_byte(output, AddressingMode::RELATIVE.code, 0)?;
+                    self.encode_addressing_byte(output, AddressingMode::RELATIVE.code, offset.size.to_power())?;
                     
                     let immediate = Unsigned::from(offset);
                     Self::write_immediate(output, immediate, IoError::ImmediateOffset)?

@@ -9,6 +9,7 @@
 #![allow(clippy::unused_io_amount)]
 #![allow(soft_unstable)]
 
+use std::fmt::Debug;
 use std::io::Cursor;
 
 // pub mod core;
@@ -31,8 +32,8 @@ pub fn read_cursor<T: AsRef<[u8]>, R>(data: T, mut handle: impl FnMut(&mut Curso
 ///
 /// # Result
 /// The buffer that was modified.
-pub fn write_cursor<T: AsRef<[u8]>, R>(data: T, mut handle: impl FnMut(&mut Cursor<T>) -> R) -> T {
+pub fn write_cursor<T: AsRef<[u8]>, R: Debug, X>(data: T, mut handle: impl FnMut(&mut Cursor<T>) -> Result<X, R>) -> T {
     let mut cursor = Cursor::new(data);
-    handle(&mut cursor);
+    handle(&mut cursor).unwrap();
     cursor.into_inner()
 }
