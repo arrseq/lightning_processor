@@ -1,6 +1,7 @@
 pub mod encoding;
 
 use crate::instruction::operand::Operand;
+use crate::math::vector::Vector4Layout;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum OperandCategory {
@@ -77,8 +78,8 @@ pub enum Operation {
     None,
     Lock,
     VectorOperands,
-    MapVector,
-    BranchOverride,
+    MapVector { mappings: Vector4Layout, operand: u8 },
+    OverrideBranch,
     Destination             { operation: Destination,             destination: Operand },
     Input                   { operation: Input,                   input:       Operand },
     DestinationAndInput     { operation: DestinationAndInput,     destination: Operand, input: Operand },
@@ -89,34 +90,35 @@ pub enum Operation {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Dependencies {
     pub code: u16,
-    pub category: Option<OperandCategory>
+    pub category: Option<OperandCategory>,
+    pub executable: bool
 }
 
 impl Operation {
-    pub const NONE             : Dependencies = Dependencies { code: 0 , category: None                                           };
-    pub const LOCK             : Dependencies = Dependencies { code: 1 , category: None                                           };
-    pub const VECTOR_OPERANDS  : Dependencies = Dependencies { code: 2 , category: None                                           };
-    pub const MAP_VECTOR       : Dependencies = Dependencies { code: 3 , category: None                                           };
-    pub const BRANCH_OVERRIDE  : Dependencies = Dependencies { code: 4 , category: None                                           };
-    pub const STACK            : Dependencies = Dependencies { code: 5 , category: Some(OperandCategory::Input                  ) };
-    pub const UNSTACK          : Dependencies = Dependencies { code: 6 , category: Some(OperandCategory::Destination            ) };
-    pub const COPY             : Dependencies = Dependencies { code: 7 , category: Some(OperandCategory::DestinationAndInput    ) };
-    pub const COMPARE          : Dependencies = Dependencies { code: 8 , category: Some(OperandCategory::DualInput              ) };
-    pub const SIGNED_COMPARE   : Dependencies = Dependencies { code: 9 , category: Some(OperandCategory::DualInput              ) };
-    pub const ADD              : Dependencies = Dependencies { code: 10 , category: Some(OperandCategory::DestinationAndDualInput) };
-    pub const FLOATING_ADD     : Dependencies = Dependencies { code: 11 , category: Some(OperandCategory::DestinationAndDualInput) };
-    pub const SUBTRACT         : Dependencies = Dependencies { code: 12, category: Some(OperandCategory::DestinationAndDualInput) };
-    pub const FLOATING_SUBTRACT: Dependencies = Dependencies { code: 13, category: Some(OperandCategory::DestinationAndDualInput) };
-    pub const MULTIPLY         : Dependencies = Dependencies { code: 14, category: Some(OperandCategory::DestinationAndDualInput) };
-    pub const FLOATING_MULTIPLY: Dependencies = Dependencies { code: 15, category: Some(OperandCategory::DestinationAndDualInput) };
-    pub const DIVIDE           : Dependencies = Dependencies { code: 16, category: Some(OperandCategory::DestinationAndDualInput) };
-    pub const FLOATING_DIVIDE  : Dependencies = Dependencies { code: 17, category: Some(OperandCategory::DestinationAndDualInput) };
+    pub const NONE             : Dependencies = Dependencies { code: 0 , category: None                                          , executable: true  };
+    pub const LOCK             : Dependencies = Dependencies { code: 1 , category: None                                          , executable: false };
+    pub const VECTOR_OPERANDS  : Dependencies = Dependencies { code: 2 , category: None                                          , executable: false };
+    pub const MAP_VECTOR       : Dependencies = Dependencies { code: 3 , category: None                                          , executable: false };
+    pub const OVERRIDE_BRANCH  : Dependencies = Dependencies { code: 4 , category: None                                          , executable: false };
+    pub const STACK            : Dependencies = Dependencies { code: 5 , category: Some(OperandCategory::Input                  ), executable: true  };
+    pub const UNSTACK          : Dependencies = Dependencies { code: 6 , category: Some(OperandCategory::Destination            ), executable: true  };
+    pub const COPY             : Dependencies = Dependencies { code: 7 , category: Some(OperandCategory::DestinationAndInput    ), executable: true  };
+    pub const COMPARE          : Dependencies = Dependencies { code: 8 , category: Some(OperandCategory::DualInput              ), executable: true  };
+    pub const SIGNED_COMPARE   : Dependencies = Dependencies { code: 9 , category: Some(OperandCategory::DualInput              ), executable: true  };
+    pub const ADD              : Dependencies = Dependencies { code: 10, category: Some(OperandCategory::DestinationAndDualInput), executable: true  };
+    pub const FLOATING_ADD     : Dependencies = Dependencies { code: 11, category: Some(OperandCategory::DestinationAndDualInput), executable: true  };
+    pub const SUBTRACT         : Dependencies = Dependencies { code: 12, category: Some(OperandCategory::DestinationAndDualInput), executable: true  };
+    pub const FLOATING_SUBTRACT: Dependencies = Dependencies { code: 13, category: Some(OperandCategory::DestinationAndDualInput), executable: true  };
+    pub const MULTIPLY         : Dependencies = Dependencies { code: 14, category: Some(OperandCategory::DestinationAndDualInput), executable: true  };
+    pub const FLOATING_MULTIPLY: Dependencies = Dependencies { code: 15, category: Some(OperandCategory::DestinationAndDualInput), executable: true  };
+    pub const DIVIDE           : Dependencies = Dependencies { code: 16, category: Some(OperandCategory::DestinationAndDualInput), executable: true  };
+    pub const FLOATING_DIVIDE  : Dependencies = Dependencies { code: 17, category: Some(OperandCategory::DestinationAndDualInput), executable: true  };
 
     pub const NONE_CODE             : u16 = Self::NONE.code             ;
     pub const LOCK_CODE             : u16 = Self::LOCK.code             ;
     pub const VECTOR_OPERANDS_CODE  : u16 = Self::VECTOR_OPERANDS.code  ;
     pub const MAP_VECTOR_CODE       : u16 = Self::MAP_VECTOR.code       ;
-    pub const BRANCH_OVERRIDE_CODE  : u16 = Self::BRANCH_OVERRIDE.code  ;
+    pub const OVERRIDE_BRANCH_CODE  : u16 = Self::OVERRIDE_BRANCH.code  ;
     pub const STACK_CODE            : u16 = Self::STACK.code            ;
     pub const UNSTACK_CODE          : u16 = Self::UNSTACK.code          ;
     pub const COPY_CODE             : u16 = Self::COPY.code             ;
@@ -135,11 +137,17 @@ impl Operation {
         Self::NONE,
         Self::LOCK,
         Self::VECTOR_OPERANDS, Self::MAP_VECTOR,
-        Self::BRANCH_OVERRIDE,
+        Self::OVERRIDE_BRANCH,
         Self::STACK   , Self::UNSTACK          ,
         Self::COPY    ,
         Self::COMPARE , Self::SIGNED_COMPARE   ,
         Self::ADD     , Self::FLOATING_ADD     , Self::SUBTRACT, Self::FLOATING_SUBTRACT,
         Self::MULTIPLY, Self::FLOATING_MULTIPLY, Self::DIVIDE  , Self::FLOATING_DIVIDE
     ];
+}
+
+impl Operation {
+    pub fn executable(self) -> bool {
+        Self::OPERATIONS[self.code() as usize].executable
+    }
 }

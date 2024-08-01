@@ -39,24 +39,31 @@ impl Unsigned {
     }
     
     pub const fn encoder_interpret(remaining: u64, cap_end: bool) -> Option<(u8, u8)> {
-        let subtracted: u64 = if cap_end { 0 } else { 1 }; 
+        let subtracted: u64 = if cap_end { 0 } else { 1 };
         if remaining > u8::MAX as u64 - subtracted { Some((u8::MAX, u8::MAX - 1)) }
             else if remaining == 0 { None }
             else { Some((remaining as u8, remaining as u8)) }
     }
     
-    pub fn encode_chain(self, output: &mut impl Write, cap_end: bool) -> io::Result<()> {
+    pub fn encode_chain(self, output: &mut impl Write, cap_end: Option<u64>) -> io::Result<()> {
         let mut remaining = self.value;
         // Write back 0 to terminate the encoding.
         if remaining == 0 { return output.write_all(&[0]); }
-        
+        let mut bytes_read = 0u64;
+
         loop {
+            let cap_end = if let Some(cap_end) = cap_end && bytes_read == cap_end.saturating_sub(1) { true }
+                else { false };
+
+            dbg!(cap_end);
+
             let need_to_write = Self::encoder_interpret(remaining, cap_end);
             if let Some((output_byte, value_byte)) = need_to_write { 
                 remaining -= value_byte as u64;
                 output.write_all(&[output_byte])?;
             }
-        
+
+            bytes_read += 1;
             if remaining == 0 { break; }
         }
         

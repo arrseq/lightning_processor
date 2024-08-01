@@ -24,7 +24,11 @@ pub enum DecodeError {
 impl Instruction {
     pub fn decode(input: &mut impl Read) -> Result<Self, DecodeError> {
         Ok(Self {
-            operation: Operation::decode(input).map_err(|source| DecodeError::Operation { source })?
+            operation: Operation::decode(input).map_err(|source| DecodeError::Operation { source })?,
+            lock: false,
+            vector_operands: false,
+            vector_mapping: false,
+            branch_override: None
         })
     }
 }

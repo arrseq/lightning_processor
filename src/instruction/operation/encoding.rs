@@ -9,6 +9,7 @@ use crate::instruction::operand::Operand;
 use crate::instruction::operation::{OperandCategory, DestinationAndDualInput, DestinationAndInput, DualInput, Input, Operation, Destination};
 use crate::math::dynamic_number;
 use crate::math::dynamic_number::Unsigned;
+use crate::math::vector::Vector4Layout;
 
 impl Destination {
     // Implement from_code to convert a code into a Destination, returning None if it doesn't match.
@@ -20,7 +21,7 @@ impl Destination {
     }
 
     // Implement to_code to convert a Destination into its corresponding code.
-    const fn to_code(self) -> u16 {
+    const fn code(self) -> u16 {
         match self {
             Self::Unstack => Self::UNSTACK,
         }
@@ -37,7 +38,7 @@ impl Input {
     }
 
     // Implement to_code to convert an Input into its corresponding code.
-    const fn to_code(self) -> u16 {
+    const fn code(self) -> u16 {
         match self {
             Self::Stack => Self::STACK,
         }
@@ -54,7 +55,7 @@ impl DestinationAndInput {
     }
 
     // Implement to_code to convert a DestinationAndInput into its corresponding code.
-    const fn to_code(self) -> u16 {
+    const fn code(self) -> u16 {
         match self {
             Self::Copy => Self::COPY,
         }
@@ -72,7 +73,7 @@ impl DualInput {
     }
 
     // Implement to_code to convert a DualInput into its corresponding code.
-    const fn to_code(self) -> u16 {
+    const fn code(self) -> u16 {
         match self {
             Self::Compare => Self::COMPARE,
             Self::SignedCompare => Self::SIGNED_COMPARE,
@@ -97,7 +98,7 @@ impl DestinationAndDualInput {
     }
 
     // Implement to_code to convert a DestinationAndDualInput into its corresponding code
-    pub const fn to_code(self) -> u16 {
+    pub const fn code(self) -> u16 {
         match self {
             Self::Add => Self::ADD,
             Self::FloatingAdd => Self::FLOATING_ADD,
@@ -191,15 +192,19 @@ impl Operation {
     fn decode_operand(input: &mut impl Read, error: OperandError) -> Result<Operand, DecodeError> {
         Operand::decode(input).map_err(|source| DecodeError::Operand { source, error })
     }
-    
-    const fn encode_operation(self) -> u16 {
+
+    pub(super) const fn code(self) -> u16 {
         match self {
             Self::None => Self::NONE.code,
-            Self::Destination { operation, .. } => operation.to_code(),
-            Operation::Input { operation, .. } => operation.to_code(),
-            Operation::DestinationAndInput { operation, .. } => operation.to_code(),
-            Operation::DualInput { operation, .. } => operation.to_code(),
-            Operation::DestinationAndDualInput { operation, .. } => operation.to_code(),
+            Self::Lock => Self::LOCK.code,
+            Self::VectorOperands => Self::VECTOR_OPERANDS.code,
+            Self::MapVector { .. } => Self::MAP_VECTOR.code,
+            Self::OverrideBranch => Self::OVERRIDE_BRANCH.code,
+            Self::Destination { operation, .. } => operation.code(),
+            Operation::Input { operation, .. } => operation.code(),
+            Operation::DestinationAndInput { operation, .. } => operation.code(),
+            Operation::DualInput { operation, .. } => operation.code(),
+            Operation::DestinationAndDualInput { operation, .. } => operation.code(),
         }
     }
 
@@ -216,13 +221,21 @@ impl Operation {
         Self::encode_operand(output, destination, OperandError::Destination)
     }
     
+    fn encode_map_vector(output: &mut impl Write, mappings: Vector4Layout, operand: u8) -> Result<(), EncodeError> {
+        // todo: fix comments
+        // [op map map] [map ___ __]
+        // let mut encoded = operand
+        todo!()
+    }
+    
     pub(crate) fn encode(self, output: &mut impl Write) -> Result<(), EncodeError> {
-        let operation = self.encode_operation();
+        let operation = self.code();
         Unsigned::new(operation as u64)
-            .encode_chain(output, true)
+            .encode_chain(output, Some(Self::MAX_OPERATION_LENGTH as u64))
             .map_err(|source| EncodeError::Chain { source })?;
         
         match self {
+            Self::MapVector { mappings, operand } => Self::encode_map_vector(output, mappings, operand)?,
             Self::Destination { destination, .. } => Self::encode_destination(output, destination)?,
             Self::Input { input, .. } => Self::encode_inputs(output, [ input ])?,
             Self::DestinationAndInput { destination, input, .. } => {
