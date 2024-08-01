@@ -31,18 +31,3 @@ implement_for_vector!(u8, U8Vector4, U8Vector3, U8Vector2);
 implement_for_vector!(u16, U16Vector4, U16Vector3, U16Vector2);
 implement_for_vector!(u32, U32Vector4, U32Vector3, U32Vector2);
 implement_for_vector!(u64, U64Vector4, U64Vector3, U64Vector2);
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Component {
-    X0,
-    X1,
-    X2,
-    X3
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Vector4Layout(pub [u8; 4]);
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Vector3Layout(pub [u8; 3]);
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Vector2Layout(pub [u8; 2]);

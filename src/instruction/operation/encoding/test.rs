@@ -1,6 +1,6 @@
 use crate::{read_cursor, write_cursor};
 use crate::instruction::operand::{AddressingMode, ImmediateAddressing, Operand};
-use crate::instruction::operation::{Destination, DestinationAndDualInput, Input, Operation};
+use crate::instruction::operation::{Destination, DestinationAndDualInput, Input, Operation, VectorComponent};
 use crate::math::dynamic_number::{Size, Unsigned};
 
 #[test]
@@ -36,5 +36,11 @@ fn decode() {
 
 #[test]
 fn encode() {
-    dbg!(write_cursor(vec![0u8; 0], |cursor| Operation::None.encode(cursor)));
+    // dbg!(write_cursor(vec![0u8; 0], |cursor| Operation::None.encode(cursor)));
+    dbg!(read_cursor(write_cursor(vec![0u8; 0], |cursor| Operation::MapVector { mappings: [
+        VectorComponent::X1,
+        VectorComponent::X1,
+        VectorComponent::X2,
+        VectorComponent::X4
+    ], operand: 0 }.encode(cursor)), Operation::decode));
 }

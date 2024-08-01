@@ -1,7 +1,6 @@
 pub mod encoding;
 
 use crate::instruction::operand::Operand;
-use crate::math::vector::Vector4Layout;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum OperandCategory {
@@ -74,11 +73,22 @@ impl DestinationAndDualInput {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[repr(u8)]
+pub enum VectorComponent {
+    X0,
+    X1,
+    X2,
+    X3,
+    X4
+}
+
+
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Operation {
     None,
     Lock,
     VectorOperands,
-    MapVector { mappings: Vector4Layout, operand: u8 },
+    MapVector { mappings: [VectorComponent; 4], operand: u8 },
     OverrideBranch,
     Destination             { operation: Destination,             destination: Operand },
     Input                   { operation: Input,                   input:       Operand },
@@ -147,7 +157,7 @@ impl Operation {
 }
 
 impl Operation {
-    pub fn executable(self) -> bool {
+    pub const fn executable(self) -> bool {
         Self::OPERATIONS[self.code() as usize].executable
     }
 }

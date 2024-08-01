@@ -6,10 +6,9 @@ use std::io::{Read, Write};
 use thiserror::Error;
 use crate::instruction::{operand, operation};
 use crate::instruction::operand::Operand;
-use crate::instruction::operation::{OperandCategory, DestinationAndDualInput, DestinationAndInput, DualInput, Input, Operation, Destination};
+use crate::instruction::operation::{OperandCategory, DestinationAndDualInput, DestinationAndInput, DualInput, Input, Operation, Destination, VectorComponent};
 use crate::math::dynamic_number;
 use crate::math::dynamic_number::Unsigned;
-use crate::math::vector::Vector4Layout;
 
 impl Destination {
     // Implement from_code to convert a code into a Destination, returning None if it doesn't match.
@@ -127,7 +126,15 @@ pub enum DecodeError {
     #[error("The operation code was not recognized")]
     InvalidOperation,
     #[error("Failed to retrieve operand")]
-    Operand { #[source] source: operand::encoding::Error, error: OperandError }
+    Operand { #[source] source: operand::encoding::Error, error: OperandError },
+    #[error("Failed to read from input")]
+    Io { #[source] source: io::Error, error: IoError }
+}
+
+#[derive(Debug, Error)]
+pub enum IoError {
+    #[error("Failed to write encoded form of map vector modifier")]
+    MapVector
 }
 
 #[derive(Debug, Error)]
@@ -135,7 +142,21 @@ pub enum EncodeError {
     #[error("Failed to write operation specifier code")]
     Chain { #[source] source: io::Error },
     #[error("Failed to encode operand")]
-    Operand { #[source] source: operand::encoding::Error, error: OperandError }
+    Operand { #[source] source: operand::encoding::Error, error: OperandError },
+    #[error("Failed to write to output")]
+    Io { #[source] source: io::Error, error: IoError }
+}
+
+impl VectorComponent {
+    pub(super) const fn from_code(code: u8) -> Self {
+        match code {
+            0 => Self::X0,
+            1 => Self::X1,
+            2 => Self::X2,
+            3 => Self::X3,
+            _ => Self::X4
+        }
+    }
 }
 
 impl Operation {
@@ -149,27 +170,27 @@ impl Operation {
         // The ends of the statements are marked unreachable in the match because the codes will always be valid for 
         // their operand types.
         if let Some(category) = category { return Ok(match category {
-            OperandCategory::Destination => Operation::Destination {
+            OperandCategory::Destination => Self::Destination {
                 operation: Destination::from_code(code).unwrap(),
                 destination: Self::decode_operand(input, OperandError::Destination)?
             },
-            OperandCategory::Input => Operation::Input {
+            OperandCategory::Input => Self::Input {
                 operation: Input::from_code(code).unwrap(),
                 input: Self::decode_operand(input, OperandError::Input { nth: 0 })?
             },
-            OperandCategory::DestinationAndInput => Operation::DestinationAndInput {
+            OperandCategory::DestinationAndInput => Self::DestinationAndInput {
                 operation: DestinationAndInput::from_code(code).unwrap(),
                 destination: Self::decode_operand(input, OperandError::Destination)?,
                 input: Self::decode_operand(input, OperandError::Input { nth: 0 })?
             },
-            OperandCategory::DualInput => Operation::DualInput {
+            OperandCategory::DualInput => Self::DualInput {
                 operation: DualInput::from_code(code).unwrap(),
                 inputs: [
                     Self::decode_operand(input, OperandError::Input { nth: 0 })?,
                     Self::decode_operand(input, OperandError::Input { nth: 1 })?
                 ]
             },
-            OperandCategory::DestinationAndDualInput => Operation::DestinationAndDualInput {
+            OperandCategory::DestinationAndDualInput => Self::DestinationAndDualInput {
                 operation: DestinationAndDualInput::from_code(code).unwrap(),
                 destination: Self::decode_operand(input, OperandError::Destination)?,
                 inputs: [
@@ -178,8 +199,16 @@ impl Operation {
                 ]
             }
         }); }
+        
+        if code == Self::MAP_VECTOR_CODE {
+            let map_vector = Self::decode_map_vector(input)?;
+            return Ok(Self::MapVector {
+                mappings: map_vector.1,
+                operand: map_vector.0
+            });
+        };
 
-        Ok(Self::from_no_operand_code(code).ok_or(DecodeError::InvalidOperation)?)
+        Self::from_no_operand_code(code).ok_or(DecodeError::InvalidOperation)
     }
 
     const fn from_no_operand_code(code: u16) -> Option<Self> {
@@ -221,11 +250,34 @@ impl Operation {
         Self::encode_operand(output, destination, OperandError::Destination)
     }
     
-    fn encode_map_vector(output: &mut impl Write, mappings: Vector4Layout, operand: u8) -> Result<(), EncodeError> {
+    fn encode_map_vector(output: &mut impl Write, operand: u8, mappings: [VectorComponent; 4]) -> Result<(), EncodeError> {
         // todo: fix comments
-        // [op map map] [map ___ __]
-        // let mut encoded = operand
-        todo!()
+        let mut encoded = operand << 6;
+        encoded |= (mappings[0] as u8 & 0b00000_111) << 3;
+        encoded |= mappings[1] as u8 & 0b00000_111;
+        
+        let mut second_encoded = (mappings[2] as u8 & 0b00000_111) << 5;
+        second_encoded |= (mappings[3] as u8 & 0b00000_111) << 2;
+        
+        output.write_all(&[ encoded, second_encoded ]).map_err(|source| EncodeError::Io { source, error: IoError::MapVector })
+    }
+
+    fn decode_map_vector(input: &mut impl Read) -> Result<(u8, [VectorComponent; 4]), DecodeError> {
+        let mut buffer = [0u8; 2];
+        input.read_exact(&mut buffer).map_err(|source| DecodeError::Io { source, error: IoError::MapVector })?;
+        
+        let operand = (buffer[0] & 0b11_000_000) >> 6;
+        let mapping_0 = (buffer[0] & 0b00_111_000) >> 3;
+        let mapping_1 = buffer[0] & 0b00_000_111;
+        let mapping_2 = (buffer[1] & 0b111_000_00) >> 5;
+        let mapping_3 = (buffer[1] & 0b000_111_00) >> 2;
+        
+        Ok((operand, [
+            VectorComponent::from_code(mapping_0),
+            VectorComponent::from_code(mapping_1),
+            VectorComponent::from_code(mapping_2),
+            VectorComponent::from_code(mapping_3)
+        ]))
     }
     
     pub(crate) fn encode(self, output: &mut impl Write) -> Result<(), EncodeError> {
@@ -235,7 +287,7 @@ impl Operation {
             .map_err(|source| EncodeError::Chain { source })?;
         
         match self {
-            Self::MapVector { mappings, operand } => Self::encode_map_vector(output, mappings, operand)?,
+            Self::MapVector { mappings, operand } => Self::encode_map_vector(output, operand, mappings)?,
             Self::Destination { destination, .. } => Self::encode_destination(output, destination)?,
             Self::Input { input, .. } => Self::encode_inputs(output, [ input ])?,
             Self::DestinationAndInput { destination, input, .. } => {
