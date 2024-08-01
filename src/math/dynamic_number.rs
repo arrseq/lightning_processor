@@ -1,5 +1,8 @@
 pub mod chain;
 
+#[cfg(test)]
+mod test;
+
 /// # Power
 /// The power is a representation of this primitive data type which when set to the power of 2 gives the size in bytes.
 /// The power only has its 2 least significant bits used and the rest are discarded.
@@ -86,11 +89,18 @@ impl Size {
             Self::X64 => u64::MAX
         }
     }
-    
-    pub const fn get_minimum(value: u64) -> Self {
+
+    pub const fn minimum(value: u64) -> Self {
         if value > u32::MAX as u64 { Self::X64 }
             else if value > u16::MAX as u64 { Self::X32 }
             else if value > u8::MAX as u64 { Self::X16 }
+            else { Self::X8 }
+    }
+
+    pub const fn minimum_signed(value: i64) -> Self {
+        if value > i32::MAX as i64 || value < i32::MIN as i64 { Self::X64 }
+            else if value > i16::MAX as i64 || value < i16::MIN as i64 { Self::X32 }
+            else if value > i8::MAX as i64 || value < i8::MIN as i64 { Self::X16 }
             else { Self::X8 }
     }
 }
@@ -103,8 +113,8 @@ pub struct Unsigned {
 
 impl Unsigned {
     pub const fn new(value: u64) -> Self {
-        let size = Size::get_minimum(value);
-        Unsigned {
+        let size = Size::minimum(value);
+        Self {
             value: value & size.mask(),
             size
         }
@@ -124,6 +134,16 @@ impl From<Signed> for Unsigned {
 pub struct Signed {
     pub value: i64,
     pub size: Size
+}
+
+impl Signed {
+    pub const fn new(value: i64) -> Self {
+        let size = Size::minimum_signed(value);
+        Self {
+            value: value & size.mask() as i64,
+            size
+        }
+    }
 }
 
 impl From<Unsigned> for Signed {

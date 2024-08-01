@@ -31,7 +31,7 @@ impl Unsigned {
         
         Ok(Unsigned {
             value: result,
-            size: Size::get_minimum(result)
+            size: Size::minimum(result)
         })
     }
     

@@ -58,6 +58,15 @@ fn decode_relative_immediate() {
 }
 
 #[test]
+fn encode_relative_immediate() {
+    // -10 int_2 offset with dword value.
+    assert_eq!(write_cursor(vec![0u8; 0], |cursor| Operand {
+        mode: AddressingMode::Immediate { mode: ImmediateAddressing::Relative { offset: Signed::new(-10) }},
+        size: Size::X32
+    }.encode(cursor)), [])
+}
+
+#[test]
 fn decode_value_immediate() {
     // 10 uint_1 as a qword value.
     assert_eq!(read_cursor([ 0b01_110000, 0b00001010 ], Operand::decode).unwrap(), Operand {
