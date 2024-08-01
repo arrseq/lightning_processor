@@ -148,7 +148,7 @@ impl Operand {
     /// | End segment     | 4            |
     fn encode_addressing_byte(self, output: &mut impl Write, addressing_mode: u8, end_segment: u8) -> Result<(), Error> {
         let mut byte = addressing_mode << 6;
-        byte |= (self.size.to_power() & 0b00000011) << 4;
+        byte |= (self.size.power() & 0b00000011) << 4;
         byte |= end_segment & 0b00001111;
 
         output.write_all(&[byte]).map_err(|source| Error { source, error: IoError::AddressingByte })
@@ -187,11 +187,11 @@ impl Operand {
             AddressingMode::Register { register } => self.encode_addressing_byte(output, AddressingMode::REGISTER_CODE, register)?,
             AddressingMode::Immediate { mode } => match mode {
                 ImmediateAddressing::Immediate { immediate } => {
-                    self.encode_addressing_byte(output, AddressingMode::IMMEDIATE_CODE, immediate.size.to_power())?;
+                    self.encode_addressing_byte(output, AddressingMode::IMMEDIATE_CODE, immediate.size.power())?;
                     Self::write_immediate(output, immediate, IoError::ImmediateValue)?
                 },
                 ImmediateAddressing::Relative { offset } => {
-                    self.encode_addressing_byte(output, AddressingMode::RELATIVE_CODE, offset.size.to_power())?;
+                    self.encode_addressing_byte(output, AddressingMode::RELATIVE_CODE, offset.size.power())?;
                     
                     let immediate = Unsigned::from(offset);
                     Self::write_immediate(output, immediate, IoError::ImmediateOffset)?
@@ -204,14 +204,14 @@ impl Operand {
                     ComplexAddressing::Base { mode } => match mode {
                         BaseAddressing::Base => self.encode_complex_addressing_byte(output, ComplexAddressing::BASE.code, 0, 0)?,
                         BaseAddressing::Offsetted { offset } => {
-                            self.encode_complex_addressing_byte(output, ComplexAddressing::BASE_PLUS_OFFSET.code, 0, offset.size.to_power())?;
+                            self.encode_complex_addressing_byte(output, ComplexAddressing::BASE_PLUS_OFFSET.code, 0, offset.size.power())?;
                             Self::write_immediate(output, offset, IoError::ImmediateOffset)?;
                         }
                     }
                     ComplexAddressing::ArrayAddressing { mode, index } => match mode {
                         ArrayAddressing::Array => self.encode_complex_addressing_byte(output, ComplexAddressing::ARRAY.code, index, 0)?,
                         ArrayAddressing::Offsetted { offset } => {
-                            self.encode_complex_addressing_byte(output, ComplexAddressing::OFFSETTED_ARRAY.code, index, offset.size.to_power())?;
+                            self.encode_complex_addressing_byte(output, ComplexAddressing::OFFSETTED_ARRAY.code, index, offset.size.power())?;
                             Self::write_immediate(output, offset, IoError::ImmediateOffset)?;
                         }
                     }

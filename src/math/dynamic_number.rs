@@ -27,7 +27,7 @@ impl Size {
     }
 
     /// Convert this enum representation to a power of 2.
-    pub const fn to_power(self) -> u8 {
+    pub const fn power(self) -> u8 {
         match self {
             Self::X8 => 0,
             Self::X16 => 1,

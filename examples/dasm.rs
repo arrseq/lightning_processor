@@ -1,14 +1,15 @@
 use std::io::{Cursor, Read};
 use arrseq_lightning::instruction::Instruction;
+use arrseq_lightning::instruction::operand::{AddressingMode, ArrayAddressing, BaseAddressing, ComplexAddressing, ImmediateAddressing, Operand};
 use arrseq_lightning::instruction::operation::{Destination, DestinationAndDualInput, DestinationAndInput, DualInput, Input, Operation};
 use arrseq_lightning::math::dynamic_number::Size;
 
 fn size_to_str<'a>(size: Size) -> &'a str {
     match size {
-        Size::X8 => "byte",
-        Size::X16 => "word",
-        Size::X32 => "dword",
-        Size::X64 => "qword"
+        Size::X8 => "x8",
+        Size::X16 => "x16",
+        Size::X32 => "x32",
+        Size::X64 => "x64"
     }
 }
 
@@ -35,15 +36,61 @@ fn operation_to_str<'a>(operation: Operation) -> &'a str {
     }
 }
 
+fn operand_to_str(operand: Operand) -> String {
+    let size_spec = size_to_str(operand.size);
+    
+    let body = match operand.mode {
+        AddressingMode::Register { register } => &format!("g{}", register),
+        AddressingMode::Immediate { mode } => match mode {
+            ImmediateAddressing::Immediate { immediate } => &immediate.value.to_string(),
+            ImmediateAddressing::Relative { offset } => &offset.value.to_string()
+        },
+        AddressingMode::Complex { mode, base } => match mode {
+            ComplexAddressing::Base { mode } => match mode {
+                BaseAddressing::Base => &format!("[{}]", base),
+                BaseAddressing::Offsetted { offset } => &format!("[{} + {}]", base, offset.value)
+            },
+            ComplexAddressing::ArrayAddressing { mode, index } => match mode {
+                ArrayAddressing::Array => &format!("[{} + {} * {}]", base, index, operand.size.size()),
+                ArrayAddressing::Offsetted { offset } => &format!("[{} + {} * {} + {}]", base, index, operand.size.size(), offset.value)
+            }
+        }
+    };
+    
+    size_spec.to_string() + " " + body
+}
+
+fn operands_to_str(operands: &[Operand]) -> String {
+    let mut output = String::new();
+    for operand in operands { output += &(operand_to_str(*operand) + " "); }
+    output
+}
+
 fn disassemble(instruction: Instruction) -> String {
-    dbg!(instruction);
-    "".to_string()
+    let operation = operation_to_str(instruction.operation);
+    let operands: &[Operand] = match instruction.operation {
+        Operation::Destination             { destination, .. }                     => &[ destination ],
+        Operation::Input                   { input, .. }                           => &[input],
+        Operation::DestinationAndInput     { destination, input, .. }     => &[destination, input],
+        Operation::DualInput               { inputs, .. }                       => &[inputs[0], inputs[1]],
+        Operation::DestinationAndDualInput { destination, inputs, .. } => &[destination, inputs[0], inputs[1]],
+        _ => &[]
+    };
+    
+    operation.to_string() + " " + &operands_to_str(operands)
 }
 
 fn main() {
-    let mut rom = Cursor::new(vec![0]);
-    let instruction = Instruction::decode(&mut rom).expect("Failed to decode instruction from rom");
-    let asm_instruction = disassemble(instruction);
-    
-    println!("Disassembly: {}", asm_instruction);
+    let mut rom = Cursor::new(vec![0, 0, 1, 0]);
+
+    loop {
+        let instruction = match Instruction::decode(&mut rom) {
+            Ok(value) => value,
+            Err(_) => break
+        };
+        
+        let asm_instruction = disassemble(instruction);
+
+        println!("{}", asm_instruction);
+    }
 }
