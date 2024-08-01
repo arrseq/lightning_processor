@@ -184,21 +184,21 @@ impl Operand {
     
     pub(crate) fn encode(self, output: &mut impl Write) -> Result<(), Error> {
         match self.mode {
-            AddressingMode::Register { register } => self.encode_addressing_byte(output, AddressingMode::REGISTER.code, register)?,
+            AddressingMode::Register { register } => self.encode_addressing_byte(output, AddressingMode::REGISTER_CODE, register)?,
             AddressingMode::Immediate { mode } => match mode {
                 ImmediateAddressing::Immediate { immediate } => {
-                    self.encode_addressing_byte(output, AddressingMode::IMMEDIATE.code, immediate.size.to_power())?;
+                    self.encode_addressing_byte(output, AddressingMode::IMMEDIATE_CODE, immediate.size.to_power())?;
                     Self::write_immediate(output, immediate, IoError::ImmediateValue)?
                 },
                 ImmediateAddressing::Relative { offset } => {
-                    self.encode_addressing_byte(output, AddressingMode::RELATIVE.code, offset.size.to_power())?;
+                    self.encode_addressing_byte(output, AddressingMode::RELATIVE_CODE, offset.size.to_power())?;
                     
                     let immediate = Unsigned::from(offset);
                     Self::write_immediate(output, immediate, IoError::ImmediateOffset)?
                 }
             },
             AddressingMode::Complex { mode, base } => {
-                self.encode_addressing_byte(output, AddressingMode::COMPLEX.code, base)?;
+                self.encode_addressing_byte(output, AddressingMode::COMPLEX_CODE, base)?;
                     
                 match mode {
                     ComplexAddressing::Base { mode } => match mode {

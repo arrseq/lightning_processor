@@ -21,7 +21,7 @@ fn decode() {
             mode: AddressingMode::Register { register: 0 },
             size: Size::X64
         },
-        input: [
+        inputs: [
             Operand {
                 mode: AddressingMode::Register { register: 1 },
                 size: Size::X8
@@ -36,11 +36,5 @@ fn decode() {
 
 #[test]
 fn encode() {
-    dbg!(write_cursor(vec![0u8; 0], |cursor| Operation::Destination {
-        operation: Destination::Unstack,
-        destination: Operand {
-            mode: AddressingMode::Register { register: 10 },
-            size: Size::X16
-        }
-    }.encode(cursor)));
+    dbg!(write_cursor(vec![0u8; 0], |cursor| Operation::None.encode(cursor)));
 }

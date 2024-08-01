@@ -3,7 +3,7 @@ pub mod encoding;
 use crate::instruction::operand::Operand;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Category {
+pub enum OperandCategory {
     Destination,
     Input,
     DestinationAndInput,
@@ -74,34 +74,37 @@ impl DestinationAndDualInput {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Operation {
+    None,
     Destination             { operation: Destination,             destination: Operand },
     Input                   { operation: Input,                   input:       Operand },
     DestinationAndInput     { operation: DestinationAndInput,     destination: Operand, input: Operand },
-    DualInput               { operation: DualInput,               input: [Operand; 2] },
-    DestinationAndDualInput { operation: DestinationAndDualInput, input: [Operand; 2],  destination: Operand }
+    DualInput               { operation: DualInput,               inputs: [Operand; 2] },
+    DestinationAndDualInput { operation: DestinationAndDualInput, inputs: [Operand; 2],  destination: Operand }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Dependencies {
     pub code: u16,
-    pub category: Category
+    pub category: Option<OperandCategory>
 }
 
 impl Operation {
-    pub const STACK            : Dependencies = Dependencies { code: 0 , category: Category::Input                   };
-    pub const UNSTACK          : Dependencies = Dependencies { code: 1 , category: Category::Destination             };
-    pub const COPY             : Dependencies = Dependencies { code: 2 , category: Category::DestinationAndInput     };
-    pub const COMPARE          : Dependencies = Dependencies { code: 3 , category: Category::DualInput               };
-    pub const SIGNED_COMPARE   : Dependencies = Dependencies { code: 4 , category: Category::DualInput               };
-    pub const ADD              : Dependencies = Dependencies { code: 5 , category: Category::DestinationAndDualInput };
-    pub const FLOATING_ADD     : Dependencies = Dependencies { code: 6 , category: Category::DestinationAndDualInput };
-    pub const SUBTRACT         : Dependencies = Dependencies { code: 7 , category: Category::DestinationAndDualInput };
-    pub const FLOATING_SUBTRACT: Dependencies = Dependencies { code: 8 , category: Category::DestinationAndDualInput };
-    pub const MULTIPLY         : Dependencies = Dependencies { code: 9 , category: Category::DestinationAndDualInput };
-    pub const FLOATING_MULTIPLY: Dependencies = Dependencies { code: 10, category: Category::DestinationAndDualInput };
-    pub const DIVIDE           : Dependencies = Dependencies { code: 11, category: Category::DestinationAndDualInput };
-    pub const FLOATING_DIVIDE  : Dependencies = Dependencies { code: 12, category: Category::DestinationAndDualInput };
+    pub const NONE             : Dependencies = Dependencies { code: 0 , category: None                                           };
+    pub const STACK            : Dependencies = Dependencies { code: 1 , category: Some(OperandCategory::Input                  ) };
+    pub const UNSTACK          : Dependencies = Dependencies { code: 2 , category: Some(OperandCategory::Destination            ) };
+    pub const COPY             : Dependencies = Dependencies { code: 3 , category: Some(OperandCategory::DestinationAndInput    ) };
+    pub const COMPARE          : Dependencies = Dependencies { code: 4 , category: Some(OperandCategory::DualInput              ) };
+    pub const SIGNED_COMPARE   : Dependencies = Dependencies { code: 5 , category: Some(OperandCategory::DualInput              ) };
+    pub const ADD              : Dependencies = Dependencies { code: 6 , category: Some(OperandCategory::DestinationAndDualInput) };
+    pub const FLOATING_ADD     : Dependencies = Dependencies { code: 7 , category: Some(OperandCategory::DestinationAndDualInput) };
+    pub const SUBTRACT         : Dependencies = Dependencies { code: 8 , category: Some(OperandCategory::DestinationAndDualInput) };
+    pub const FLOATING_SUBTRACT: Dependencies = Dependencies { code: 9 , category: Some(OperandCategory::DestinationAndDualInput) };
+    pub const MULTIPLY         : Dependencies = Dependencies { code: 10, category: Some(OperandCategory::DestinationAndDualInput) };
+    pub const FLOATING_MULTIPLY: Dependencies = Dependencies { code: 11, category: Some(OperandCategory::DestinationAndDualInput) };
+    pub const DIVIDE           : Dependencies = Dependencies { code: 12, category: Some(OperandCategory::DestinationAndDualInput) };
+    pub const FLOATING_DIVIDE  : Dependencies = Dependencies { code: 13, category: Some(OperandCategory::DestinationAndDualInput) };
 
+    pub const NONE_CODE             : u16 = Self::NONE.code             ;
     pub const STACK_CODE            : u16 = Self::STACK.code            ;
     pub const UNSTACK_CODE          : u16 = Self::UNSTACK.code          ;
     pub const COPY_CODE             : u16 = Self::COPY.code             ;
@@ -116,7 +119,8 @@ impl Operation {
     pub const DIVIDE_CODE           : u16 = Self::DIVIDE.code           ;
     pub const FLOATING_DIVIDE_CODE  : u16 = Self::FLOATING_DIVIDE.code  ;
     
-    pub const OPERATIONS: [Dependencies; 13] = [
+    pub const OPERATIONS: [Dependencies; 14] = [
+        Self::NONE,
         Self::STACK   , Self::UNSTACK          ,
         Self::COPY    ,
         Self::COMPARE , Self::SIGNED_COMPARE   ,

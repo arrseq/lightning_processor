@@ -4,11 +4,112 @@ mod test;
 use std::io;
 use std::io::{Read, Write};
 use thiserror::Error;
-use crate::instruction::operand;
+use crate::instruction::{operand, operation};
 use crate::instruction::operand::Operand;
-use crate::instruction::operation::{Category, DestinationAndDualInput, DestinationAndInput, DualInput, Input, Operation};
+use crate::instruction::operation::{OperandCategory, DestinationAndDualInput, DestinationAndInput, DualInput, Input, Operation, Destination};
 use crate::math::dynamic_number;
 use crate::math::dynamic_number::Unsigned;
+
+impl Destination {
+    // Implement from_code to convert a code into a Destination, returning None if it doesn't match.
+    const fn from_code(code: u16) -> Option<Self> {
+        Some(match code {
+            Self::UNSTACK => Self::Unstack,
+            _ => return None,
+        })
+    }
+
+    // Implement to_code to convert a Destination into its corresponding code.
+    const fn to_code(self) -> u16 {
+        match self {
+            Self::Unstack => Self::UNSTACK,
+        }
+    }
+}
+
+impl Input {
+    // Implement from_code to convert a code into an Input, returning None if it doesn't match.
+    const fn from_code(code: u16) -> Option<Self> {
+        Some(match code {
+            Self::STACK => Self::Stack,
+            _ => return None,
+        })
+    }
+
+    // Implement to_code to convert an Input into its corresponding code.
+    const fn to_code(self) -> u16 {
+        match self {
+            Self::Stack => Self::STACK,
+        }
+    }
+}
+
+impl DestinationAndInput {
+    // Implement from_code to convert a code into a DestinationAndInput, returning None if it doesn't match.
+    const fn from_code(code: u16) -> Option<Self> {
+        Some(match code {
+            Self::COPY => Self::Copy,
+            _ => return None,
+        })
+    }
+
+    // Implement to_code to convert a DestinationAndInput into its corresponding code.
+    const fn to_code(self) -> u16 {
+        match self {
+            Self::Copy => Self::COPY,
+        }
+    }
+}
+
+impl DualInput {
+    // Implement from_code to convert a code into a DualInput, returning None if it doesn't match.
+    const fn from_code(code: u16) -> Option<Self> {
+        Some(match code {
+            Self::COMPARE => Self::Compare,
+            Self::SIGNED_COMPARE => Self::SignedCompare,
+            _ => return None,
+        })
+    }
+
+    // Implement to_code to convert a DualInput into its corresponding code.
+    const fn to_code(self) -> u16 {
+        match self {
+            Self::Compare => Self::COMPARE,
+            Self::SignedCompare => Self::SIGNED_COMPARE,
+        }
+    }
+}
+
+impl DestinationAndDualInput {
+    // Implement from_code to convert a code into a DestinationAndDualInput, returning None if it doesn't match.
+    pub const fn from_code(code: u16) -> Option<Self> {
+        Some(match code {
+            Self::ADD => Self::Add,
+            Self::FLOATING_ADD => Self::FloatingAdd,
+            Self::SUBTRACT => Self::Subtract,
+            Self::FLOATING_SUBTRACT => Self::FloatingSubtract,
+            Self::MULTIPLY => Self::Multiply,
+            Self::FLOATING_MULTIPLY => Self::FloatingMultiply,
+            Self::DIVIDE => Self::Divide,
+            Self::FLOATING_DIVIDE => Self::FloatingDivide,
+            _ => return None,
+        })
+    }
+
+    // Implement to_code to convert a DestinationAndDualInput into its corresponding code
+    pub const fn to_code(self) -> u16 {
+        match self {
+            Self::Add => Self::ADD,
+            Self::FloatingAdd => Self::FLOATING_ADD,
+            Self::Subtract => Self::SUBTRACT,
+            Self::FloatingSubtract => Self::FLOATING_SUBTRACT,
+            Self::Multiply => Self::MULTIPLY,
+            Self::FloatingMultiply => Self::FLOATING_MULTIPLY,
+            Self::Divide => Self::DIVIDE,
+            Self::FloatingDivide => Self::FLOATING_DIVIDE,
+        }
+    }
+}
 
 #[derive(Debug, Error)]
 pub enum OperandError {
@@ -44,70 +145,38 @@ impl Operation {
         
         // The ends of the statements are marked unreachable in the match because the codes will always be valid for 
         // their operand types.
-        Ok(match category {
-            Category::Destination => {
-                let destination = Self::decode_operand(input, OperandError::Destination)?;
-                
-                let operation = match code {
-                    super::Destination::UNSTACK => super::Destination::Unstack,
-                    _ => unreachable!()
-                };
-
-                Operation::Destination { operation, destination }
+        if let Some(category) = category { return Ok(match category {
+            OperandCategory::Destination => Operation::Destination {
+                operation: Destination::from_code(code).unwrap(),
+                destination: Self::decode_operand(input, OperandError::Destination)?
             },
-            Category::Input => {
-                let input = Self::decode_operand(input, OperandError::Input { nth: 0 })?;
-
-                let operation = match code {
-                    super::Input::STACK => super::Input::Stack,
-                    _ => unreachable!()
-                };
-
-                Operation::Input { operation, input }
+            OperandCategory::Input => Operation::Input {
+                operation: Input::from_code(code).unwrap(),
+                input: Self::decode_operand(input, OperandError::Input { nth: 0 })?
             },
-            Category::DestinationAndInput => {
-                let destination = Self::decode_operand(input, OperandError::Destination)?;
-                let input = Self::decode_operand(input, OperandError::Input { nth: 0 })?;
-                
-                let operation = match code {
-                    super::DestinationAndInput::COPY => super::DestinationAndInput::Copy,
-                    _ => unreachable!()
-                };
-                
-                Operation::DestinationAndInput { operation, destination, input }
+            OperandCategory::DestinationAndInput => Operation::DestinationAndInput {
+                operation: DestinationAndInput::from_code(code).unwrap(),
+                destination: Self::decode_operand(input, OperandError::Destination)?,
+                input: Self::decode_operand(input, OperandError::Input { nth: 0 })?
+            },
+            OperandCategory::DualInput => Operation::DualInput {
+                operation: DualInput::from_code(code).unwrap(),
+                inputs: [
+                    Self::decode_operand(input, OperandError::Input { nth: 0 })?,
+                    Self::decode_operand(input, OperandError::Input { nth: 1 })?
+                ]
+            },
+            OperandCategory::DestinationAndDualInput => Operation::DestinationAndDualInput {
+                operation: DestinationAndDualInput::from_code(code).unwrap(),
+                destination: Self::decode_operand(input, OperandError::Destination)?,
+                inputs: [
+                    Self::decode_operand(input, OperandError::Input { nth: 0 })?,
+                    Self::decode_operand(input, OperandError::Input { nth: 1 })?
+                ]
             }
-            Category::DualInput => {
-                let input_0 = Self::decode_operand(input, OperandError::Input { nth: 0 })?;
-                let input_1 = Self::decode_operand(input, OperandError::Input { nth: 1 })?;
-                
-                let operation = match code {
-                    super::DualInput::COMPARE => super::DualInput::Compare,
-                    super::DualInput::SIGNED_COMPARE => super::DualInput::SignedCompare,
-                    _ => unreachable!()
-                };
-                
-                Operation::DualInput { operation, input: [input_0, input_1] }
-            },
-            Category::DestinationAndDualInput => {
-                let destination = Self::decode_operand(input, OperandError::Destination)?;
-                let input_0 = Self::decode_operand(input, OperandError::Input { nth: 0 })?;
-                let input_1 = Self::decode_operand(input, OperandError::Input { nth: 1 })?;
+        }); }
 
-                let operation = match code {
-                    super::DestinationAndDualInput::ADD               => super::DestinationAndDualInput::Add,
-                    super::DestinationAndDualInput::FLOATING_ADD      => super::DestinationAndDualInput::FloatingAdd,
-                    super::DestinationAndDualInput::SUBTRACT          => super::DestinationAndDualInput::Subtract,
-                    super::DestinationAndDualInput::FLOATING_SUBTRACT => super::DestinationAndDualInput::FloatingSubtract,
-                    super::DestinationAndDualInput::MULTIPLY          => super::DestinationAndDualInput::Multiply,
-                    super::DestinationAndDualInput::FLOATING_MULTIPLY => super::DestinationAndDualInput::FloatingMultiply,
-                    super::DestinationAndDualInput::DIVIDE            => super::DestinationAndDualInput::Divide,
-                    super::DestinationAndDualInput::FLOATING_DIVIDE   => super::DestinationAndDualInput::FloatingDivide,
-                    _ => unreachable!()
-                };
-
-                Operation::DestinationAndDualInput { operation, destination, input: [input_0, input_1] }
-            }
-        })
+        todo!()
     }
     
     fn decode_operand(input: &mut impl Read, error: OperandError) -> Result<Operand, DecodeError> {
@@ -116,33 +185,15 @@ impl Operation {
     
     pub(crate) fn encode(self, output: &mut impl Write) -> Result<(), EncodeError> {
         let operation = match self {
-            Self::Destination { operation, .. } => match operation {
-                super::Destination::Unstack => Self::UNSTACK.code
-            },
-            Operation::Input { operation, .. } => match operation { 
-                Input::Stack => Self::STACK.code
-            },
-            Operation::DestinationAndInput { operation, .. } => match operation { 
-                DestinationAndInput::Copy => Self::COPY.code
-            },
-            Operation::DualInput { operation, .. } => match operation {
-                DualInput::Compare => Self::COMPARE.code,
-                DualInput::SignedCompare => Self::SIGNED_COMPARE.code
-            },
-            Operation::DestinationAndDualInput { operation, .. } => match operation {
-                DestinationAndDualInput::Add => Self::ADD.code,
-                DestinationAndDualInput::FloatingAdd => Self::FLOATING_ADD.code,
-                DestinationAndDualInput::Subtract => Self::SUBTRACT.code,
-                DestinationAndDualInput::FloatingSubtract => Self::FLOATING_SUBTRACT.code,
-                DestinationAndDualInput::Multiply => Self::MULTIPLY.code,
-                DestinationAndDualInput::FloatingMultiply => Self::FLOATING_MULTIPLY.code,
-                DestinationAndDualInput::Divide => Self::DIVIDE.code,
-                DestinationAndDualInput::FloatingDivide => Self::FLOATING_DIVIDE.code
-            },
+            Self::None => Self::NONE.code,
+            Self::Destination { operation, .. } => operation.to_code(),
+            Operation::Input { operation, .. } => operation.to_code(),
+            Operation::DestinationAndInput { operation, .. } => operation.to_code(),
+            Operation::DualInput { operation, .. } => operation.to_code(),
+            Operation::DestinationAndDualInput { operation, .. } => operation.to_code(),
         };
+
         Unsigned::new(operation as u64).encode_chain(output, true).map_err(|source| EncodeError::Chain { source })?;
         Ok(())
     }
-    
-    // fn encode_destination(self, output: &mut impl Write) -> Result<(), operand::encoding::>
 }
