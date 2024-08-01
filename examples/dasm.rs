@@ -36,6 +36,10 @@ fn operation_to_str<'a>(operation: Operation) -> &'a str {
     }
 }
 
+fn register_to_str(register: u8) -> String {
+    format!("g{}", register)
+}
+
 fn operand_to_str(operand: Operand) -> String {
     let size_spec = size_to_str(operand.size);
     
@@ -47,12 +51,12 @@ fn operand_to_str(operand: Operand) -> String {
         },
         AddressingMode::Complex { mode, base } => match mode {
             ComplexAddressing::Base { mode } => match mode {
-                BaseAddressing::Base => &format!("[{}]", base),
-                BaseAddressing::Offsetted { offset } => &format!("[{} + {}]", base, offset.value)
+                BaseAddressing::Base => &format!("[{}]", register_to_str(base)),
+                BaseAddressing::Offsetted { offset } => &format!("[{} + {}]", register_to_str(base), offset.value)
             },
             ComplexAddressing::ArrayAddressing { mode, index } => match mode {
-                ArrayAddressing::Array => &format!("[{} + {} * {}]", base, index, operand.size.size()),
-                ArrayAddressing::Offsetted { offset } => &format!("[{} + {} * {} + {}]", base, index, operand.size.size(), offset.value)
+                ArrayAddressing::Array => &format!("[{} + {} * {}]", register_to_str(base), register_to_str(index), operand.size.size()),
+                ArrayAddressing::Offsetted { offset } => &format!("[{} + {} * {} + {}]", register_to_str(base), register_to_str(index), operand.size.size(), offset.value)
             }
         }
     };
@@ -81,16 +85,15 @@ fn disassemble(instruction: Instruction) -> String {
 }
 
 fn main() {
-    let mut rom = Cursor::new(vec![0, 0, 1, 0]);
+    let mut rom = Cursor::new(include_bytes!("./dasm.img"));
 
     loop {
         let instruction = match Instruction::decode(&mut rom) {
             Ok(value) => value,
-            Err(_) => break
+            Err(_) => continue
         };
         
         let asm_instruction = disassemble(instruction);
-
-        println!("{}", asm_instruction);
+        println!("{}", asm_instruction); 
     }
 }
