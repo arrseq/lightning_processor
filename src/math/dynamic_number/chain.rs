@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod test;
+
 use std::io;
 use std::io::{Read, Write};
 use thiserror::Error;
@@ -44,7 +47,8 @@ impl Unsigned {
     
     pub fn encode_chain(self, output: &mut impl Write, cap_end: bool) -> io::Result<()> {
         let mut remaining = self.value;
-        let mut bytes_written = 0u64;
+        // Write back 0 to terminate the encoding.
+        if remaining == 0 { return output.write_all(&[0]); }
         
         loop {
             let need_to_write = Self::encoder_interpret(remaining, cap_end);

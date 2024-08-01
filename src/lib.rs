@@ -34,6 +34,6 @@ pub fn read_cursor<T: AsRef<[u8]>, R>(data: T, mut handle: impl FnMut(&mut Curso
 /// The buffer that was modified.
 pub fn write_cursor<T: AsRef<[u8]>, R: Debug, X>(data: T, mut handle: impl FnMut(&mut Cursor<T>) -> Result<X, R>) -> T {
     let mut cursor = Cursor::new(data);
-    handle(&mut cursor).unwrap();
+    handle(&mut cursor).expect("Failed write due to process error");
     cursor.into_inner()
 }
