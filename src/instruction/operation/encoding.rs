@@ -177,10 +177,10 @@ impl Operation {
                 ]
             }
         }); }
-        
+
         Ok(Self::from_no_operand_code(code).ok_or(DecodeError::InvalidOperation)?)
     }
-    
+
     const fn from_no_operand_code(code: u16) -> Option<Self> {
         Some(match code {
             Self::NONE_CODE => Self::None,

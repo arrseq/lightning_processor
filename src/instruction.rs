@@ -4,10 +4,15 @@ use crate::instruction::operation::Operation;
 
 pub mod operation;
 pub mod operand;
+mod modifier;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Instruction {
-    pub operation: Operation
+    pub operation: Operation,
+    pub lock: bool,
+    pub vector_operands: bool,
+    pub vector_mapping: bool,
+    pub branch_override: Option<bool>,
 }
 
 #[derive(Debug, Error)]
