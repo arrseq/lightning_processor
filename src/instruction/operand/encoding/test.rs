@@ -121,7 +121,7 @@ fn encode_relative_immediate() {
 #[test]
 fn decode_base() {
     // register 10 as base as a byte value.
-    assert_eq!(read_cursor([ 0b11_00_1010, 0b00_0000_00 ], Operand::decode).unwrap(), Operand {
+    assert_eq!(read_cursor([ 0b11_00_1010, 0 ], Operand::decode).unwrap(), Operand {
         size: Size::X8,
         mode: AddressingMode::Complex {
             mode: ComplexAddressing::Base { mode: BaseAddressing::Base },
@@ -140,6 +140,27 @@ fn decode_base() {
             base: 15
         }
     });
+}
+
+#[test]
+fn encode_base() {
+    // register 5 as base as qword value.
+    assert_eq!(write_cursor(vec![0u8; 0], |cursor| Operand {
+        mode: AddressingMode::Complex { 
+            mode: ComplexAddressing::Base { mode: BaseAddressing::Base },
+            base: 5
+        },
+        size: Size::X64
+    }.encode(cursor)), [0b11_11_0101, 0]);
+
+    // register 15 as base with byte offset of 1 as dword value.
+    assert_eq!(write_cursor(vec![0u8; 0], |cursor| Operand {
+        mode: AddressingMode::Complex {
+            mode: ComplexAddressing::Base { mode: BaseAddressing::Offsetted { offset: Unsigned::new(1) }},
+            base: 15
+        },
+        size: Size::X32
+    }.encode(cursor)), [0b11_10_1111, 0b01_0000_00, 1]);
 }
 
 #[test]
@@ -164,4 +185,34 @@ fn decode_array() {
             base: 3
         }
     });
+}
+
+#[test]
+fn encode_array() {
+    // base register 5 and index 15 as qword value.
+    assert_eq!(write_cursor(vec![0u8; 0], |cursor| Operand {
+        mode: AddressingMode::Complex { 
+            mode: ComplexAddressing::ArrayAddressing {
+                mode: ArrayAddressing::Array,
+                index: 15
+            },
+            base: 5
+        },
+        size: Size::X64
+    }.encode(cursor)), [0b11_11_0101, 0b10_1111_00]);
+
+    // base register 3 and index 5 with word offset of 10 as word value.
+    assert_eq!(write_cursor(vec![0u8; 0], |cursor| Operand {
+        mode: AddressingMode::Complex {
+            mode: ComplexAddressing::ArrayAddressing {
+                mode: ArrayAddressing::Offsetted { offset: Unsigned {
+                    value: 10,
+                    size: Size::X16
+                }},
+                index: 5
+            },
+            base: 3
+        },
+        size: Size::X16
+    }.encode(cursor)), [0b11_01_0011, 0b11_0101_01, 10, 0]);
 }
