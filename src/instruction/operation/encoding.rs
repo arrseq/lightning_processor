@@ -187,7 +187,7 @@ impl Operation {
                 ]
             }
         }); }
-        
+
         if code == Self::MAP_VECTOR_CODE {
             let map_vector = Self::decode_map_vector(input)?;
             return Ok(Self::MapVector {
@@ -237,7 +237,7 @@ impl Operation {
     fn encode_destination(output: &mut impl Write, destination: Operand) -> Result<(), EncodeError> {
         Self::encode_operand(output, destination, OperandError::Destination)
     }
-    
+
     fn optional_vector_component_from_code(code: u8) -> Option<VectorComponent> {
         Some(match code {
             1 => VectorComponent::X0,
@@ -247,7 +247,7 @@ impl Operation {
             _ => return None
         })
     }
-    
+
     fn optional_vector_component_code(vector_component: Option<VectorComponent>) -> u8 {
         if let Some(component) = vector_component { match component {
             VectorComponent::X0 => 1,
@@ -262,23 +262,23 @@ impl Operation {
         let mut encoded = operand << 6;
         encoded |= (Self::optional_vector_component_code(mappings[0]) & 0b00000_111) << 3;
         encoded |= Self::optional_vector_component_code(mappings[1]) & 0b00000_111;
-        
+
         let mut second_encoded = (Self::optional_vector_component_code(mappings[2]) & 0b00000_111) << 5;
         second_encoded |= (Self::optional_vector_component_code(mappings[3]) & 0b00000_111) << 2;
-        
+
         output.write_all(&[ encoded, second_encoded ]).map_err(|source| EncodeError::Io { source, error: IoError::MapVector })
     }
 
     fn decode_map_vector(input: &mut impl Read) -> Result<(u8, [Option<VectorComponent>; 4]), DecodeError> {
         let mut buffer = [0u8; 2];
         input.read_exact(&mut buffer).map_err(|source| DecodeError::Io { source, error: IoError::MapVector })?;
-        
+
         let operand = (buffer[0] & 0b11_000_000) >> 6;
         let mapping_0 = (buffer[0] & 0b00_111_000) >> 3;
         let mapping_1 = buffer[0] & 0b00_000_111;
         let mapping_2 = (buffer[1] & 0b111_000_00) >> 5;
         let mapping_3 = (buffer[1] & 0b000_111_00) >> 2;
-        
+
         Ok((operand, [
             Self::optional_vector_component_from_code(mapping_0),
             Self::optional_vector_component_from_code(mapping_1),

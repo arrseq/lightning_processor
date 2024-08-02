@@ -36,11 +36,18 @@ fn decode() {
 
 #[test]
 fn encode() {
-    // dbg!(write_cursor(vec![0u8; 0], |cursor| Operation::None.encode(cursor)));
-    dbg!(read_cursor(write_cursor(vec![0u8; 0], |cursor| Operation::MapVector { mappings: [
-        Some(VectorComponent::X1),
-        None,
-        Some(VectorComponent::X2),
-        Some(VectorComponent::X3)
-    ], operand: 0 }.encode(cursor)), Operation::decode));
+    // none
+    assert_eq!(write_cursor(vec![0u8; 1], |cursor| Operation::None.encode(cursor)), [0]);
+    // lock modifier
+    assert_eq!(write_cursor(vec![0u8; 1], |cursor| Operation::Lock.encode(cursor)), [1]);
+    // vec remap
+    assert_eq!(write_cursor(vec![0u8; 1], |cursor| Operation::MapVector {
+        mappings: [
+            None,
+            Some(VectorComponent::X3),
+            Some(VectorComponent::X2),
+            Some(VectorComponent::X1),
+        ],
+        operand: 1
+    }.encode(cursor)), [3, 0b01_000_100, 0b011_010_00]);
 }
