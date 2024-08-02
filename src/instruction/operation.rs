@@ -8,7 +8,8 @@ pub enum OperandCategory {
     Input,
     DestinationAndInput,
     DualInput,
-    DestinationAndDualInput
+    DestinationAndDualInput,
+    Other
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -105,7 +106,7 @@ pub struct Dependencies {
 impl Operation {
     pub const NONE             : Dependencies = Dependencies { code: 0 , category: None                                          , executable: true  };
     pub const LOCK             : Dependencies = Dependencies { code: 1 , category: None                                          , executable: false };
-    pub const VECTOR_OPERANDS  : Dependencies = Dependencies { code: 2 , category: None                                          , executable: false };
+    pub const VECTOR_OPERANDS  : Dependencies = Dependencies { code: 2 , category: Some(OperandCategory::Other)                  , executable: false };
     pub const MAP_VECTOR       : Dependencies = Dependencies { code: 3 , category: None                                          , executable: false };
     pub const OVERRIDE_BRANCH  : Dependencies = Dependencies { code: 4 , category: None                                          , executable: false };
     pub const STACK            : Dependencies = Dependencies { code: 5 , category: Some(OperandCategory::Input                  ), executable: true  };

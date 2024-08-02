@@ -4,14 +4,12 @@ mod test;
 use std::io;
 use std::io::{Read, Write};
 use thiserror::Error;
-use crate::instruction::{operand, operation};
+use crate::instruction::{operand};
 use crate::instruction::operand::Operand;
 use crate::instruction::operation::{OperandCategory, DestinationAndDualInput, DestinationAndInput, DualInput, Input, Operation, Destination, VectorComponent};
-use crate::math::dynamic_number;
 use crate::math::dynamic_number::Unsigned;
 
 impl Destination {
-    // Implement from_code to convert a code into a Destination, returning None if it doesn't match.
     const fn from_code(code: u16) -> Option<Self> {
         Some(match code {
             Self::UNSTACK => Self::Unstack,
@@ -19,7 +17,6 @@ impl Destination {
         })
     }
 
-    // Implement to_code to convert a Destination into its corresponding code.
     const fn code(self) -> u16 {
         match self {
             Self::Unstack => Self::UNSTACK,
@@ -28,7 +25,6 @@ impl Destination {
 }
 
 impl Input {
-    // Implement from_code to convert a code into an Input, returning None if it doesn't match.
     const fn from_code(code: u16) -> Option<Self> {
         Some(match code {
             Self::STACK => Self::Stack,
@@ -36,7 +32,6 @@ impl Input {
         })
     }
 
-    // Implement to_code to convert an Input into its corresponding code.
     const fn code(self) -> u16 {
         match self {
             Self::Stack => Self::STACK,
@@ -45,7 +40,6 @@ impl Input {
 }
 
 impl DestinationAndInput {
-    // Implement from_code to convert a code into a DestinationAndInput, returning None if it doesn't match.
     const fn from_code(code: u16) -> Option<Self> {
         Some(match code {
             Self::COPY => Self::Copy,
@@ -53,7 +47,6 @@ impl DestinationAndInput {
         })
     }
 
-    // Implement to_code to convert a DestinationAndInput into its corresponding code.
     const fn code(self) -> u16 {
         match self {
             Self::Copy => Self::COPY,
@@ -62,7 +55,6 @@ impl DestinationAndInput {
 }
 
 impl DualInput {
-    // Implement from_code to convert a code into a DualInput, returning None if it doesn't match.
     const fn from_code(code: u16) -> Option<Self> {
         Some(match code {
             Self::COMPARE => Self::Compare,
@@ -71,7 +63,6 @@ impl DualInput {
         })
     }
 
-    // Implement to_code to convert a DualInput into its corresponding code.
     const fn code(self) -> u16 {
         match self {
             Self::Compare => Self::COMPARE,
@@ -81,7 +72,6 @@ impl DualInput {
 }
 
 impl DestinationAndDualInput {
-    // Implement from_code to convert a code into a DestinationAndDualInput, returning None if it doesn't match.
     pub const fn from_code(code: u16) -> Option<Self> {
         Some(match code {
             Self::ADD => Self::Add,
@@ -96,7 +86,6 @@ impl DestinationAndDualInput {
         })
     }
 
-    // Implement to_code to convert a DestinationAndDualInput into its corresponding code
     pub const fn code(self) -> u16 {
         match self {
             Self::Add => Self::ADD,
@@ -185,23 +174,30 @@ impl Operation {
                     Self::decode_operand(input, OperandError::Input { nth: 0 })?,
                     Self::decode_operand(input, OperandError::Input { nth: 1 })?
                 ]
+            },
+            OperandCategory::Other => match code {
+                Self::MAP_VECTOR_CODE => {
+                    let map_vector = Self::decode_map_vector(input)?;
+                    return Ok(Self::MapVector {
+                        mappings: map_vector.1,
+                        operand: map_vector.0
+                    })
+                },
+                _ => return Err(DecodeError::InvalidOperation)
             }
         }); }
 
-        if code == Self::MAP_VECTOR_CODE {
-            let map_vector = Self::decode_map_vector(input)?;
-            return Ok(Self::MapVector {
-                mappings: map_vector.1,
-                operand: map_vector.0
-            });
-        };
-
-        Self::from_no_operand_code(code).ok_or(DecodeError::InvalidOperation)
+        // If an operand decode handler was not filtered into, then decode simply by operation code with no operands. 
+        return Ok(Self::from_no_operand_code(code).ok_or(DecodeError::InvalidOperation).map_err(|source| DecodeError::InvalidOperation)?);
     }
 
+    /// Create an operation from a code which is for an operation that does not receive operands.
     const fn from_no_operand_code(code: u16) -> Option<Self> {
         Some(match code {
             Self::NONE_CODE => Self::None,
+            Self::LOCK_CODE => Self::Lock,
+            Self::VECTOR_OPERANDS_CODE => Self::VectorOperands,
+            Self::OVERRIDE_BRANCH_CODE => Self::OverrideBranch,
             _ => return None
         })
     }
@@ -210,6 +206,7 @@ impl Operation {
         Operand::decode(input).map_err(|source| DecodeError::Operand { source, error })
     }
 
+    /// Get the unique code that represents this current operation.
     pub(super) const fn code(self) -> u16 {
         match self {
             Self::None => Self::NONE.code,
@@ -225,20 +222,27 @@ impl Operation {
         }
     }
 
+    /// The error field is used to specify the error reason.
     fn encode_operand(output: &mut impl Write, operand: Operand, error: OperandError) -> Result<(), EncodeError> {
         operand.encode(output).map_err(|source| EncodeError::Operand { source, error })
     }
     
+    /// Encode input operands and their error will be calculated.
     fn encode_inputs<const Count: usize>(output: &mut impl Write, inputs: [Operand; Count]) -> Result<(), EncodeError> {
         for (nth, input) in inputs.iter().enumerate() { Self::encode_operand(output, *input, OperandError::Input { nth: nth as u8 })?; }
         Ok(())
     }
     
+    /// Encode a destination operand with the error being set for the destination.
     fn encode_destination(output: &mut impl Write, destination: Operand) -> Result<(), EncodeError> {
         Self::encode_operand(output, destination, OperandError::Destination)
     }
 
-    fn optional_vector_component_from_code(code: u8) -> Option<VectorComponent> {
+    /// Decode a vector component that is in an [Option] enum into a that type. 
+    /// 
+    /// # Result
+    /// If a code that is too large is provided, then the largest vector is returned.
+    const fn optional_vector_component_from_code(code: u8) -> Option<VectorComponent> {
         Some(match code {
             1 => VectorComponent::X0,
             2 => VectorComponent::X1,
@@ -248,7 +252,8 @@ impl Operation {
         })
     }
 
-    fn optional_vector_component_code(vector_component: Option<VectorComponent>) -> u8 {
+    /// Turn a vector component that is in an [Option] enum into code that represents the state.
+    const fn optional_vector_component_code(vector_component: Option<VectorComponent>) -> u8 {
         if let Some(component) = vector_component { match component {
             VectorComponent::X0 => 1,
             VectorComponent::X1 => 2,
@@ -257,8 +262,8 @@ impl Operation {
         }} else { 0 }
     }
     
+    /// Encode the data for mapping a vector.
     fn encode_map_vector(output: &mut impl Write, operand: u8, mappings: [Option<VectorComponent>; 4]) -> Result<(), EncodeError> {
-        // todo: fix comments
         let mut encoded = operand << 6;
         encoded |= (Self::optional_vector_component_code(mappings[0]) & 0b00000_111) << 3;
         encoded |= Self::optional_vector_component_code(mappings[1]) & 0b00000_111;
@@ -269,6 +274,7 @@ impl Operation {
         output.write_all(&[ encoded, second_encoded ]).map_err(|source| EncodeError::Io { source, error: IoError::MapVector })
     }
 
+    /// Decode the data for mapping a vector.
     fn decode_map_vector(input: &mut impl Read) -> Result<(u8, [Option<VectorComponent>; 4]), DecodeError> {
         let mut buffer = [0u8; 2];
         input.read_exact(&mut buffer).map_err(|source| DecodeError::Io { source, error: IoError::MapVector })?;
