@@ -36,7 +36,8 @@ fn operation_to_str<'a>(operation: Operation) -> &'a str {
         Operation::Lock => "lock",
         Operation::VectorOperands => "vec_op",
         Operation::MapVector { .. } => "map_vec",
-        Operation::OverrideBranch => "ov_branch"
+        Operation::TakeBranch => "tkbr",
+        Operation::IgnoreBranch => "igbr"
     }
 }
 

@@ -197,7 +197,8 @@ impl Operation {
             Self::NONE_CODE => Self::None,
             Self::LOCK_CODE => Self::Lock,
             Self::VECTOR_OPERANDS_CODE => Self::VectorOperands,
-            Self::OVERRIDE_BRANCH_CODE => Self::OverrideBranch,
+            Self::TAKE_BRANCH_CODE => Self::TakeBranch,
+            Self::IGNORE_BRANCH_CODE => Self::IgnoreBranch,
             _ => return None
         })
     }
@@ -213,12 +214,13 @@ impl Operation {
             Self::Lock => Self::LOCK.code,
             Self::VectorOperands => Self::VECTOR_OPERANDS.code,
             Self::MapVector { .. } => Self::MAP_VECTOR.code,
-            Self::OverrideBranch => Self::OVERRIDE_BRANCH.code,
+            Self::TakeBranch => Self::TAKE_BRANCH.code,
+            Self::IgnoreBranch => Self::IGNORE_BRANCH.code,
             Self::Destination { operation, .. } => operation.code(),
-            Operation::Input { operation, .. } => operation.code(),
-            Operation::DestinationAndInput { operation, .. } => operation.code(),
-            Operation::DualInput { operation, .. } => operation.code(),
-            Operation::DestinationAndDualInput { operation, .. } => operation.code(),
+            Self::Input { operation, .. } => operation.code(),
+            Self::DestinationAndInput { operation, .. } => operation.code(),
+            Self::DualInput { operation, .. } => operation.code(),
+            Self::DestinationAndDualInput { operation, .. } => operation.code(),
         }
     }
 
