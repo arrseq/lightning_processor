@@ -103,3 +103,21 @@ pub struct Operand {
     pub mode: AddressingMode,
     pub size: Size
 }
+
+impl Operand {
+    pub const fn new_register(register: u8, size: Size) -> Self {
+        Self {
+            mode: AddressingMode::Register { register },
+            size
+        }
+    }
+    
+    pub const fn new_value(value: Unsigned, size: Size) -> Self {
+        Self {
+            mode: AddressingMode::Immediate { 
+                mode: ImmediateAddressing::Immediate { immediate: value },
+            },
+            size
+        }
+    }
+}

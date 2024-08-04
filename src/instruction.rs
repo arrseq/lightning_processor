@@ -1,7 +1,6 @@
-use std::io::Read;
-use thiserror::Error;
 use crate::instruction::operation::{Operation, VectorComponent};
 
+pub mod encoding;
 pub mod operation;
 pub mod operand;
 
@@ -22,33 +21,15 @@ pub struct Instruction {
     pub branch_override: Option<bool>,
 }
 
-#[derive(Debug, Error)]
-pub enum DecodeError {
-    #[error("Failed to decode an operation")]
-    Operation { #[source] source: operation::encoding::DecodeError },
-}
-
 impl Instruction {
-    pub fn decode(input: &mut impl Read) -> Result<Self, DecodeError> {
-        let mut lock = false;
-        let mut vector_operands = false;
-        let mut vector_mapping = [None; 4];
-        let mut branch_override = None;
-
-        Ok(Self {
-            operation: loop {
-                let operation = Operation::decode(input).map_err(|source| DecodeError::Operation { source })?;
-
-                match operation {
-                    Operation::Lock => lock = true,
-                    Operation::VectorOperands => vector_operands = true,
-                    Operation::MapVector { mappings, operand } => vector_mapping[operand as usize] = Some(mappings),
-                    Operation::TakeBranch => branch_override = Some(true),
-                    Operation::IgnoreBranch => branch_override = Some(false),
-                    _ => break operation
-                }
-            },
-            lock, vector_operands, vector_mapping, branch_override
-        })
+    /// Create a new instruction with no modifiers.
+    pub const fn new(operation: &Operation) -> Self {
+        Self {
+            operation: *operation,
+            lock: false,
+            vector_operands: false,
+            vector_mapping: [None; 4],
+            branch_override: None
+        }
     }
 }

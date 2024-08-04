@@ -21,7 +21,7 @@ pub(crate) enum IoError {
 
 #[derive(Debug, Error)]
 #[error("Failed to access data for encoding or decoding")]
-pub(crate) struct Error {
+pub struct Error {
     #[source] 
     source: io::Error, 
     error: IoError 
@@ -48,7 +48,7 @@ impl Operand {
             Size::X64 => {
                 let mut buffer = [0u8; size_of::<u64>()];
                 input.read_exact(&mut buffer)?;
-                u64::from_le_bytes(buffer) as u64
+                u64::from_le_bytes(buffer)
             }
         };
         
@@ -175,7 +175,7 @@ impl Operand {
             Size::X8 => output.write_all(&(immediate.value as u8).to_le_bytes()),
             Size::X16 => output.write_all(&(immediate.value as u16).to_le_bytes()),
             Size::X32 => output.write_all(&(immediate.value as u32).to_le_bytes()),
-            Size::X64 => output.write_all(&(immediate.value as u64).to_le_bytes())
+            Size::X64 => output.write_all(&(immediate.value).to_le_bytes())
         };
         
         result.map_err(|source| Error { source, error })?;

@@ -188,7 +188,7 @@ impl Operation {
         }); }
 
         // If an operand decode handler was not filtered into, then decode simply by operation code with no operands. 
-        return Ok(Self::from_no_operand_code(code).ok_or(DecodeError::InvalidOperation).map_err(|source| DecodeError::InvalidOperation)?);
+        Self::from_no_operand_code(code).ok_or(DecodeError::InvalidOperation)
     }
 
     /// Create an operation from a code which is for an operation that does not receive operands.
@@ -230,7 +230,7 @@ impl Operation {
     }
     
     /// Encode input operands and their error will be calculated.
-    fn encode_inputs<const Count: usize>(output: &mut impl Write, inputs: [Operand; Count]) -> Result<(), EncodeError> {
+    fn encode_inputs<const COUNT: usize>(output: &mut impl Write, inputs: [Operand; COUNT]) -> Result<(), EncodeError> {
         for (nth, input) in inputs.iter().enumerate() { Self::encode_operand(output, *input, OperandError::Input { nth: nth as u8 })?; }
         Ok(())
     }

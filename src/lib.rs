@@ -1,3 +1,6 @@
+// Suffer the consequences when they aren't watching.
+#![allow(incomplete_features)]
+
 #![feature(seek_stream_len)]
 #![feature(test)]
 #![feature(let_chains)]

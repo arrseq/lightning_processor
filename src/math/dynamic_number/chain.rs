@@ -3,7 +3,6 @@ mod test;
 
 use std::io;
 use std::io::{Read, Write};
-use thiserror::Error;
 use crate::math::dynamic_number::{Size, Unsigned};
 
 impl Unsigned {
