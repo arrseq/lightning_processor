@@ -225,18 +225,18 @@ impl Operation {
     }
 
     /// The error field is used to specify the error reason.
-    fn encode_operand(output: &mut impl Write, operand: Operand, error: OperandError) -> Result<(), EncodeError> {
+    fn encode_operand(output: &mut impl Write, operand: &Operand, error: OperandError) -> Result<(), EncodeError> {
         operand.encode(output).map_err(|source| EncodeError::Operand { source, error })
     }
     
     /// Encode input operands and their error will be calculated.
-    fn encode_inputs<const COUNT: usize>(output: &mut impl Write, inputs: [Operand; COUNT]) -> Result<(), EncodeError> {
-        for (nth, input) in inputs.iter().enumerate() { Self::encode_operand(output, *input, OperandError::Input { nth: nth as u8 })?; }
+    fn encode_inputs<const COUNT: usize>(output: &mut impl Write, inputs: &[Operand; COUNT]) -> Result<(), EncodeError> {
+        for (nth, input) in inputs.iter().enumerate() { Self::encode_operand(output, input, OperandError::Input { nth: nth as u8 })?; }
         Ok(())
     }
     
     /// Encode a destination operand with the error being set for the destination.
-    fn encode_destination(output: &mut impl Write, destination: Operand) -> Result<(), EncodeError> {
+    fn encode_destination(output: &mut impl Write, destination: &Operand) -> Result<(), EncodeError> {
         Self::encode_operand(output, destination, OperandError::Destination)
     }
 
@@ -303,16 +303,16 @@ impl Operation {
         
         match self {
             Self::MapVector { mappings, operand } => Self::encode_map_vector(output, operand, mappings)?,
-            Self::Destination { destination, .. } => Self::encode_destination(output, destination)?,
-            Self::Input { input, .. } => Self::encode_inputs(output, [ input ])?,
+            Self::Destination { destination, .. } => Self::encode_destination(output, &destination)?,
+            Self::Input { input, .. } => Self::encode_inputs(output, &[ input ])?,
             Self::DestinationAndInput { destination, input, .. } => {
-                Self::encode_destination(output, destination)?;
-                Self::encode_inputs(output, [ input ])?;
+                Self::encode_destination(output, &destination)?;
+                Self::encode_inputs(output, &[ input ])?;
             },
-            Self::DualInput { inputs, .. } => Self::encode_inputs(output, inputs)?,
+            Self::DualInput { inputs, .. } => Self::encode_inputs(output, &inputs)?,
             Self::DestinationAndDualInput { destination, inputs, .. } => {
-                Self::encode_destination(output, destination)?;
-                Self::encode_inputs(output, inputs)?;
+                Self::encode_destination(output, &destination)?;
+                Self::encode_inputs(output, &inputs)?;
             },
             _ => {}
         };

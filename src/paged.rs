@@ -5,17 +5,32 @@ use thiserror::Error;
 #[cfg(test)]
 mod test;
 
-pub type Mappings = Vec<(u64, u64)>;
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Entry {
+    pub readable: bool,
+    pub writable: bool,
+    pub executable: bool,
+    pub physical_page: u64
+}
+
+pub type Mappings = Vec<(u64, Entry)>;
 
 #[derive(Debug, PartialEq)]
 pub struct Paged<'a, Memory> {
     /// Mappings from page's page to physical page.
     pub mappings: Mappings,
     pub memory: &'a mut Memory,
-    pub invalid_page_error: bool
+    pub privileged: bool,
+    pub invalid_page_error: bool,
+    pub read_unreadable_page_error: bool,
+    pub write_unwritable_page_error: bool
 }
 
-// TODO: Rewrite with support for permission tags.
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum AccessType {
+    Read,
+    Write
+}
 
 /// The page mapping does not exist in the mappings.
 #[derive(Debug, Error)]
@@ -30,17 +45,31 @@ impl<'a, Memory: Seek + 'a> Paged<'a, Memory> {
     pub const PAGE_MASK: u64 = !Self::PAGE_ITEM_MASK;
     
     /// Extract the page code from an address.
-    pub fn extract_page(address: u64) -> u64 {
+    pub const fn extract_page(address: u64) -> u64 {
         address >> Self::PAGE_ITEM_BITS
     }
     
     /// Extract the item code from an address.
-    pub fn extract_item(address: u64) -> u64 {
+    pub const fn extract_item(address: u64) -> u64 {
         address & Self::PAGE_ITEM_MASK
     }
 
-    pub fn page_to_layer(page: u64) -> u64 {
+    pub const fn page_to_layer(page: u64) -> u64 {
         page << Self::PAGE_ITEM_BITS
+    }
+    
+    /// Get a page based on an address.
+    pub fn get_entry(&self, address: u64) -> Result<Entry, InvalidPageError> {
+        let page = Self::extract_page(address);
+
+        // It is most efficient to search for new pages from the end because on a page fault the new mapping may have
+        // been appended as that is most efficient. Reverse finding will let you end up at that entry first and have an
+        // immediate hit.
+        Ok(self.mappings
+            .iter()
+            .rev()
+            .find(|entry| entry.0 == page)
+            .ok_or(InvalidPageError)?.1)
     }
     
     /// Translate an addresses page bits from a virtual page to a physical page.
@@ -48,21 +77,8 @@ impl<'a, Memory: Seek + 'a> Paged<'a, Memory> {
     /// # Result
     /// containing the translated address. If the translation does not exist for the particular page, then 
     /// [Err(InvalidPageError)] is returned.
-    pub fn translate_address(&self, address: u64) -> Result<u64, InvalidPageError> {
-        let page = Self::extract_page(address);
-
-        // It is most efficient to search for new pages from the end because on a page fault the new mapping may have
-        // been appended as that is most efficient. Reverse finding will let you end up at that entry first and have an
-        // immediate hit.
-        let mapping = self.mappings
-            .iter()
-            .rev()
-            .find(|entry| entry.0 == page)
-            .ok_or(InvalidPageError)?.1;
-
-        let physical_page_layer = mapping << Self::PAGE_ITEM_BITS;
-        let item_layer = Self::extract_item(address);
-        Ok(physical_page_layer | item_layer)
+    pub const fn translate_address(&self, entry: Entry, address: u64) -> u64 {
+        Self::page_to_layer(entry.physical_page) | Self::extract_item(address)
     }
     
     /// Ensure the address doesn't overflow.
@@ -71,18 +87,34 @@ impl<'a, Memory: Seek + 'a> Paged<'a, Memory> {
         Ok(())
     }
     
-    fn operation_length(&mut self, physical_address: u64, remaining: u64) -> io::Result<u64> {
-        let start = Self::extract_item(physical_address);
+    fn operation_length(&mut self, virtual_address: u64, remaining: u64, access_type: AccessType) -> io::Result<u64> {
+        let start = Self::extract_item(virtual_address);
         let end = (remaining + start).min(Self::PAGE_ITEM_MASK + 1);
 
         let operation_length = end
             .checked_sub(start)
             .expect("Bug resulted in end being smaller than the start");
 
-        let translated = self.translate_address(physical_address).map_err(|_| {
+        let entry = self.get_entry(virtual_address).map_err(|_| {
             self.invalid_page_error = true;
             io::Error::new(ErrorKind::UnexpectedEof, "Reached end of paged region. Page fault error.")
         })?;
+        
+        // handle privilege errors.
+        match access_type {
+            AccessType::Read => {
+                self.read_unreadable_page_error = !self.privileged && !entry.readable;
+                self.write_unwritable_page_error = false;
+                if self.read_unreadable_page_error { return Err(io::Error::new(ErrorKind::UnexpectedEof, "Reading a page that is not readable")) }
+            }
+            AccessType::Write => {
+                self.write_unwritable_page_error = !self.privileged && !entry.writable;
+                self.read_unreadable_page_error = false;
+                if self.write_unwritable_page_error { return Err(io::Error::new(ErrorKind::UnexpectedEof, "Writing to a page that is not writing")) }
+            }
+        }
+        
+        let translated = self.translate_address(entry, virtual_address);
         self.invalid_page_error = false;
 
         self.memory.seek(SeekFrom::Start(translated))?;
@@ -108,7 +140,7 @@ impl<'a, Memory: Seek + Read + 'a> Read for Paged<'a, Memory> {
         Self::check_overflow(physical_address, buffer_length)?;
         
         loop {
-            let operation_length = self.operation_length(physical_address, remaining)?;
+            let operation_length = self.operation_length(physical_address, remaining, AccessType::Read)?;
 
             // Read
             let mut capped_reader = self.memory.take(operation_length);
@@ -140,7 +172,7 @@ impl<'a, Memory: Seek + Write + 'a> Write for Paged<'a, Memory> {
         Self::check_overflow(physical_address, buffer_length)?;
 
         loop {
-            let operation_length = self.operation_length(physical_address, remaining)?;
+            let operation_length = self.operation_length(physical_address, remaining, AccessType::Write)?;
 
             // Write data
             let write_frame = &buf[bytes_written as usize..(operation_length + bytes_written) as usize];

@@ -135,3 +135,5 @@ fn write() {
     assert_eq!(*paged.memory.get_ref(), buffer);
     assert_eq!(paged.stream_position().unwrap(), 4096);
 }
+
+// FIXME: Update tests and test for permissions.
