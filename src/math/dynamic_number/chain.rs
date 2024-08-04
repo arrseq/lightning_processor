@@ -54,8 +54,6 @@ impl Unsigned {
             let cap_end = if let Some(cap_end) = cap_end && bytes_read == cap_end.saturating_sub(1) { true }
                 else { false };
 
-            dbg!(cap_end);
-
             let need_to_write = Self::encoder_interpret(remaining, cap_end);
             if let Some((output_byte, value_byte)) = need_to_write { 
                 remaining -= value_byte as u64;

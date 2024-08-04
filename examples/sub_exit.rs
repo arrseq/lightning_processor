@@ -1,4 +1,4 @@
-use std::io::Cursor;
+use std::io::{Cursor, Seek, SeekFrom};
 use arrseq_lightning::instruction::Instruction;
 use arrseq_lightning::instruction::operand::{AddressingMode, Operand};
 use arrseq_lightning::instruction::operation::{DestinationAndDualInput, DualInput, Operation};
@@ -39,6 +39,7 @@ fn make_program() -> Cursor<Vec<u8>> {
         instruction.lock = true;
         instruction.encode(&mut cursor).unwrap()
     }
+    cursor.seek(SeekFrom::Start(0)).unwrap();
     cursor
 }
 
@@ -49,7 +50,4 @@ fn make_program() -> Cursor<Vec<u8>> {
 /// Counter starts from register 1 and exit is called when the counter reaches 0.
 fn main() {
     let binary = make_program();
-    dbg!(binary);
-    
-    dbg!(size_of::<Instruction>());
 }
