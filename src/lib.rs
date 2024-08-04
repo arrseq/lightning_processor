@@ -21,6 +21,7 @@ use std::io::Cursor;
 pub mod math;
 pub mod paged;
 pub mod instruction;
+mod text;
 
 /// Testing utility to streamline the processing of creating a temporary cursor and using it for an operation that 
 /// returns a value.
