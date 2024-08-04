@@ -17,7 +17,7 @@ pub struct Instruction {
     /// List of vector remapping modifiers.
     ///
     /// [None] as an element specifies that the operand does not have a modifier.
-    pub vector_mapping: [Option<VectorMapping>; 4],
+    pub vector_mappings: [Option<VectorMapping>; 4],
     pub branch_override: Option<bool>,
 }
 
@@ -28,7 +28,7 @@ impl Instruction {
             operation: *operation,
             lock: false,
             vector_operands: false,
-            vector_mapping: [None; 4],
+            vector_mappings: [None; 4],
             branch_override: None
         }
     }

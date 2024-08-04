@@ -35,8 +35,9 @@ const PROGRAM: [Instruction; 2] = [
 
 fn make_program() -> Cursor<Vec<u8>> {
     let mut cursor = Cursor::new(vec![0u8; 0]);
-    for instruction in PROGRAM {
-        // TODO: Implement encode().
+    for mut instruction in PROGRAM {
+        instruction.lock = true;
+        instruction.encode(&mut cursor).unwrap()
     }
     cursor
 }
