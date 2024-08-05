@@ -4,6 +4,8 @@
     <h6>Project owned by Array Sequence</h6>
 </div>
 
+<img src="./encoder_table.svg" width="100%">
+
 # Community
 Support and showcases and anything related to the company can be done in our community discord server for Array 
 Sequence.
