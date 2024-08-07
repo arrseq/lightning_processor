@@ -3,7 +3,8 @@ use crate::num;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Operation {
-
+    CopyRegister,
+    CopyAddressed
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]

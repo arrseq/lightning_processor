@@ -17,4 +17,3 @@
 pub mod instruction;
 pub mod num;
 pub mod operation;
-pub mod state;
