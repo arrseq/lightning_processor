@@ -1,6 +1,11 @@
 use crate::num;
-use crate::state::flag::Flag;
-use crate::state::register::Register;
+use crate::instruction::flag::Flag;
+use crate::instruction::register::Register;
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Operation {
+
+}
 
 /// Hint to suggest whether the branch might be taken.
 pub type Hint = Option<bool>;
@@ -33,7 +38,7 @@ pub type ConditionCode = num::MaskedU8<CONDITION_MASK>;
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ConditionMapping {
     pub code: ConditionCode,
-    pub variant: Condition 
+    pub variant: Condition
 }
 
 impl Condition {
@@ -46,17 +51,17 @@ impl Condition {
         Condition(Some(Flag::Parity    )),
         Condition(Some(Flag::Auxiliary ))
     ];
-    
-    pub fn from_code(code: ConditionCode) -> Option<Self> {
-        Self::MAPPINGS.get(code.get() as usize).copied()
+
+    pub fn from_code(code: ConditionCode) -> Self {
+        *Self::MAPPINGS
+            .get(code.get() as usize)
+            .unwrap_or(&Self::MAPPINGS[0])
     }
-    
+
     pub fn to_code(self) -> ConditionCode {
-        ConditionCode::new(
-            Self::MAPPINGS
-                .iter()
-                .position(|&mapping| mapping == self)
-                .unwrap() as u8,
-        )
+        ConditionCode::new(Self::MAPPINGS
+            .iter()
+            .position(|&mapping| mapping == self)
+            .unwrap() as u8)
     }
 }

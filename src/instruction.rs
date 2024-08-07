@@ -1,7 +1,11 @@
+pub mod branch;
+pub mod memory;
+pub mod register;
+pub mod flag;
+
 use crate::num;
-use crate::operation::branch;
-use crate::state::flag::Flag;
-use crate::state::register::Register;
+use flag::Flag;
+use register::Register;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum RegisterOperation {
@@ -10,16 +14,11 @@ pub enum RegisterOperation {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SizedRegisterOperation {
-    
+
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum DualSizedRegisterOperation {
-    
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum ConditionalBranchOperation {
 
 }
 
@@ -28,14 +27,18 @@ pub enum Instruction {
     Nothing,
     WaitForInterrupt,
     Register { operation: RegisterOperation, register: Register },
-    SizedRegister { 
-        operation: SizedRegisterOperation, 
+    SizedRegister {
+        operation: SizedRegisterOperation,
         size: num::Size, register: Register },
     DualSizedRegister {
         operation: DualSizedRegisterOperation,
         size: num::Size, registers: [Register; 2] },
-    ConditionalBranch {
-        operation: ConditionalBranchOperation,
+    Branch {
+        operation: branch::Operation,
         condition: Option<Flag>, hint: branch::Hint,
-        address: branch::Address }
+        address: branch::Address },
+    Memory {
+        operation: memory::Operation,
+        size: num::Size, register: Register,
+        address: memory::Address }
 }
