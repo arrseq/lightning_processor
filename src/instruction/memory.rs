@@ -4,7 +4,8 @@ use crate::num;
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Operation {
     CopyRegister,
-    CopyAddressed
+    CopyAddressed,
+    Acquire
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
