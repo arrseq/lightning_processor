@@ -66,7 +66,7 @@ impl DestinationDualSource {
 pub enum DestinationTripleSource {
     MultiplyAndAdd,
     AddAndMultiply
-    
+
     // todo: Consider neccessity and operation space
 }
 
@@ -86,7 +86,7 @@ pub enum DualDestinationDualSource {
 
 impl DualDestinationDualSource {
     pub const MAPPINGS: [(Code, DualDestinationDualSource); 4] = [
-        (Code::new(21), Self::DivideWithRemainder),       (Code::new(22), Self::DivideFloatingWithRemainder),
+        (Code::new(21), Self::DivideWithRemainder),       (Code::new(22), Self::DivideFloatWithRemainder),
         (Code::new(23), Self::DivideVectorWithRemainder), (Code::new(24), Self::DivideFloatVectorWithRemainder),
     ];
 }
