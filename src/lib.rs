@@ -14,8 +14,6 @@
 #![allow(clippy::unused_io_amount)]
 #![allow(soft_unstable)]
 
-// 
 pub mod instruction;
 pub mod num;
-// pub mod operation;
-// mod processor;
+pub mod core;

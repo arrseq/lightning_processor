@@ -1,81 +1,29 @@
 pub mod operation;
+pub mod address;
+pub mod vector;
+pub mod flag;
 
-use crate::num::{MaskedU16, MaskedU32, MaskedU8};
+use crate::instruction::address::Address;
+use crate::instruction::flag::Flag;
+use crate::instruction::vector::{VectorComponentFlags, VectorComponentMapping};
+use crate::num::{MaskedU8};
 
-pub type SegmentCode = MaskedU8<0x3>
+pub type SegmentCode = MaskedU8<0x3>;
 pub type RegisterCode = MaskedU8<0xF>;
-pub type FlagCode = MaskedU8<0x07>;
 pub type BranchHintCode = MaskedU8<0x3>;
 pub type OperandCode = MaskedU8<0x3>;
-pub type VectorComponentCode = MaskedU8<0x3>;
-pub const VECTOR_SIZE: usize = 4;
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct VectorComponentMapping {
-    operand: OperandCode,
-    components: [VectorComponentCode; 2]
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct VectorComponentFlags {
-    operand: OperandCode,
-    negate: bool,
-    zero: bool
-}
-
-pub type AddressImmediate = MaskedU32<0x1FFFF>;
-pub type ScaleCode = MaskedU8<0x3>;
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum AddressMode {
-    Absolute,
-    Relative
-}
-
-pub type BaseOffset = MaskedU16<0x1FFF>;
-pub type IndexedBaseOffset = MaskedU16<0x1FF>;
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum IndexedBaseOffsetMode {
-    Immediate(IndexedBaseOffset),
-    Register(RegisterCode)
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum BaseMode {
-    Offset(BaseOffset),
-    RegisterOffset(RegisterCode),
-    Indexed {
-        index: RegisterCode,
-        offset: IndexedBaseOffsetMode
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Address {
-    Immediate {
-        immediate: AddressImmediate,
-        mode: AddressMode
-    },
-    Register {
-        register: RegisterCode,
-        mode: AddressMode
-    },
-    Base {
-        base: RegisterCode, 
-        mode: BaseMode
-    }
-}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Instruction {
+    WaitForInterrupt,
     LoadImmediate {
+        destination: RegisterCode,
         segment: SegmentCode,
         immediate: u16
     },
     DualSource {
         operation: operation::DualSource,
-        source: [RegisterCode; 2]
+        sources: [RegisterCode; 2]
     },
     Destination {
         operation: operation::Destination,
@@ -104,15 +52,15 @@ pub enum Instruction {
     LoadVectorComponents {
         destination: RegisterCode,
         /// Having [None] means that the component corresponding to the index should be 0.
-        components: [Option<VectorComponentCode>; VECTOR_SIZE]
+        components: [Option<vector::ComponentCode>; vector::SIZE]
     },
     ExtractVectorComponents {
         vector: RegisterCode,
         /// Having [None] means that the component corresponding to the index should not be extracted into a register.
-        components: [Option<RegisterCode>; VECTOR_SIZE]
+        components: [Option<RegisterCode>; vector::SIZE]
     },
     FlagVectorComponents {
-        flags: [VectorComponentFlags; VECTOR_SIZE],
+        flags: [VectorComponentFlags; vector::SIZE],
         temporary: bool
     },
     /// Only supports 2 operands due to the size constrain of an instruction.
@@ -135,7 +83,7 @@ pub enum Instruction {
         source: RegisterCode
     },
     Branch {
-        condition: FlagCode,
+        condition: Flag,
         hint: Option<bool>,
         address: Address
     }

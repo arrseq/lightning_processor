@@ -1,7 +1,5 @@
 //! Enums of all operations for specific operand formats.
 
-use crate::instruction::Instruction;
-
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum DualSource {
     Compare
@@ -42,8 +40,8 @@ pub enum DestinationDualSource {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum DestinationTripleSource {
-    MultiplyAndAdd, // mad
-    AddAndMultiply // adm
+    MultiplyAndAdd,
+    AddAndMultiply
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -57,7 +55,8 @@ pub enum DualDestinationDualSource {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Memory {
     Call,
-    ReleaseMemory
+    ReleaseMemory,
+    Branch
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -66,7 +65,7 @@ pub enum SourceMemory {
     CopyMemoryWordToRegister,
     CopyMemoryDwordToRegister,
     CopyMemoryQwordToRegister,
-    
+
     AcquireMemoryByte,
     AcquireMemoryWord,
     AcquireMemoryDword,
