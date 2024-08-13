@@ -2,6 +2,7 @@ pub mod operation;
 pub mod address;
 pub mod vector;
 pub mod flag;
+pub mod encoding;
 
 use crate::instruction::address::Address;
 use crate::instruction::flag::Flag;
@@ -14,6 +15,27 @@ pub type BranchHintCode = MaskedU8<0x3>;
 pub type OperandCode = MaskedU8<0x3>;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Format {
+    WaitForInterrupt,
+    LoadImmediate,
+    LoadVectorComponents,
+    ExtractVectorComponents,
+    FlagVectorComponents,
+    MapVector,
+    Branch,
+    
+    DualSource,
+    Destination,
+    DestinationSource,
+    DestinationDualSource,
+    DestinationTripleSource,
+    DualDestinationDualSource,
+    Memory,
+    SourceMemory,
+    DestinationMemory
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Instruction {
     WaitForInterrupt,
     LoadImmediate {
@@ -21,6 +43,31 @@ pub enum Instruction {
         segment: SegmentCode,
         immediate: u16
     },
+    LoadVectorComponents {
+        destination: RegisterCode,
+        /// Having [None] means that the component corresponding to the index should be 0.
+        components: [Option<vector::ComponentCode>; vector::SIZE]
+    },
+    ExtractVectorComponents {
+        vector: RegisterCode,
+        /// Having [None] means that the component corresponding to the index should not be extracted into a register.
+        components: [Option<RegisterCode>; vector::SIZE]
+    },
+    FlagVectorComponents {
+        flags: [VectorComponentFlags; vector::SIZE],
+        temporary: bool
+    },
+    /// Only supports 2 operands due to the size constrain of an instruction.
+    MapVector {
+        mappings: [VectorComponentMapping; 2],
+        temporary: bool
+    },
+    Branch {
+        condition: Flag,
+        hint: Option<bool>,
+        address: Address
+    },
+    
     DualSource {
         operation: operation::DualSource,
         sources: [RegisterCode; 2]
@@ -49,25 +96,6 @@ pub enum Instruction {
         destinations: [RegisterCode; 2], 
         sources: [RegisterCode; 2]
     },
-    LoadVectorComponents {
-        destination: RegisterCode,
-        /// Having [None] means that the component corresponding to the index should be 0.
-        components: [Option<vector::ComponentCode>; vector::SIZE]
-    },
-    ExtractVectorComponents {
-        vector: RegisterCode,
-        /// Having [None] means that the component corresponding to the index should not be extracted into a register.
-        components: [Option<RegisterCode>; vector::SIZE]
-    },
-    FlagVectorComponents {
-        flags: [VectorComponentFlags; vector::SIZE],
-        temporary: bool
-    },
-    /// Only supports 2 operands due to the size constrain of an instruction.
-    MapVector {
-        mappings: [VectorComponentMapping; 2],
-        temporary: bool
-    },
     Memory {
         operation: operation::Memory,
         address: Address
@@ -81,10 +109,5 @@ pub enum Instruction {
         operation: operation::DestinationMemory,
         destination: Address,
         source: RegisterCode
-    },
-    Branch {
-        condition: Flag,
-        hint: Option<bool>,
-        address: Address
     }
 }
