@@ -4,6 +4,8 @@ macro_rules! impl_mask {
         pub struct $name<const MASK: $ty>($ty);
         
         impl<const MASK: $ty> $name<MASK> {
+            pub const MASK: $ty = MASK;
+            
             pub const fn new(value: $ty) -> Self { Self(value & MASK) }
             pub const fn get(self) -> $ty { self.0 }
             pub fn set(&mut self, value: $ty) { self.0 = value & MASK }
