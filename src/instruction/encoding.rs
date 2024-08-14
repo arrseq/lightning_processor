@@ -27,21 +27,21 @@ impl Instruction {
         (destination, segment, immediate)
     }
 
-    fn decode_load_vector(operands: EncodedOperands) -> (RegisterCode, [Option<vector::ComponentCode>; vector::SIZE]) {
+    fn decode_vector_components(operands: EncodedOperands) -> (RegisterCode, [Option<RegisterCode>; vector::SIZE]) {
         let operands = operands.get();
-        let destination = RegisterCode::new((operands & LOAD_VECTOR_DESTINATION) as u8);
+        let primary = RegisterCode::new((operands & LOAD_VECTOR_DESTINATION) as u8);
 
         let enable_0 = ((operands & LOAD_VECTOR_COMPONENT_ENABLE_0.1) >> LOAD_VECTOR_COMPONENT_ENABLE_0.0) > 0;
         let enable_1 = ((operands & LOAD_VECTOR_COMPONENT_ENABLE_1.1) >> LOAD_VECTOR_COMPONENT_ENABLE_1.0) > 0;
         let enable_2 = ((operands & LOAD_VECTOR_COMPONENT_ENABLE_2.1) >> LOAD_VECTOR_COMPONENT_ENABLE_2.0) > 0;
         let enable_3 = ((operands & LOAD_VECTOR_COMPONENT_ENABLE_3.1) >> LOAD_VECTOR_COMPONENT_ENABLE_3.0) > 0;
 
-        let component_0 = vector::ComponentCode::new(((operands & LOAD_VECTOR_COMPONENT_0.1) >> LOAD_VECTOR_COMPONENT_0.0) as u8);
-        let component_1 = vector::ComponentCode::new(((operands & LOAD_VECTOR_COMPONENT_1.1) >> LOAD_VECTOR_COMPONENT_1.0) as u8);
-        let component_2 = vector::ComponentCode::new(((operands & LOAD_VECTOR_COMPONENT_2.1) >> LOAD_VECTOR_COMPONENT_2.0) as u8);
-        let component_3 = vector::ComponentCode::new(((operands & LOAD_VECTOR_COMPONENT_3.1) >> LOAD_VECTOR_COMPONENT_3.0) as u8);
+        let component_0 = RegisterCode::new(((operands & LOAD_VECTOR_COMPONENT_0.1) >> LOAD_VECTOR_COMPONENT_0.0) as u8);
+        let component_1 = RegisterCode::new(((operands & LOAD_VECTOR_COMPONENT_1.1) >> LOAD_VECTOR_COMPONENT_1.0) as u8);
+        let component_2 = RegisterCode::new(((operands & LOAD_VECTOR_COMPONENT_2.1) >> LOAD_VECTOR_COMPONENT_2.0) as u8);
+        let component_3 = RegisterCode::new(((operands & LOAD_VECTOR_COMPONENT_3.1) >> LOAD_VECTOR_COMPONENT_3.0) as u8);
 
-        (destination, [
+        (primary, [
             enable_0.then_some(component_0),
             enable_1.then_some(component_1),
             enable_2.then_some(component_2),
@@ -66,10 +66,13 @@ impl Instruction {
                 Self::LoadImmediate { destination, segment, immediate }
             },
             Format::LoadVectorComponents => {
-                let (destination, components) = Self::decode_load_vector(operands);
+                let (destination, components) = Self::decode_vector_components(operands);
                 Self::LoadVectorComponents {destination, components}
             },
-            Format::ExtractVectorComponents => todo!(),
+            Format::ExtractVectorComponents => {
+                let (source, destinations) = Self::decode_vector_components(operands);
+                Self::ExtractVectorComponents { source, destinations }
+            },
             Format::FlagVectorComponents => todo!(),
             Format::MapVector => todo!(),
             Format::Branch => todo!(),

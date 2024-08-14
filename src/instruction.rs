@@ -46,12 +46,12 @@ pub enum Instruction {
     LoadVectorComponents {
         destination: RegisterCode,
         /// Having [None] means that the component corresponding to the index should be 0.
-        components: [Option<vector::ComponentCode>; vector::SIZE]
+        components: [Option<RegisterCode>; vector::SIZE]
     },
     ExtractVectorComponents {
-        vector: RegisterCode,
+        source: RegisterCode,
         /// Having [None] means that the component corresponding to the index should not be extracted into a register.
-        components: [Option<RegisterCode>; vector::SIZE]
+        destinations: [Option<RegisterCode>; vector::SIZE]
     },
     FlagVectorComponents {
         flags: [VectorComponentFlags; vector::SIZE],
