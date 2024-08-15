@@ -6,7 +6,7 @@ pub mod encoding;
 
 use crate::instruction::address::Address;
 use crate::instruction::flag::Flag;
-use crate::instruction::vector::{VectorComponentFlags, VectorComponentMapping};
+use crate::instruction::vector::{ComponentMapping};
 use crate::num::{MaskedU8};
 
 pub type SegmentCode = MaskedU8<0x3>;
@@ -20,7 +20,6 @@ pub enum Format {
     LoadImmediate,
     LoadVectorComponents,
     ExtractVectorComponents,
-    FlagVectorComponents,
     MapVector,
     Branch,
     
@@ -53,21 +52,17 @@ pub enum Instruction {
         /// Having [None] means that the component corresponding to the index should not be extracted into a register.
         destinations: [Option<RegisterCode>; vector::SIZE]
     },
-    FlagVectorComponents {
-        flags: [VectorComponentFlags; vector::SIZE],
-        temporary: bool
-    },
     /// Only supports 2 operands due to the size constrain of an instruction.
     MapVector {
-        mappings: [VectorComponentMapping; 2],
-        temporary: bool
+        temporary: bool,
+        operand: OperandCode,
+        mappings: [vector::ComponentCode; vector::SIZE]
     },
     Branch {
         condition: Flag,
         hint: Option<bool>,
         address: Address
     },
-    
     DualSource {
         operation: operation::DualSource,
         sources: [RegisterCode; 2]
