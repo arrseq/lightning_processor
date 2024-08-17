@@ -174,7 +174,7 @@ impl Instruction {
             Format::Branch => todo!(),
             Format::DualSource(operation) => todo!(),
             Format::Destination(operation) => todo!(),
-            Format::DestinationSource(operation) => todo!(), 
+            Format::DestinationSource(operation) => todo!(),
             Format::DestinationDualSource(operation) => todo!(),
             Format::DestinationTripleSource(operation) => todo!(),
             Format::DualDestinationDualSource(operation) => todo!(),

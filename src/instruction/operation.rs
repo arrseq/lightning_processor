@@ -11,10 +11,6 @@ pub enum DualSource {
 
 impl DualSource {
     pub const MAPPINGS: [(Code, DualSource); 1] = [(Code::new(0), Self::Compare)];
-    
-    pub fn from_code(code: Code) -> Self {
-        
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
@@ -207,5 +203,4 @@ pub const MAPPINGS: [Entry; 46] = [
     Entry { format: Format::DestinationMemory(DestinationMemory::CopyRegisterWordToMemory),                       name: "copy_register_word_to_memory" },
     Entry { format: Format::DestinationMemory(DestinationMemory::CopyRegisterDwordToMemory),                      name: "copy_register_dword_to_memory" },
     Entry { format: Format::DestinationMemory(DestinationMemory::CopyRegisterQwordToMemory),                      name: "copy_register_qword_to_memory" }
-
 ];
