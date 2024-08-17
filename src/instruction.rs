@@ -1,106 +1,86 @@
-pub mod operation;
+use crate::instruction::address::{AccessMode, Address};
+use crate::num::{MaskedU32, MaskedU8};
+
 pub mod address;
 pub mod vector;
-pub mod flag;
+pub mod branch;
 pub mod encoding;
-
-use crate::instruction::address::Address;
-use crate::instruction::flag::Flag;
-use crate::num::{MaskedU8};
+mod register;
+mod arithmetic;
 
 pub type SegmentCode = MaskedU8<0x3>;
-pub type RegisterCode = MaskedU8<0xF>;
-pub type BranchHintCode = MaskedU8<0x3>;
-pub type OperandCode = MaskedU8<0x3>;
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Format {
-    WaitForInterrupt,
-    LoadImmediate,
-    LoadVectorComponents,
-    ExtractVectorComponents,
-    MapVector,
-    Branch,
-    DualSource(operation::DualSource),
-    Destination(operation::Destination),
-    DestinationSource(operation::DestinationSource),
-    DestinationDualSource(operation::DestinationDualSource),
-    DestinationTripleSource(operation::DestinationTripleSource),
-    DualDestinationDualSource(operation::DualDestinationDualSource),
-    Memory(operation::Memory),
-    SourceMemory(operation::SourceMemory),
-    DestinationMemory(operation::DestinationMemory)
-}
+pub type LargeImmediate = MaskedU32<0x1FFFFF>;
+pub type ScaleCode = MaskedU8<0x03>;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Instruction {
-    WaitForInterrupt,
-    LoadImmediate {
-        destination: RegisterCode,
+    None,
+    Wait,
+    
+    End,
+    EndInterrupt,
+    Interrupt,
+    
+    Stack { source: register::Code },
+    Unstack { destination: register::Code },
+    
+    LoadImmediate { 
+        destination: register::Code,
         segment: SegmentCode,
-        immediate: u16
+        immediate: LargeImmediate
     },
-    LoadVectorComponents {
-        destination: RegisterCode,
-        /// Having [None] means that the component corresponding to the index should be 0.
-        components: [Option<RegisterCode>; vector::SIZE]
+    BuildVector {
+        destination: register::Code,
+        components: [register::Code; vector::SIZE]
     },
-    ExtractVectorComponents {
-        source: RegisterCode,
-        /// Having [None] means that the component corresponding to the index should not be extracted into a register.
-        destinations: [Option<RegisterCode>; vector::SIZE]
+    UnBuildVector {
+        source: register::Code,
+        destinations: [register::Code; vector::SIZE]
     },
-    /// Only supports 2 operands due to the size constrain of an instruction.
-    MapVector {
-        temporary: bool,
-        operand: OperandCode,
-        mappings: [vector::ComponentCode; vector::SIZE]
+    
+    CopyRegister {
+        destination: register::Code,
+        destination_file: register::FileName,
+        source: register::Code,
+        source_file: register::FileName
+    },
+    
+    Arithmetic {
+        operation: arithmetic::Operation,
+        vector: bool,
+        atomic: bool,
+        destination: register::Code,
+        sources: [register::Code; 2]
+    },
+    Address {
+        operation: address::Operation,
+        data: address::Meta,
+        offset: address::LargeOffset
+    },
+    AddressWithBase {
+        operation: address::OperationWithBase,
+        data: address::Meta,
+        base: register::Code,
+        offset: address::SmallOffset
     },
     Branch {
-        condition: Flag,
-        hint: Option<bool>,
-        address: Address
+        operation: branch::Operation,
+        data: branch::Meta,
+        offset: branch::LargeOffset
     },
-    DualSource {
-        operation: operation::DualSource,
-        sources: [RegisterCode; 2]
+    BranchWithBase {
+        operation: branch::OperationWithBase,
+        data: branch::Meta,
+        base: register::Code,
+        offset: branch::SmallOffset
     },
-    Destination {
-        operation: operation::Destination,
-        destination: RegisterCode
-    },
-    DestinationSource {
-        operation: operation::DestinationSource,
-        destination: RegisterCode,
-        source: RegisterCode
-    },
-    DestinationDualSource {
-        operation: operation::DestinationDualSource,
-        destination: RegisterCode,
-        sources: [RegisterCode; 2]
-    },
-    DestinationTripleSource {
-        operation: operation::DestinationTripleSource,
-        destination: RegisterCode,
-        sources: [RegisterCode; 3]
-    },
-    DualDestinationDualSource {
-        operation: operation::DualDestinationDualSource,
-        destinations: [RegisterCode; 2], 
-        sources: [RegisterCode; 2]
-    },
-    Memory {
-        operation: operation::Memory,
-        address: Address
-    },
-    SourceMemory {
-        operation: operation::SourceMemory,
-        destination: RegisterCode,
-        source: Address
-    },
-    DestinationMemory {
-        operation: operation::DestinationMemory,
-        destination: Address,
-        source: RegisterCode
-    }
+    
+    Timer,
+    
+    Lock,
+    UnLock,
+    
+    Free2,
+    Free3,
+    Free4
 }

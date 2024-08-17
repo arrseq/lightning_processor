@@ -2,7 +2,7 @@ extern crate arrseq_lightning;
 
 use arrseq_lightning::instruction::{address, Instruction, operation, RegisterCode};
 use arrseq_lightning::instruction::address::{Address};
-use arrseq_lightning::instruction::flag::Flag;
+use arrseq_lightning::instruction::branch::Flag;
 use arrseq_lightning::num::MaskedU8;
 
 fn main() {

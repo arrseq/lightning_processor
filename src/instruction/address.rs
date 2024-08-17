@@ -1,46 +1,24 @@
-use crate::instruction::RegisterCode;
-use crate::num::{MaskedU16, MaskedU32, MaskedU8};
-
-pub type LargeImmediate = MaskedU32<0x1FFFF>;
-pub type ScaleCode = MaskedU8<0x3>;
+use crate::instruction::{register, ScaleCode};
+use crate::num::MaskedU32;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Mode {
-    Absolute,
-    Relative
+pub enum AccessMode {
+    Read,
+    Write
 }
 
-pub type MediumImmediate = MaskedU16<0x1FFF>;
-pub type ShortImmediate = MaskedU16<0x1FF>;
+pub type LargeOffset = MaskedU32<0xFFFFF>;
+pub type SmallOffset = MaskedU32<0x3FFF>;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum IndexedBaseOffsetMode {
-    Immediate(ShortImmediate),
-    Register(RegisterCode)
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum BaseMode {
-    Offset(MediumImmediate),
-    RegisterOffset(RegisterCode),
-    Indexed {
-        index: RegisterCode,
-        offset: IndexedBaseOffsetMode
-    }
+pub struct Meta {
+    pub relative: bool,
+    pub access_mode: AccessMode,
+    pub scale: ScaleCode,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Address {
-    Immediate {
-        mode: Mode,
-        immediate: LargeImmediate
-    },
-    Register {
-        mode: Mode,
-        register: RegisterCode
-    },
-    Base {
-        mode: BaseMode,
-        base: RegisterCode
-    }
-}
+pub enum Operation {}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum OperationWithBase {}
