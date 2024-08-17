@@ -1,7 +1,7 @@
 use crate::instruction::RegisterCode;
 use crate::num::{MaskedU16, MaskedU32, MaskedU8};
 
-pub type Immediate = MaskedU32<0x1FFFF>;
+pub type LargeImmediate = MaskedU32<0x1FFFF>;
 pub type ScaleCode = MaskedU8<0x3>;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -10,18 +10,18 @@ pub enum Mode {
     Relative
 }
 
-pub type BaseOffset = MaskedU16<0x1FFF>;
-pub type IndexedBaseOffset = MaskedU16<0x1FF>;
+pub type MediumImmediate = MaskedU16<0x1FFF>;
+pub type ShortImmediate = MaskedU16<0x1FF>;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum IndexedBaseOffsetMode {
-    Immediate(IndexedBaseOffset),
+    Immediate(ShortImmediate),
     Register(RegisterCode)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum BaseMode {
-    Offset(BaseOffset),
+    Offset(MediumImmediate),
     RegisterOffset(RegisterCode),
     Indexed {
         index: RegisterCode,
@@ -32,15 +32,15 @@ pub enum BaseMode {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Address {
     Immediate {
-        immediate: Immediate,
-        mode: Mode
+        mode: Mode,
+        immediate: LargeImmediate
     },
     Register {
-        register: RegisterCode,
-        mode: Mode
+        mode: Mode,
+        register: RegisterCode
     },
     Base {
-        base: RegisterCode,
-        mode: BaseMode
+        mode: BaseMode,
+        base: RegisterCode
     }
 }

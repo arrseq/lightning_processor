@@ -11,8 +11,8 @@ fn main() {
     let program = [
         Instruction::LoadImmediate { destination: RegisterCode::new(0), segment: MaskedU8::new(0), immediate: c_max },                                              // li r0, c_max
         Instruction::DualSource { operation: operation::DualSource::Compare, sources: [RegisterCode::new(0), RegisterCode::new(1)] },                               // cmp r0, r1
-        Instruction::Branch { hint: None, condition: Flag::Zero, address: Address::Immediate { immediate: address::Immediate::new(8), mode: address::Mode::Relative }},    // jz pc+8
-        Instruction::Memory { operation: operation::Memory::Branch, address: Address::Immediate { immediate: address::Immediate::new(4), mode: address::Mode::Absolute }}, // jmp 0
+        Instruction::Branch { hint: None, condition: Flag::Zero, address: Address::Immediate { immediate: address::LargeImmediate::new(8), mode: address::Mode::Relative }},    // jz pc+8
+        Instruction::Memory { operation: operation::Memory::Branch, address: Address::Immediate { immediate: address::LargeImmediate::new(4), mode: address::Mode::Absolute }}, // jmp 0
         Instruction::WaitForInterrupt                                                                                                                                             // hlt
 
         // pseudo code:
@@ -27,5 +27,5 @@ fn main() {
     ];
 
     // dbg!(Instruction::decode(0b1000_1000_1000_1000_0001_1000_0000010));
-    dbg!(Instruction::decode(0b1111_1110_1001_1010_1001_1011_0000011));
+    dbg!(Instruction::decode(0b11_111_110_100_110_101_0011_000_0100001));
 }

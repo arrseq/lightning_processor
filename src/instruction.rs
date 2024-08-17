@@ -6,7 +6,6 @@ pub mod encoding;
 
 use crate::instruction::address::Address;
 use crate::instruction::flag::Flag;
-use crate::instruction::vector::{ComponentMapping};
 use crate::num::{MaskedU8};
 
 pub type SegmentCode = MaskedU8<0x3>;
@@ -22,16 +21,15 @@ pub enum Format {
     ExtractVectorComponents,
     MapVector,
     Branch,
-    
-    DualSource,
-    Destination,
-    DestinationSource,
-    DestinationDualSource,
-    DestinationTripleSource,
-    DualDestinationDualSource,
-    Memory,
-    SourceMemory,
-    DestinationMemory
+    DualSource(operation::DualSource),
+    Destination(operation::Destination),
+    DestinationSource(operation::DestinationSource),
+    DestinationDualSource(operation::DestinationDualSource),
+    DestinationTripleSource(operation::DestinationTripleSource),
+    DualDestinationDualSource(operation::DualDestinationDualSource),
+    Memory(operation::Memory),
+    SourceMemory(operation::SourceMemory),
+    DestinationMemory(operation::DestinationMemory)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
