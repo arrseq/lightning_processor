@@ -1,4 +1,4 @@
-use crate::instruction::{register, ScaleCode};
+use crate::instruction::{ScaleCode};
 use crate::num::MaskedU32;
 
 #[derive(Debug, Clone, Copy, PartialEq)]

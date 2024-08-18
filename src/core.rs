@@ -1,12 +1,12 @@
-pub mod arithmetic;
+use crate::instruction::register;
 
-use crate::instruction::RegisterCode;
+pub mod arithmetic;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct State {
     pub instruction_pointer: u64,
     // TODO: Operand modifiers state
-    pub general: [u64; RegisterCode::MASK as usize],
+    pub general: [u64; register::Code::MASK as usize],
     // pub general_vectors: []
 }
 

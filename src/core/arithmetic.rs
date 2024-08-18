@@ -1,8 +1,8 @@
 use crate::core::Core;
-use crate::instruction::RegisterCode;
+use crate::instruction::register;
 
 impl Core {
-    pub fn add(&mut self, destination: RegisterCode, sources: [RegisterCode; 2]) {
+    pub fn add(&mut self, destination: register::Code, sources: [register::Code; 2]) {
         todo!()
     }
 }

@@ -1,4 +1,3 @@
-use crate::instruction::OperandCode;
 use crate::num::MaskedU8;
 
 pub type ComponentCode = MaskedU8<0x3>;
