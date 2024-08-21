@@ -16,4 +16,3 @@
 
 pub mod instruction;
 pub mod num;
-pub mod core;

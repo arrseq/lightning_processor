@@ -1,11 +1,10 @@
-use crate::num::MaskedU32;
+use proc_bitfield::bitfield;
 
-pub type Immediate = MaskedU32<0x1FFFFF>;
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Segment {
-    Segment0(Immediate),
-    Segment1(Immediate),
-    Segment2(Immediate),
-    Segment3(bool)
+bitfield! {
+    #[derive(Clone, Copy, PartialEq, Eq)]
+    pub struct Operation(pub u32): Debug, FromRaw, IntoRaw { 
+        pub segment: u8 @ 5..=6,
+        pub value: u16 @ 11..=26,
+        pub base: u8 @ 27..=31
+    }
 }

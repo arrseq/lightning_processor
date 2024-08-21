@@ -10,6 +10,12 @@ macro_rules! impl_mask {
             pub const fn get(self) -> $ty { self.0 }
             pub fn set(&mut self, value: $ty) { self.0 = value & MASK }
         }
+        
+        impl<const MASK: $ty> Default for $name<MASK> {
+            fn default() -> Self {
+                Self(0)
+            }
+        }
     };
 }
 
