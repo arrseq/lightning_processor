@@ -5,6 +5,7 @@ pub mod memory;
 pub mod mnemonic;
 pub mod register;
 pub mod unary;
+pub mod binary;
 
 bitfield! {
     /// A bitfield showcasing how to specify bit ranges.
@@ -37,10 +38,10 @@ pub enum Instruction {
     Negate(unary::NegateOperation),
     ExtendSign(unary::ExtendSignOperation),
     
-    Binary,
-    RegroupingBinary,
+    Binary(binary::Operation),
+    RegroupBinary(binary::RegroupingBinaryOperation),
     
-    RegroupingQuaternary
+    RegroupQuaternary(binary::RegroupingQuaternaryOperation)
 }
 
 impl Instruction {
@@ -79,6 +80,9 @@ impl Instruction {
             Self::UNARY_CODE => Self::Unary(unary::Operation::from(encoded)),
             Self::NEGATE_CODE => Self::Negate(unary::NegateOperation::from(encoded)),
             Self::EXTEND_SIGN_CODE => Self::ExtendSign(unary::ExtendSignOperation::from(encoded)),
+            Self::BINARY_CODE => Self::Binary(binary::Operation::from(encoded)),
+            Self::REGROUP_BINARY_CODE => Self::RegroupBinary(binary::RegroupingBinaryOperation::from(encoded)),
+            Self::REGROUP_QUATERNARY_CODE => Self::RegroupQuaternary(binary::RegroupingQuaternaryOperation::from(encoded)),
 
             _ => unimplemented!()
         }
@@ -100,10 +104,9 @@ impl Instruction {
             Instruction::Unary(op) => (Self::UNARY_CODE, u32::from(op)),
             Instruction::Negate(op) => (Self::NEGATE_CODE, u32::from(op)),
             Instruction::ExtendSign(op) => (Self::EXTEND_SIGN_CODE, u32::from(op)),
-            // Instruction::Binary(op) => (Self::BINARY_CODE, u32::from(op)),
-            // Instruction::RegroupingBinary(op) => (Self::REGROUPING_BINARY_CODE, u32::from(op)),
-            // Instruction::RegroupingQuaternary(op) => (Self::REGROUPING_QUATERNARY_CODE, u32::from(op)),
-            _ => todo!()
+            Instruction::Binary(op) => (Self::BINARY_CODE, u32::from(op)),
+            Instruction::RegroupBinary(op) => (Self::REGROUP_BINARY_CODE, u32::from(op)),
+            Instruction::RegroupQuaternary(op) => (Self::REGROUP_QUATERNARY_CODE, u32::from(op))
         };
         
         let opcode = opcode as u32;
