@@ -62,7 +62,7 @@ bitfield! {
     #[derive(Clone, Copy, PartialEq, Eq)]
     pub struct RegroupingQuaternaryOperation(pub u32): Debug, FromRaw, IntoRaw {
         pub atomic: bool @ 5,
-        pub mode: bool [unsafe! RegroupingBinaryMode] @ 6,
+        pub mode: bool [unsafe! RegroupingQuaternaryMode] @ 6,
         pub upper: u8 @ 7..=11,
         pub source_0: u8 @ 12..=16,
         pub source_1: u8 @ 17..=21,
