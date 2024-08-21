@@ -12,6 +12,15 @@ pub enum File {
 
 bitfield! {
     #[derive(Clone, Copy, PartialEq, Eq)]
+    pub struct LoadImmediateOperation(pub u32): Debug, FromRaw, IntoRaw { 
+        pub segment: u8 @ 5..=6,
+        pub value: u16 @ 11..=26,
+        pub base: u8 @ 27..=31
+    }
+}
+
+bitfield! {
+    #[derive(Clone, Copy, PartialEq, Eq)]
     pub struct BuildVectorOperation(pub u32): Debug, FromRaw, IntoRaw { 
         pub source_0: u8 @ 7..=11,
         pub source_1: u8 @ 12..=16,

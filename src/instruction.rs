@@ -1,7 +1,6 @@
 use proc_bitfield::{bitfield, ConvRaw};
 use crate::num::MaskedU8;
 
-pub mod load_immediate;
 pub mod memory;
 pub mod mnemonic;
 pub mod register;
@@ -21,7 +20,7 @@ pub enum Scale { X8, X16, X32, X64 }
 pub enum Instruction {
     Mnemonic(mnemonic::Operation),
 
-    LoadImmediate(load_immediate::Operation),
+    LoadImmediate(register::LoadImmediateOperation),
     BuildVector(register::BuildVectorOperation),
     UnBuildVector(register::UnBuildVectorOperation),
     
@@ -67,7 +66,7 @@ impl Instruction {
         let operation = Format::from(encoded).operation();
         match operation {
             Self::MNEMONIC_CODE => Self::Mnemonic(mnemonic::Format::from(encoded).operation()),
-            Self::LOAD_IMMEDIATE_CODE => Self::LoadImmediate(load_immediate::Operation::from(encoded)),
+            Self::LOAD_IMMEDIATE_CODE => Self::LoadImmediate(register::LoadImmediateOperation::from(encoded)),
             Self::BUILD_VECTOR_CODE => Self::BuildVector(register::BuildVectorOperation::from(encoded)),
             Self::UNBUILD_VECTOR_CODE => Self::UnBuildVector(register::UnBuildVectorOperation::from(encoded)),
             Self::READ_MEMORY_CODE => Self::ReadMemory(memory::ReadOperation::from(encoded)),
