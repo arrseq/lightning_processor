@@ -1,7 +1,7 @@
-use proc_bitfield::{bitfield, ConvRaw};
+use proc_bitfield::{bitfield};
 use crate::instruction::Scale;
 
-#[derive(Debug, Clone, Copy, PartialEq, Default, ConvRaw)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 #[repr(u8)]
 pub enum Mode {
     #[default]
@@ -13,6 +13,28 @@ pub enum Mode {
     TrailingZeros,
     LeadingZeros,
     CountZeros
+}
+
+impl From<u8> for Mode {
+    fn from(code: u8) -> Self {
+        match code {
+            0 => Self::Invert,
+            1 => Self::Increment,
+            2 => Self::Decrement,
+            3 => Self::ShiftLeft,
+            4 => Self::ShiftRight,
+            5 => Self::TrailingZeros,
+            6 => Self::LeadingZeros,
+            7 => Self::CountZeros,
+            _ => Self::default()
+        }
+    }
+}
+
+impl From<Mode> for u8 {
+    fn from(mode: Mode) -> Self {
+        mode as Self
+    }
 }
 
 bitfield! {

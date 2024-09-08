@@ -1,4 +1,4 @@
-use proc_bitfield::{bitfield, ConvRaw};
+use proc_bitfield::{bitfield};
 use crate::instruction::Scale;
 
 bitfield! {
@@ -51,7 +51,7 @@ bitfield! {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Default, ConvRaw)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 #[repr(u8)]
 pub enum BranchMode {
     #[default]
@@ -60,7 +60,24 @@ pub enum BranchMode {
     Demote
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Default, ConvRaw)]
+impl From<u8> for BranchMode {
+    fn from(code: u8) -> Self {
+        match code {
+            0 => Self::Basic,
+            1 => Self::CallStack,
+            2 => Self::Demote,
+            _ => Self::default()
+        }
+    }
+}
+
+impl From<BranchMode> for u8 {
+    fn from(mode: BranchMode) -> Self {
+        mode as Self
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 #[repr(u8)]
 pub enum BranchCondition {
     #[default]
@@ -69,6 +86,25 @@ pub enum BranchCondition {
     Parity,
     Regrouping,
     Overflow
+}
+
+impl From<u8> for BranchCondition {
+    fn from(code: u8) -> Self {
+        match code {
+            0 => Self::Zero,
+            1 => Self::Negative,
+            2 => Self::Parity,
+            3 => Self::Regrouping,
+            4 => Self::Overflow,
+            _ => Self::default(), // Default case for invalid values
+        }
+    }
+}
+
+impl From<BranchCondition> for u8 {
+    fn from(condition: BranchCondition) -> Self {
+        condition as Self
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
