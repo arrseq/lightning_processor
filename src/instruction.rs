@@ -1,4 +1,5 @@
 use proc_bitfield::{bitfield, ConvRaw};
+use crate::instruction::mnemonic::Operation;
 use crate::num::MaskedU8;
 
 pub mod memory;
@@ -15,11 +16,11 @@ bitfield! {
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 #[repr(u8)]
-pub enum Scale { 
+pub enum Scale {
     #[default]
-    X8, 
-    X16, 
-    X32, 
+    X8,
+    X16,
+    X32,
     X64
 }
 
@@ -44,7 +45,7 @@ impl From<Scale> for u8 {
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[repr(u8)]
 pub enum Instruction {
-    Mnemonic(mnemonic::Format),
+    Mnemonic(mnemonic::Operation),
 
     LoadImmediate(register::LoadImmediateOperation),
     BuildVector(register::BuildVectorOperation),
@@ -108,14 +109,17 @@ impl Instruction {
             Self::BINARY_CODE => Self::Binary(binary::Operation::from(encoded)),
             Self::REGROUP_BINARY_CODE => Self::RegroupBinary(binary::RegroupingBinaryOperation::from(encoded)),
             Self::REGROUP_QUATERNARY_CODE => Self::RegroupQuaternary(binary::RegroupingQuaternaryOperation::from(encoded)),
-
-            _ => unimplemented!()
+            _ => Self::Mnemonic(mnemonic::Format::from(0).operation())
         }
     }
     
     pub fn encode(self) -> u32 {
         let (opcode, operands) = match self {
-            Instruction::Mnemonic(op) => (Self::MNEMONIC_CODE, u32::from(op)),
+            Instruction::Mnemonic(op) => {
+                let mut inner = mnemonic::Format::from(0);
+                inner.set_operation(op);
+                (Self::MNEMONIC_CODE, u32::from(inner)) 
+            },
             Instruction::LoadImmediate(op) => (Self::LOAD_IMMEDIATE_CODE, u32::from(op)),
             Instruction::BuildVector(op) => (Self::BUILD_VECTOR_CODE, u32::from(op)),
             Instruction::UnBuildVector(op) => (Self::UNBUILD_VECTOR_CODE, u32::from(op)),
