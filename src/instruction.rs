@@ -13,8 +13,33 @@ bitfield! {
     struct Format(pub u32): Debug, FromRaw, IntoRaw { operation: u8 @ 0..=4 }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, ConvRaw)]
-pub enum Scale { X8, X16, X32, X64 }
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[repr(u8)]
+pub enum Scale { 
+    #[default]
+    X8, 
+    X16, 
+    X32, 
+    X64
+}
+
+impl From<u8> for Scale {
+    fn from(code: u8) -> Self {
+        match code {
+            0 => Self::X8,
+            1 => Self::X16,
+            2 => Self::X32,
+            3 => Self::X64,
+            _ => Self::default()
+        }
+    }
+}
+
+impl From<Scale> for u8 {
+    fn from(scale: Scale) -> Self {
+        scale as Self
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[repr(u8)]

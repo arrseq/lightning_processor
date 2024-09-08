@@ -1,6 +1,6 @@
-use proc_bitfield::{bitfield, ConvRaw};
+use proc_bitfield::{bitfield};
 
-#[derive(Debug, Clone, Copy, PartialEq, Default, ConvRaw)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 #[repr(u8)]
 pub enum File {
     #[default]
@@ -8,6 +8,24 @@ pub enum File {
     Vector,
     Interrupt,
     Processor
+}
+
+impl From<u8> for File {
+    fn from(code: u8) -> Self {
+        match code {
+            0 => Self::General,
+            1 => Self::Vector,
+            2 => Self::Interrupt,
+            3 => Self::Processor,
+            _ => Self::default()
+        }
+    }
+}
+
+impl From<File> for u8 {
+    fn from(file: File) -> Self {
+        file as Self
+    }
 }
 
 bitfield! {
